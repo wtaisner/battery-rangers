@@ -1,0 +1,7 @@
+name: battery
+dependencies:
+ -python=3.12
+ -numpy
+ -pip
+ -pip:
+  -pre-commit
