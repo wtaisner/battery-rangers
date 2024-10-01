@@ -36,6 +36,8 @@ Install pre-commit hooks: `pre-commit install`. From now on, it will run check a
 │
 ├── pre-commit.yaml   <- Pre-commit hooks to run on commit. See https://pre-commit.com for details.
 │
+├── .flake8   <- Custom configuration for flake8.
+│
 └── src   <- Source code for use in this project.
 ```
 
