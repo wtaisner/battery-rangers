@@ -34,10 +34,10 @@ jobs:
           pip install pylint
       - name: test structure
         run: |
-          ls
-          ls /home/runner/work/battery-rangers
-          ls /home/runner/work/battery-rangers/battery-rangers
+          ls -a /home/runner/work/battery-rangers
+          echo "=============="
+          ls -a /home/runner/work/battery-rangers/battery-rangers
       - name: Lint with pylint
         run: |
           export PYTHONPATH=$PYTHONPATH:/home/runner/work/battery-rangers/battery-rangers
-          pylint apps --rcfile=/home/runner/work/battery-rangers/.pylintrc
+          pylint apps --rcfile=/home/runner/work/battery-rangers/battery-rangers/.pylintrc
