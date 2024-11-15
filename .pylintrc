@@ -439,6 +439,10 @@ disable=raw-checker-failed,
         duplicate-code,
         logging-fstring-interpolation,
         too-many-locals,
+        fixme, # allow TODOs in code
+        c-extension-no-member, #
+        no-member,
+        no-name-in-module,
 
 
 # Enable the message, report, category or checker with the given id(s). You can

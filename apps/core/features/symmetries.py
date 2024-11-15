@@ -1,55 +1,52 @@
+"""Symmetry analysis functions."""
 import logging
 import os
 
 import pandas as pd
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer, PointGroupAnalyzer
-from pymatgen.core.structure import Structure, Molecule
+from pymatgen.core.structure import Molecule, Structure
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
 
-from src.features.utils import visualize_structure, get_pymatgen_molecule_from_smiles
+from apps.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
 
 
 def translate_point_group_to_symmetry_description(symmetry_code: str) -> str:
     """
     Translates the point group code e.g. D3h to the corresponding description.
 
-    Parameters:
-    symmetry_code (str): The symmetry code to translate.
+    Args:
+        symmetry_code (str): The symmetry code to translate.
 
     Returns:
-    str: The translated symmetry code.
+        str: The translated symmetry code.
     """
-    translation_table_path = os.path.join(
-        "../../data/symmetries/symmetry_translation.csv"
-    )  # TODO: change
+    translation_table_path = os.path.join("../../../data/symmetries/symmetry_translation.csv")  # TODO: change
 
     table = pd.read_csv(translation_table_path).astype(str)
 
     if symmetry_code in table["Point group"].to_list():
-        return table[table["Point group"] == symmetry_code][
-            "Simple description of typical geometry"
-        ].to_list()[0]
-    else:
-        logging.debug(
-            f'Could not find symmetry code {symmetry_code} in translation table: \
+        return table[table["Point group"] == symmetry_code]["Simple description of typical geometry"].to_list()[0]
+
+    logging.debug(
+        f'Could not find symmetry code {symmetry_code} in translation table: \
             {table["Point group"].to_list()}'
-        )
-        return "Unknown"
+    )
+    return "Unknown"
 
 
 def analyse_symmetry_point_group(molecule: Molecule, visualize: bool = False) -> tuple:
     """
     Analyzes the symmetry of a given crystal structure.
 
-    Parameters:
-            molecule (Molecule): Molecule to analyze.
-            visualize (bool, optional): Whether to visualize the structure. Defaults to False.
+    Args:
+        molecule (Molecule): Molecule to analyze.
+        visualize (bool, optional): Whether to visualize the structure. Defaults to False.
 
     Returns:
-            tuple: A tuple containing the following symmetry analysis results:
-                    - symmetry_operations (list): List of symmetry operations.
-                    - rotational_symmetry (int): The rotational symmetry number.
-                    - point_group (str): The point group of the structure.
-                    - equivalent_atoms (list): List of equivalent atoms.
+        tuple: A tuple containing the following symmetry analysis results:
+             - symmetry_operations (list): List of symmetry operations.
+             - rotational_symmetry (int): The rotational symmetry number.
+             - point_group (str): The point group of the structure.
+             - equivalent_atoms (list): List of equivalent atoms.
     """
 
     # Get the space group
@@ -65,9 +62,7 @@ def analyse_symmetry_point_group(molecule: Molecule, visualize: bool = False) ->
     logging.debug(f"Point group: {point_group}")
     logging.debug(f"Equivalent atoms: {equivalent_atoms}")
 
-    symmetry_description = translate_point_group_to_symmetry_description(
-        point_group.__str__()
-    )
+    symmetry_description = translate_point_group_to_symmetry_description(str(point_group))
     logging.debug(f"Symmetry description: {symmetry_description}")
 
     if visualize:
@@ -77,18 +72,16 @@ def analyse_symmetry_point_group(molecule: Molecule, visualize: bool = False) ->
     return (
         symmetry_operations,
         rotational_symmetry,
-        point_group.__str__(),
+        str(point_group),
         equivalent_atoms,
     )
 
 
-def analyse_symmetry_space_group(
-    structure: Structure, visualize: bool = False
-) -> tuple:
+def analyse_symmetry_space_group(structure: Structure, visualize: bool = False) -> tuple:
     """
     Analyzes the symmetry of a given crystal structure.
 
-    Parameters:
+    Args:
         structure (Structure): The crystal structure to analyze.
         visualize (bool, optional): Whether to visualize the structure. Defaults to False.
 
@@ -136,8 +129,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     logging.debug("Starting pymatgen_playground.py")
 
-    smiles = "Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1"
+    SMILES = "Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1"
 
-    molecule = get_pymatgen_molecule_from_smiles(smiles)
+    molecule = get_pymatgen_molecule_from_smiles(SMILES)
 
     analyse_symmetry_point_group(molecule, visualize=True)

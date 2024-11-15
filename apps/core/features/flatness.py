@@ -1,19 +1,21 @@
+"""Flatness feature calculation."""
 import logging
+
+import matplotlib.pyplot as plt
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import rdDistGeom, rdDepictor
+from rdkit.Chem import Draw, Mol, rdDepictor, rdDistGeom
 from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
 
 
-def embed_molecule(
-    mol: Chem.Mol, sample_size: int = 20, random_seed: int = 321
-) -> Chem.Mol:
+def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> Chem.Mol:
     """
     Embed a molecule using RDKit.
 
     Args:
         mol: A molecule.
+        sample_size:
+        random_seed:
 
     Returns:
         The embedded molecule.
@@ -27,15 +29,14 @@ def embed_molecule(
     return mol
 
 
-def get_flatness_smiles(
-    smiles: str, plot_visualization: bool = False, **kwargs
-) -> float:
+def get_flatness_smiles(smiles: str, plot_visualization: bool = False, **kwargs) -> float:
     """
     Calculate the flatness of a molecule from a SMILES string.
 
     Args:
         smiles: A SMILES string.
         plot_visualization: Whether to plot the molecule and the fitted plane.
+        **kwargs: Additional arguments for the get_flatness_mol function.
 
     Returns:
         The flatness of the molecule.
@@ -45,9 +46,7 @@ def get_flatness_smiles(
     return get_flatness_mol(mol, plot_visualization, **kwargs)
 
 
-def get_flatness_mol(
-    mol: Chem.Mol, plot_visualization: bool = False, **kwargs
-) -> float:
+def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) -> float:
     """
     Calculate the flatness of a molecule.
 
@@ -57,23 +56,23 @@ def get_flatness_mol(
     Args:
         mol: A molecule.
         plot_visualization: Whether to plot the molecule and the fitted plane.
-
     Returns:
         The flatness of the molecule.
     """
+    # TODO: this probably can be simplified to kwargs.get("sample_size", 20), or sth similar
     if "sample_size" in kwargs:
-        embeded_mol = embed_molecule(mol, sample_size=kwargs["sample_size"])
+        embedded_mol = embed_molecule(mol, sample_size=kwargs["sample_size"])
     else:
-        embeded_mol = embed_molecule(mol)
+        embedded_mol = embed_molecule(mol)
 
-    logging.debug(f"Number of conformers: {embeded_mol.GetNumConformers()}")
-    logging.debug(f"Is 3D: {embeded_mol.GetConformer().Is3D()}")
-    logging.debug(f"Number of atoms: {embeded_mol.GetNumAtoms()}")
+    logging.debug(f"Number of conformers: {embedded_mol.GetNumConformers()}")
+    logging.debug(f"Is 3D: {embedded_mol.GetConformer().Is3D()}")
+    logging.debug(f"Number of atoms: {embedded_mol.GetNumAtoms()}")
 
-    conformers = embeded_mol.GetNumConformers()
+    conformers = embedded_mol.GetNumConformers()
     rmsds = np.zeros(conformers)
     for i in range(conformers):
-        conf = embeded_mol.GetConformer(i)
+        conf = embedded_mol.GetConformer(i)
         coords = conf.GetPositions()
 
         # Fit a plane to the coordinates
@@ -99,6 +98,8 @@ def __visualize_the_plane(coords: np.ndarray, model: LinearRegression) -> None:
     Args:
         coords: The molecule's 3D coordinates.
         model: The fitted plane.
+    Returns:
+        None
     """
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection="3d")
@@ -107,11 +108,11 @@ def __visualize_the_plane(coords: np.ndarray, model: LinearRegression) -> None:
     x = np.linspace(min(coords[:, 0]), max(coords[:, 0]), 10)
     y = np.linspace(min(coords[:, 1]), max(coords[:, 1]), 10)
 
-    X, Y = np.meshgrid(x, y)
+    x, y = np.meshgrid(x, y)
 
-    Z = model.intercept_ + model.coef_[0] * X + model.coef_[1] * Y
+    z = model.intercept_ + model.coef_[0] * x + model.coef_[1] * y
 
-    ax.plot_surface(X, Y, Z, alpha=0.2)
+    ax.plot_surface(x, y, z, alpha=0.2)
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
@@ -133,12 +134,10 @@ if __name__ == "__main__":
 
     # Example usage
     # smiles = 'Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1'
-    smiles = "N#Cc1c(F)c(F)c(C#N)c(F)c1F"
+    SMILES = "N#Cc1c(F)c(F)c(C#N)c(F)c1F"
 
-    f = get_flatness_smiles(smiles, plot_visualization=True, sample_size=1)
+    f = get_flatness_smiles(SMILES, plot_visualization=True, sample_size=1)
     logging.info(f"Flatness: {f}")
 
-    from rdkit.Chem import Draw
-
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(SMILES)
     Draw.MolToFile(mol, "mol.png")
