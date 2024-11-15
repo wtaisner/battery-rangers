@@ -32,11 +32,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pylint
-      - name: test structure
-        run: |
-          ls -a /home/runner/work/battery-rangers
-          echo "=============="
-          ls -a /home/runner/work/battery-rangers/battery-rangers
       - name: Lint with pylint
         run: |
           export PYTHONPATH=$PYTHONPATH:/home/runner/work/battery-rangers/battery-rangers
