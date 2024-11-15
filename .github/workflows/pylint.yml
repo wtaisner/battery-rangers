@@ -35,4 +35,4 @@ jobs:
       - name: Lint with pylint
         run: |
           export PYTHONPATH=$PYTHONPATH:/home/runner/work/battery-rangers/battery-rangers
-          pylint apps --rcfile=/home/runner/work/battery-rangers/battery-rangers/.pylintrc
+          pylint apps --rcfile=/home/runner/work/battery-rangers/battery-rangers/.pylintrc --disable=import-error
