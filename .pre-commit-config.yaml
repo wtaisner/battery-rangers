@@ -5,13 +5,6 @@ repos:
   hooks:
   - id: black
     args: ['--line-length=200']
-# Use flake8 linter.
-- repo: https://github.com/pycqa/flake8
-  rev: 6.0.0
-  hooks:
-  - id: flake8
-    args: ['--count', '--select=E9,F63,F7,F82', '--show-source', '--statistics', '--max-line-length=200']
-    additional_dependencies: [flake8-match==1.0.0]
 # Use isort to sort imports.
 - repo: https://github.com/pycqa/isort
   rev: 5.12.0
@@ -27,3 +20,17 @@ repos:
   - id: check-case-conflict
   - id: check-json
   - id: check-yaml
+# Use pylint to check code quality.
+- repo: local
+  hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+      require_serial: true
+      args:
+        [
+          "-rn", # Only display messages
+          "--rcfile=.pylintrc", # Use the .pylintrc file
+        ]
