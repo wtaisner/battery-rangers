@@ -6,7 +6,7 @@ import pandas as pd
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
 
-from apps.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
+from modules.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
 
 
 def translate_point_group_to_symmetry_description(symmetry_code: str) -> str:
