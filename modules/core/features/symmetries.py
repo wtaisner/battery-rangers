@@ -1,6 +1,5 @@
 """Symmetry analysis functions."""
 import logging
-import os
 
 import pandas as pd
 from pymatgen.core.structure import Molecule, Structure
@@ -9,17 +8,17 @@ from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
 
 
-def translate_point_group_to_symmetry_description(symmetry_code: str) -> str:
+def translate_point_group_to_symmetry_description(symmetry_code: str, translation_table_path: str) -> str:
     """
     Translates the point group code e.g. D3h to the corresponding description.
 
     Args:
         symmetry_code (str): The symmetry code to translate.
+        translation_table_path (str): The path to the translation table (symmetry_translation.csv file).
 
     Returns:
         str: The translated symmetry code.
     """
-    translation_table_path = os.path.join("../../../data/symmetries/symmetry_translation.csv")  # TODO: change
 
     table = pd.read_csv(translation_table_path).astype(str)
 
@@ -33,7 +32,7 @@ def translate_point_group_to_symmetry_description(symmetry_code: str) -> str:
     return "Unknown"
 
 
-def analyse_symmetry_point_group(molecule: Molecule, visualize: bool = False) -> tuple:
+def analyse_symmetry_point_group(molecule: Molecule, translation_table_path: str, visualize: bool = False) -> tuple:
     """
     Analyzes the symmetry of a given crystal structure.
 
@@ -62,7 +61,7 @@ def analyse_symmetry_point_group(molecule: Molecule, visualize: bool = False) ->
     logging.debug(f"Point group: {point_group}")
     logging.debug(f"Equivalent atoms: {equivalent_atoms}")
 
-    symmetry_description = translate_point_group_to_symmetry_description(str(point_group))
+    symmetry_description = translate_point_group_to_symmetry_description(str(point_group), translation_table_path)
     logging.debug(f"Symmetry description: {symmetry_description}")
 
     if visualize:
@@ -130,7 +129,8 @@ if __name__ == "__main__":
     logging.debug("Starting pymatgen_playground.py")
 
     SMILES = "Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1"
+    TRANSLATION_TABLE_PATH = "../../../data/symmetries/symmetry_translation.csv"
 
     molecule = get_pymatgen_molecule_from_smiles(SMILES)
 
-    analyse_symmetry_point_group(molecule, visualize=True)
+    analyse_symmetry_point_group(molecule, TRANSLATION_TABLE_PATH, visualize=True)
