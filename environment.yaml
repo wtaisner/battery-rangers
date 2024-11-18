@@ -3,6 +3,7 @@ dependencies:
   - python = 3.12
   - numpy >= 1.26.4
   - pylint >= 3.3.1
+  - rdkit >= 2024.09.2
   - pip >= 24.2
   - pip:
       - pre-commit >= 3.8.0
