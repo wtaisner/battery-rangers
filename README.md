@@ -1,14 +1,17 @@
-# bmd-battery-rangers
+# Battery Rangers
 
 ![Battery rangers](static/battery_rangers.jpeg)
 
 ## Setup
 
 ### 1. Python environment
-Using conda or mamba, run `mamba env create -f environment.yaml` to create an environment. Use `mamba activate battery` to activate it in the terminal.
+Using either `conda` or `mamba`, run `mamba env create -f environment.yaml` to create an environment.
+Use `mamba activate battery` to activate it in the terminal.
 
 ### 2. [pre-commit](https://pre-commit.com)
 Install pre-commit hooks: `pre-commit install`. From now on, it will run check automatically on `git commit`.
+
+You can also run it manually with `pre-commit run --all-files`.
 
 ## Directory structure
 ```
@@ -36,9 +39,11 @@ Install pre-commit hooks: `pre-commit install`. From now on, it will run check a
 │
 ├── pre-commit.yaml   <- Pre-commit hooks to run on commit. See https://pre-commit.com for details.
 │
-├── .flake8   <- Custom configuration for flake8.
+├── .pylintrc   <- Custom configuration for pylint.
 │
-└── src   <- Source code for use in this project.
+├── apps               <- Source code for different modules.
+│   ├── core           <- Utility functions and classes.
+│   ├── ...            <- Specific module.
 ```
 
 Roughly following [cookiecuter](https://cookiecutter-data-science.drivendata.org/) template.

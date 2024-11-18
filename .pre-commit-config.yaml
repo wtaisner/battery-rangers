@@ -1,12 +1,36 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
-    hooks:
-    -   id: check-ast
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
-    -   id: flake8
--   repo: https://github.com/psf/black
-    rev: 22.10.0
-    hooks:
-    -   id: black
+# Use black formatter.
+- repo: https://github.com/psf/black
+  rev: 23.1.0
+  hooks:
+  - id: black
+    args: ['--line-length=200']
+# Use isort to sort imports.
+- repo: https://github.com/pycqa/isort
+  rev: 5.12.0
+  hooks:
+  - id: isort
+    name: isort (python)
+    args: ['-v', '--line-length=127', '--profile', 'black']
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.3.0
+  hooks:
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: check-case-conflict
+  - id: check-json
+  - id: check-yaml
+# Use pylint to check code quality.
+- repo: local
+  hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+      require_serial: true
+      args:
+        [
+          "-rn", # Only display messages
+          "--rcfile=.pylintrc", # Use the .pylintrc file
+        ]

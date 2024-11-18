@@ -1,0 +1,34 @@
+Point group,Symmetry operations [14],Simple description of typical geometry,Example 1,Example 2,Example 3
+C1,E,"no symmetry, chiral",bromochlorofluoromethane (both enantiomers shown),lysergic acid,L-leucine and most other α- amino acids except glycine
+Cs,E σ h,mirror plane,thionyl chloride,hypochlorous acid,chloroiodomethane
+Ci,E i,inversion center,meso -tartaric acid,mucic acid ( meso -galactaric acid),"1,2 dibromo 1,2 dichloroethane"
+C∞v,E 2 C ∞ Φ ∞σ v,linear,hydrogen fluoride (and all other heteronuclear diatomic molecules ),nitrous oxide (dinitrogen monoxide),hydrocyanic acid (hydrogen cyanide)
+D∞h,E 2 C ∞ Φ ∞σ i i 2 S ∞ Φ ∞ C 2,linear with inversion center,oxygen (and all other homonuclear diatomic molecules),carbon dioxide,acetylene (ethyne)
+C2,E C 2,"""open book geometry"", chiral",hydrogen peroxide,hydrazine,tetrahydrofuran (twist conformation)
+C3,E C 3 C 3 2,"propeller, chiral",triphenylphosphine,triethylamine,phosphoric acid
+C2h,E C 2 i σ h,"planar with inversion center, no vertical plane","trans - 1,2-dichloroethylene",trans - dinitrogen difluoride,trans - azobenzene
+C2v,E C 2 σ v (xz) σ v '(yz),angular (H 2 O) or see-saw (SF 4 ),water,sulfur tetrafluoride,Dichloromethane
+C3h,E C 3 C 3 2 σ h S 3 S 3 5,propeller,boric acid,"phloroglucinol (1,3,5-trihydroxybenzene)",benzotrifuroxan
+C3v,E 2 C 3 3σ v,trigonal pyramidal,ammonia (if pyramidal inversion is neglected),phosphorus oxychloride,"cobalt tetracarbonyl hydride , HCo(CO) 4"
+C4v,E 2 C 4 C 2 2σ v 2σ d,square pyramidal,xenon oxytetrafluoride,"pentaborane(9) , B 5 H 9",nitroprusside anion [Fe(CN) 5 (NO)] 2−
+C5,E 2 C 5 2 C 5 2,five-fold rotational symmetry,C-reactive protein,[Fe(Me 5 -Cp)(P 5 )],Corannulene derivative
+C5v,E 2 C 5 2 C 5 2 5σ v,milking stool' complex,Cyclopentadienyl nickel nitrosyl (CpNiNO),corannulene,Pentamethylcyclopentadienyl nickel nitrosyl (Cp*NiNO)
+D2,E C 2 (x) C 2 (y) C 2 (z),"twist, chiral",biphenyl (skew conformation),twistane (C 10 H 16 ),"(δ,δ)- trans -[Co(en) 2 Cl 2 ] +"
+D3,E C 3 (z) 3 C 2,"triple helix, chiral",Tris(ethylenediamine)cobalt(III) cation,tris(oxalato)iron(III) anion,tris(en)cobalt(III)
+D2h,E C 2 (z) C 2 (y) C 2 (x) i σ(xy) σ(xz) σ(yz),"planar with inversion center, vertical plane",ethylene,pyrazine,diborane
+D3h,E 2 C 3 3 C 2 σ h 2 S 3 3σ v,trigonal planar or trigonal bipyramidal,boron trifluoride,phosphorus pentachloride,cyclopropane
+D4h,"E 2 C 4 C 2 2 C 2 ' 2 C 2 "" i 2 S 4 σ h 2σ v 2σ d",square planar,xenon tetrafluoride,octachlorodimolybdate(II) anion,Trans -[Co III (NH 3 ) 4 Cl 2 ] + (excluding H atoms)
+D5h,E 2 C 5 2 C 5 2 5 C 2 σ h 2 S 5 2 S 5 3 5σ v,pentagonal,cyclopentadienyl anion,ruthenocene,C 70
+D6h,E 2 C 6 2 C 3 C 2 3 C 2 ' 3 C 2 ‘’ i 2 S 3 2 S 6 σ h 3σ d 3σ v,hexagonal,benzene,bis(benzene)chromium,coronene ( C 24 H 12 )
+D7h,E C 7 S 7 7 C 2 σ h 7σ v,heptagonal,tropylium ( C 7 H 7 + ) cation,,
+D8h,E C 8 C 4 C 2 S 8 i 8 C 2 σ h 4σ v 4σ d,octagonal,cyclooctatetraenide ( C 8 H 8 2− ) anion,uranocene,bis(cot)thorium(IV)
+D2d,E 2 S 4 C 2 2 C 2 ' 2σ d,90° twist,allene,tetrasulfur tetranitride,diborane(4) (excited state)
+D3d,E 2 C 3 3 C 2 i 2 S 6 3σ d,60° twist,ethane (staggered rotamer ),dicobalt octacarbonyl (non-bridged isomer ),cyclohexane chair conformation
+D4d,E 2 S 8 2 C 4 2 S 8 3 C 2 4 C 2 ' 4σ d,45° twist,sulfur (crown conformation of S 8 ),dimanganese decacarbonyl (staggered rotamer),octafluoroxenate ion (idealized geometry)
+D5d,E 2 C 5 2 C 5 2 5 C 2 i 2 S 10 3 2 S 10 5σ d,36° twist,ferrocene (staggered rotamer),Ruthenocene (stag),fulleride ion
+S4,E 2 S 4 C 2,,"1,2,3,4-tetrafluorospiropentane ( meso isomer ) [15]",tetramethyl-cot,bis(dth)copper(I)
+Td,E 8 C 3 3 C 2 6 S 4 6σ d,tetrahedral,methane,phosphorus pentoxide,adamantane
+Th,E 4 C 3 4 C 3 2 i 3 C 2 4 S 6 4 S 6 5 3σ h,pyritohedron,[Fe(C 5 H 5 N) 6 ] 2+,[Th(NO 3 ) 6 ] 2-,Fe(H2O)6
+Oh,E 8 C 3 6 C 2 6 C 4 3 C 2 i 6 S 4 8 S 6 3σ h 6σ d,octahedral or cubic,sulfur hexafluoride,molybdenum hexacarbonyl,cubane
+I,E 12 C 5 12 C 5 2 20 C 3 15 C 2,chiral icosahedral or dodecahedral,Rhinovirus,snub dodecahedron,human polio virus
+Ih,E 12 C 5 12 C 5 2 20 C 3 15 C 2 i 12 S 10 12 S 10 3 20 S 6 15σ,icosahedral or dodecahedral,Buckminsterfullerene,dodecaborate anion,dodecahedrane
