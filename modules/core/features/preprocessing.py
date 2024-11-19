@@ -93,7 +93,6 @@ def zhu_dataset_preprocessing(df_zhu: pd.DataFrame) -> pd.DataFrame:
 
     # Process target
     df_zhu = df_zhu.loc[~df_zhu["capacity_max"].isna()].reset_index(drop=True)
-
     df_zhu["smiles"] = df_zhu["smiles"].apply(Chem.CanonSmiles)
 
     return df_zhu

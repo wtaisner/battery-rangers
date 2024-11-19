@@ -34,7 +34,6 @@ def calculate_atom_percentage(smiles: str, atom: str) -> float | None:
         atom_num = 8
     elif atom == "F":
         atom_num = 9
-
     mol = Chem.MolFromSmiles(smiles)
     if mol is not None:
         num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == atom_num)
@@ -92,7 +91,6 @@ def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.Dat
 
     # Symmetry
     df["symmetry"] = df["smiles"].apply(lambda x: check_symmetry_smiles(x, translation_table_path))
-    # df_experts['symmetry'] = df_experts['symmetry'] != 'C1'
 
     df = handcrafted_feature_engineering(df)
 
@@ -133,11 +131,12 @@ def data_preprocessing_and_feature_engineering(
     :return: preprocessed dataset with generated features
     """
     df = pd.read_csv(data_path)
+
     if data_type == "expert":
         df = expert_dataset_preprocessing(df)
     elif data_type == "zhu":
         df = zhu_dataset_preprocessing(df)
-    else:
+    elif data_type == "saad":
         df = saad_dataset_preprocessing(df)
     df = df.loc[:, ["smiles", "capacity_max"]]
     df = df.groupby("smiles").max("capacity_max").reset_index()

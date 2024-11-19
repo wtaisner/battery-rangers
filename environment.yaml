@@ -3,7 +3,12 @@ dependencies:
   - python = 3.12
   - numpy >= 1.26.4
   - pylint >= 3.3.1
-  - rdkit >= 2024.09.2
+  - rdkit == 2024.3.6
   - pip >= 24.2
+  - scikit-learn >= 1.5.2
+  - pymatgen >= 2024.11.13
+  - vtk >= 9.3.1
+  - scikit-optimize >= 0.10.2
+  - py-xgboost >= 2.1.2
   - pip:
       - pre-commit >= 3.8.0

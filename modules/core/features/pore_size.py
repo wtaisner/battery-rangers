@@ -1,8 +1,7 @@
 """Pore size calculation functions."""
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem.rdDistGeom import EmbedMolecule
-from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule
+from rdkit.Chem import AllChem
 
 
 def calculate_repeating_unit_length(smiles: str) -> float:
@@ -20,9 +19,8 @@ def calculate_repeating_unit_length(smiles: str) -> float:
         molecule = Chem.MolFromSmiles(smiles)
     except ValueError as e:
         raise ValueError("Invalid SMILES string.") from e
-
-    EmbedMolecule(molecule)
-    MMFFOptimizeMolecule(molecule)
+    AllChem.EmbedMolecule(molecule)
+    AllChem.MMFFOptimizeMolecule(molecule)
 
     conf = molecule.GetConformer()
     max_distance = 0
