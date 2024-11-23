@@ -1,12 +1,23 @@
 """Symmetry analysis functions."""
 import logging
 import os
+from enum import Enum
 
 import pandas as pd
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
 
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
+
+
+class AvailableSymmetry(Enum):
+    """Enum for available symmetry types."""
+
+    NODE = "node"
+    EDGE = "edge"
+    RING_BONDS = "ring_bonds"
+    RING_NODES = "ring_nodes"
+    RING_OUTER_PLANE = "ring_outer_plane"
 
 
 def translate_point_group_to_symmetry_description(symmetry_code: str) -> str:

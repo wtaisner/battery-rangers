@@ -2,6 +2,7 @@
 import logging
 import os
 
+import networkx as nx
 import pymatgen.core
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.vis.structure_vtk import StructureVis
@@ -68,3 +69,16 @@ def visualize_structure(structure: Structure, **kwargs) -> None:
     stvis = StructureVis(**kwargs)
     stvis.set_structure(structure)
     stvis.show()
+
+
+def get_graph_from_smile(smile: str) -> nx.Graph:
+    """
+    Get a graph from a SMILE string.
+    """
+    mol = Chem.MolFromSmiles(smile)
+
+    if mol is None:
+        print(f"Mol: {str(mol)} of {smile} is NONE")
+
+    adjacency_matrix = Chem.GetAdjacencyMatrix(mol, useBO=True)
+    return nx.from_numpy_array(adjacency_matrix)
