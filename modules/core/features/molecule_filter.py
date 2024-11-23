@@ -4,7 +4,13 @@ import time
 import pandas as pd
 from rdkit import Chem
 
-from modules.core.features.filters import *  # pylint: disable=wildcard-import
+from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
+from modules.core.features.filters.flatness_filter import FlatnessFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
+from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.features.filters.single_c_c_bonds_outside_rings_filter import SingleCCBondsOutsideRingsFilter
+from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.core.features.filters.symmetry_filter import SymmetryFilter
 
 
 class MoleculeFilter:

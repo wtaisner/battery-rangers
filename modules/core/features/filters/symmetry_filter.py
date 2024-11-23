@@ -5,7 +5,7 @@ import networkx as nx
 from networkx.algorithms.cycles import simple_cycles
 from networkx.algorithms.isomorphism.ismags import ISMAGS
 
-from modules.core.features.filters import GenericMoleculeFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import AvailableSymmetry
 from modules.core.features.utils import get_graph_from_smile
 

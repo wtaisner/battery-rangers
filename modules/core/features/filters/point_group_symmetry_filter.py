@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from tqdm import tqdm
 
-from modules.core.features.filters import GenericMoleculeFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import analyse_symmetry_point_group, translate_point_group_to_symmetry_description
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles
 
