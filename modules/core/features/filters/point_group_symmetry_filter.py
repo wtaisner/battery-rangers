@@ -1,11 +1,16 @@
 """Filter that leaves molecules with a specific point group symmetry."""
+import logging
 from copy import deepcopy
 
+from pymatgen.core import Molecule
+from rdkit import Chem
+from rdkit.Chem.rdDistGeom import EmbedMolecule
 from tqdm import tqdm
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import analyse_symmetry_point_group, translate_point_group_to_symmetry_description
-from modules.core.features.utils import get_pymatgen_molecule_from_smiles
+
+logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 
 
 class PointGroupSymmetryFilter(GenericMoleculeFilter):
@@ -25,11 +30,13 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         bad_smiles = []
         for sml in tqdm(tmp_smiles, total=len(tmp_smiles), desc="Getting pymatgen molecules"):
             try:
-                pymatgen_molecules.append(get_pymatgen_molecule_from_smiles(sml))
-            except:  # pylint: disable=bare-except
+                pymatgen_molecules.append(self._smiles_to_pymatgen_molecule(sml))
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.error(f"Error converting SMILES to pymatgen molecule: {sml}, Error: {str(e)}")
                 bad_smiles.append(sml)
                 continue
-        print("pymatgen modules:", len(pymatgen_molecules), "bad smiles:", len(bad_smiles))
+
+        logger.debug(f"Pymatgen modules created: {len(pymatgen_molecules)} | Smiles that could not be converted: {len(bad_smiles)}")
         if len(pymatgen_molecules) != len(tmp_smiles):
             tmp_smiles = [x for x in tmp_smiles if x not in bad_smiles]
 
@@ -38,12 +45,54 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         return both_symmetrical_smiles
 
     @staticmethod
-    def _point_group_symmetry(pymatgen_molecules, smiles_lst):
+    def _point_group_symmetry(pymatgen_molecules: list[Molecule], smiles_lst: list[str]) -> list[str]:
+        """
+        Filters out SMILES strings corresponding to molecules that do not exhibit
+        a point group symmetry, based on pymatgen analysis.
+
+        Args:
+            pymatgen_molecules (List[Molecule]): List of pymatgen Molecule objects.
+            smiles_lst (List[str]): List of SMILES strings corresponding to the molecules.
+
+        Returns:
+            List[str]: List of SMILES strings for molecules with point group symmetry.
+        """
         pointgroup_symmetrical = []
+
         for i, mol in enumerate(pymatgen_molecules):
             _, _, pointgroup, _ = analyse_symmetry_point_group(mol)
             symm = translate_point_group_to_symmetry_description(pointgroup)
-            if symm.startswith("no"):
-                continue
-            pointgroup_symmetrical.append(smiles_lst[i])
+
+            if not symm.startswith("no"):  # Skip molecules with no symmetry
+                pointgroup_symmetrical.append(smiles_lst[i])
+
         return pointgroup_symmetrical
+
+    @staticmethod
+    def _smiles_to_pymatgen_molecule(smiles: str) -> Molecule:
+        """
+        Convert a SMILES string to a pymatgen Molecule object by first converting it
+        to an RDKit molecule and then embedding it in 3D space.
+
+        Args:
+            smiles (str): The SMILES string of the molecule.
+
+        Returns:
+            Molecule: A pymatgen Molecule object corresponding to the SMILES string.
+
+        Raises:
+            ValueError: If the SMILES string is invalid or the molecule embedding fails.
+        """
+        try:
+            cannonic_smiles = Chem.CanonSmiles(smiles)
+            rdkit_mol = Chem.MolFromSmiles(cannonic_smiles)
+            rdkit_mol = Chem.AddHs(rdkit_mol)
+            EmbedMolecule(rdkit_mol, randomSeed=42)
+            conformer = rdkit_mol.GetConformer()
+            coordinates = conformer.GetPositions()
+            symbols = [atom.GetSymbol() for atom in rdkit_mol.GetAtoms()]
+
+            return Molecule(symbols, coordinates)
+
+        except Exception as e:
+            raise ValueError(f"Error converting SMILES to pymatgen molecule: {smiles}, Error: {str(e)}") from e

@@ -17,11 +17,9 @@ class CNTripleBondsFilter(GenericMoleculeFilter):
             list[str]: The list of SMILES strings that passed the filter.
         """
         tmp_smiles = []
-        mols = [Chem.MolFromSmiles(x) for x in smiles]
-        mols_sym_triple_bonds = []
-        for i, mol in enumerate(mols):
+        molecules = [Chem.MolFromSmiles(x) for x in smiles]
+        for i, mol in enumerate(molecules):
             if self.count_cn_triple_bonds(mol) >= 2:
-                mols_sym_triple_bonds.append(mol)
                 tmp_smiles.append(smiles[i])
         return tmp_smiles
 

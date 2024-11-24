@@ -1,4 +1,5 @@
 """Class responsible for filtering molecules."""
+import logging
 import time
 
 import pandas as pd
@@ -11,6 +12,11 @@ from modules.core.features.filters.point_group_symmetry_filter import PointGroup
 from modules.core.features.filters.single_c_c_bonds_outside_rings_filter import SingleCCBondsOutsideRingsFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.filters.symmetry_filter import SymmetryFilter
+
+# Set up the logger for the module
+logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
+logging.basicConfig(format="%(levelname)s:%(name)s:%(message)s")
+logger.setLevel(logging.DEBUG)
 
 
 class MoleculeFilter:
@@ -46,28 +52,28 @@ class MoleculeFilter:
             list[str]: The list of SMILES strings that passed the filter.
         """
         for filter_operator in self.filters:
-            print(f"Applying filter: {filter_operator.__class__.__name__}")
+            logger.info(f"Applying filter: {filter_operator.__class__.__name__}")
             start_time = time.time()
             smiles = filter_operator.apply(smiles, **kwargs)
-            print(f"Filtering time: {time.time() - start_time:.2f} s. Remaining SMILES: {len(smiles)}")
+            logger.info(f"Filtering time: {time.time() - start_time:.2f} s. Remaining SMILES: {len(smiles)}")
         return smiles
 
 
 if __name__ == "__main__":
     molecule_filter = MoleculeFilter()
-    expert_smiles = pd.read_csv("/home/witold/PycharmProjects/bmd-mol-generation/data/batteries.csv")["smiles"].drop_duplicates().values
+    expert_smiles = pd.read_csv("../../../data/processed/data_experts_1.csv")["smiles"].drop_duplicates().values
     standardized_expert_smiles = [Chem.MolToSmiles(Chem.MolFromSmiles(smiles)) for smiles in expert_smiles]
-    generated_smiles = pd.read_csv("/home/witold/PycharmProjects/bmd-mol-generation/REINVENT4/reinvent_sampling_50epochs_10000smiles_v5.csv")["SMILES"].drop_duplicates().values
+    generated_smiles = pd.read_csv("/home/witold/PycharmProjects/bmd-mol-generation/outputs/reinvent_sampling_experts_1_50epochs_20000_smiles.csv")["SMILES"].drop_duplicates().values
 
-    print(f"Expert smiles: {len(standardized_expert_smiles)}")
-    print(f"Generated smiles: {len(generated_smiles)}")
+    logger.info(f"Expert smiles: {len(standardized_expert_smiles)}")
+    logger.info(f"Generated smiles: {len(generated_smiles)}")
 
     def set_diff(list1, list2):
         """Return the difference between two lists."""
         return list(set(list1).difference(set(list2)))
 
     generated_smiles = set_diff(generated_smiles, standardized_expert_smiles)
-    print(f"Generated smiles after removing expert smiles: {len(generated_smiles)}")
+    logger.info(f"Generated smiles after removing expert smiles: {len(generated_smiles)}")
 
     filtered_smiles = molecule_filter.apply(generated_smiles)
-    print(f"Filtered smiles: {len(filtered_smiles)}")
+    logger.info(f"Final number of smiles after filtering: {len(filtered_smiles)}")
