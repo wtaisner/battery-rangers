@@ -65,9 +65,9 @@ def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) 
     else:
         embedded_mol = embed_molecule(mol)
 
-    logging.debug(f"Number of conformers: {embedded_mol.GetNumConformers()}")
-    logging.debug(f"Is 3D: {embedded_mol.GetConformer().Is3D()}")
-    logging.debug(f"Number of atoms: {embedded_mol.GetNumAtoms()}")
+    # logging.debug(f"Number of conformers: {embedded_mol.GetNumConformers()}")
+    # logging.debug(f"Is 3D: {embedded_mol.GetConformer().Is3D()}")
+    # logging.debug(f"Number of atoms: {embedded_mol.GetNumAtoms()}")
 
     conformers = embedded_mol.GetNumConformers()
     rmsds = np.zeros(conformers)
@@ -86,7 +86,7 @@ def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) 
         if plot_visualization:
             __visualize_the_plane(coords, model)
 
-    logging.info(f"RMSDs: {np.mean(rmsds)} +/- {np.std(rmsds)}")
+    # logging.info(f"RMSDs: {np.mean(rmsds)} +/- {np.std(rmsds)}")
 
     return np.mean(rmsds)
 
