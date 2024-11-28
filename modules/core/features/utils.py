@@ -1,6 +1,7 @@
 """Utility functions for the features."""
 import os
 
+import networkx as nx
 import pymatgen.core
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.vis.structure_vtk import StructureVis
@@ -96,3 +97,16 @@ def smiles_to_3d(smiles: str) -> tuple | None:
     coords = mol.GetConformer().GetPositions()
     symbols = [atom.GetSymbol() for atom in mol.GetAtoms()]
     return mol, symbols, coords
+
+
+def get_graph_from_smile(smile: str) -> nx.Graph:
+    """
+    Get a graph from a SMILE string.
+    """
+    mol = Chem.MolFromSmiles(smile)
+
+    if mol is None:
+        print(f"Mol: {str(mol)} of {smile} is NONE")
+
+    adjacency_matrix = Chem.GetAdjacencyMatrix(mol, useBO=True)
+    return nx.from_numpy_array(adjacency_matrix)
