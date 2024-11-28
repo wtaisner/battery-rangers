@@ -3,7 +3,7 @@ dependencies:
   - python = 3.12
   - numpy >= 1.26.4
   - pylint >= 3.3.1
-  - rdkit == 2024.3.6
+  - rdkit >= 2024.09.2
   - pip >= 24.2
   - scikit-learn >= 1.5.2
   - pymatgen >= 2024.11.13

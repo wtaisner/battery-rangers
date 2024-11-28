@@ -1,7 +1,67 @@
 """Utils functions for data."""
+from typing import Literal
+
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+from modules.core.features.preprocessing import (
+    canon_smiles,
+    expert_dataset_preprocessing,
+    saad_dataset_preprocessing,
+    zhu_dataset_preprocessing,
+)
+
+
+def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2"]) -> pd.DataFrame:
+    """
+    preprocessing for the datasets
+    :param data_path: path to data
+    :param data_type: type of data (expert, ahu, saad, expert2)
+    :return: pre-processed data
+    """
+    df = pd.read_csv(data_path)
+
+    if data_type == "expert":
+        df = expert_dataset_preprocessing(df)
+    elif data_type == "zhu":
+        df = zhu_dataset_preprocessing(df)
+    elif data_type == "saad":
+        df = saad_dataset_preprocessing(df)
+    df = df.loc[:, ["smiles", "capacity_max"]]
+    df = df.groupby("smiles").max("capacity_max").reset_index()
+    if data_type == "expert2":
+        df["smiles"] = df["smiles"].apply(canon_smiles)
+        df.dropna(subset=["smiles"], inplace=True)
+    return df
+
+
+def complex_data_conversion(df: pd.DataFrame, features_list: list) -> tuple:
+    """
+    Converts complex numbers to two columns (one with real part, one with imaginary part)
+    :param df: dataframe
+    :param features_list: list of features, which contain complex numbers
+    :return: dataframe after conversion with dropped original features, new features names
+    """
+    new_features = []
+    for feature in features_list:
+        values = df[feature].tolist()
+        real, imag = [], []
+        for v in values:
+            if isinstance(v, tuple):
+                v = v[0]
+            v = complex(v)
+            real.append(np.real(v))
+            imag.append(np.imag(v))
+        if len(np.unique(real)) > 1:
+            new_features.append(f"{feature}_real")
+            df[f"{feature}_real"] = real
+        if len(np.unique(imag)) > 1:
+            new_features.append(f"{feature}_imag")
+            df[f"{feature}_imag"] = imag
+        df.drop(columns=[feature], inplace=True)
+    return df, new_features
 
 
 def prepare_data_for_regressors(df: pd.DataFrame, numerical_features: list, categorical_features: list) -> pd.DataFrame:
@@ -32,21 +92,49 @@ def prepare_data_for_regressors(df: pd.DataFrame, numerical_features: list, cate
     return df
 
 
-def custom_data_split(df: pd.DataFrame, target: str, num_splits: int, num_bins: int = 4, random_state: int = 23) -> list:
+def custom_discretization(df: pd.DataFrame, target: str, num_bins: int = 4) -> pd.DataFrame:
+    """
+    Discretization of the continuous target attribute.
+    :param df: dataframe with molecules and target
+    :param target: name of the target column
+    :param num_bins: number of capacity bins to use
+    :return: discretized target attribute
+    """
+    binned_capacity = pd.qcut(df[target], q=num_bins, labels=False)
+    return binned_capacity
+
+
+def custom_data_kfold(df: pd.DataFrame, target: str, num_splits: int, num_bins: int = 4, random_state: int = 42) -> list:
     """
     Performs custom data split on the provided data
     :param df: dataframe with molecules and generated features
-    :param target: name of the ratger feature
+    :param target: name of the target feature
     :param num_splits: number of folds
     :param num_bins: number of capacity bins to use
     :param random_state: random state (default: 23)
     :return: generated splits (indices)
     """
     features = [f for f in df.columns if f != target]
-    binned_capacity = pd.qcut(df[target], q=num_bins, labels=False)
+    binned_capacity = custom_discretization(df, target, num_bins)
     skf = StratifiedKFold(n_splits=num_splits, shuffle=True, random_state=random_state)
     kfolds = list(skf.split(df[features], binned_capacity))
     return kfolds
+
+
+def custom_data_split(df: pd.DataFrame, target: str, train_size: float, num_bins: int = 4, random_state: int = 42) -> list:
+    """
+
+    :param df: dataframe
+    :param target: name of the target feature
+    :param train_size: required train size (percentage
+    :param num_bins: number of bins for disretization
+    :param random_state: random state (default: 42)
+    :return: custom splits (indices)
+    """
+    idx = df.index.tolist()
+    binned_capacity = custom_discretization(df, target, num_bins)
+    train_ids, test_ids = train_test_split(idx, train_size=train_size, random_state=random_state, shuffle=True, stratify=binned_capacity)
+    return [(train_ids, test_ids)]
 
 
 def combine_split(df1: pd.DataFrame, split1: list, df2: pd.DataFrame, split2: list) -> tuple:

@@ -3,17 +3,6 @@ import pandas as pd
 from rdkit import Chem
 
 
-def drop_problematic(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Drops molecules with problematic conversion
-    :param df: dataframe with molecules
-    :return: dataframe without molecules with problematic conversion
-    """
-    problematic_no_target = [20, 21, 22, 23, 24, 44, 46, 50, 52]
-    problematic_mol_conversion = [58]
-    return df.drop(problematic_no_target + problematic_mol_conversion)
-
-
 def preprocess_target(df: pd.DataFrame, targets: list) -> pd.DataFrame:
     """
     Preprocessing of the target column, selects maximal obtained value per molecule
@@ -22,6 +11,18 @@ def preprocess_target(df: pd.DataFrame, targets: list) -> pd.DataFrame:
     :return: preprocessed dataframe
     """
     return df.loc[:, targets].max(axis=1)
+
+
+def canon_smiles(smiles: str) -> str | None:
+    """
+    Produces a canonical smiles string from a SMILES string.
+    :param smiles: SMILES string.
+    :return: canonical smiles string.
+    """
+    m = Chem.MolFromSmiles(smiles, sanitize=True)
+    if m is None:
+        return None
+    return Chem.MolToSmiles(m)
 
 
 def expert_dataset_preprocessing(df_experts: pd.DataFrame) -> pd.DataFrame:
@@ -62,7 +63,8 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame) -> pd.DataFrame:
     df_experts["capacity_mean"] = df_experts.loc[:, ["capacity_H2SO4_mean", "capacity_NaOH_mean"]].mean(axis=1)
 
     # Drop problematic rows
-    df_experts = drop_problematic(df_experts)
+    problematic_no_target = [20, 21, 22, 23, 24, 44, 46, 50, 52]
+    df_experts.drop(problematic_no_target)
 
     # Process target
     targets = ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
@@ -70,7 +72,8 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame) -> pd.DataFrame:
 
     df_experts = df_experts.loc[~df_experts["capacity_max"].isna()].reset_index(drop=True)
 
-    df_experts["smiles"] = df_experts["smiles"].apply(Chem.CanonSmiles)
+    df_experts["smiles"] = df_experts["smiles"].apply(canon_smiles)
+    df_experts.dropna(subset=["smiles"], inplace=True)
 
     return df_experts
 
@@ -87,13 +90,10 @@ def zhu_dataset_preprocessing(df_zhu: pd.DataFrame) -> pd.DataFrame:
     }
     df_zhu = df_zhu.rename(columns=column_names_mapping)
 
-    # Drop problematic rows
-    problematic_mol_conversion = [2, 31, 32, 33, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 97, 98]
-    df_zhu = df_zhu.drop(problematic_mol_conversion)
-
     # Process target
     df_zhu = df_zhu.loc[~df_zhu["capacity_max"].isna()].reset_index(drop=True)
-    df_zhu["smiles"] = df_zhu["smiles"].apply(Chem.CanonSmiles)
+    df_zhu["smiles"] = df_zhu["smiles"].apply(canon_smiles)
+    df_zhu.dropna(subset=["smiles"], inplace=True)
 
     return df_zhu
 
@@ -107,14 +107,13 @@ def saad_dataset_preprocessing(df_saad: pd.DataFrame) -> pd.DataFrame:
     column_names_mapping = {"SMILES": "smiles", "Capacitance (F/g)": "capacity_max"}
     df_saad = df_saad.rename(columns=column_names_mapping)
 
-    # Drop problematic rows
-    problematic_mol_conversion = [6, 7, 8, 9]
     problematic_feature_engineering = [0, 1, 2, 3, 4, 5]
-    df_saad = df_saad.drop(problematic_mol_conversion + problematic_feature_engineering)
+    df_saad = df_saad.drop(problematic_feature_engineering)
 
     # Process target
     df_saad = df_saad.loc[~df_saad["capacity_max"].isna()].reset_index(drop=True)
 
-    df_saad["smiles"] = df_saad["smiles"].apply(Chem.CanonSmiles)
+    df_saad["smiles"] = df_saad["smiles"].apply(canon_smiles)
+    df_saad.dropna(subset=["smiles"], inplace=True)
 
     return df_saad

@@ -8,13 +8,9 @@ from rdkit.Chem import Descriptors
 from modules.core.features.descriptors import extract_data_from_mol
 from modules.core.features.flatness import get_flatness_smiles
 from modules.core.features.pore_size import calculate_hexagonal_pore_diameter
-from modules.core.features.preprocessing import (
-    expert_dataset_preprocessing,
-    saad_dataset_preprocessing,
-    zhu_dataset_preprocessing,
-)
 from modules.core.features.symmetries import analyse_symmetry_point_group
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles
+from modules.predictor.data.utils import data_preprocessing
 
 
 def calculate_atom_percentage(smiles: str, atom: str) -> float | None:
@@ -62,7 +58,7 @@ def handcrafted_feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str:
+def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str | None:
     """
     Calculates a point group for a given molecule.
     :param smiles: smiles representation of a molecule
@@ -70,6 +66,8 @@ def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str:
     :return: point group symmetry of a given molecule
     """
     mol = get_pymatgen_molecule_from_smiles(smiles)
+    if mol is None:
+        return None
 
     _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path)
 
@@ -130,19 +128,9 @@ def data_preprocessing_and_feature_engineering(
     :param remove_unuseful: whether to remove duplicated and rarely present features
     :return: preprocessed dataset with generated features
     """
-    df = pd.read_csv(data_path)
-
-    if data_type == "expert":
-        df = expert_dataset_preprocessing(df)
-    elif data_type == "zhu":
-        df = zhu_dataset_preprocessing(df)
-    elif data_type == "saad":
-        df = saad_dataset_preprocessing(df)
-    df = df.loc[:, ["smiles", "capacity_max"]]
-    df = df.groupby("smiles").max("capacity_max").reset_index()
-    if data_type == "expert2":
-        df["smiles"] = df["smiles"].apply(Chem.CanonSmiles)
+    df = data_preprocessing(data_path, data_type)
     df = feature_engineering(df, translation_data_path)
+    # df.dropna(inplace=True)
     if remove_unuseful:
         df = remove_unuseful_features(df)
     if save_path is not None:

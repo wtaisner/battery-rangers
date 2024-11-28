@@ -1,13 +1,27 @@
 """Functions for model evaluation"""
 from datetime import datetime
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 
+from modules.predictor.data.utils import custom_data_split
 from modules.predictor.training_and_evaluation.evaluation_metrics import average_ranking_score, mape, ndcg_score, rmse
+from modules.predictor.training_and_evaluation.train import param_search
 
 
-def cv_eval(model: object, model_name: str, folds: list, df: pd.DataFrame, features: list, target: str, df_name: str, save_scores_path: str, verbose: bool = False) -> None:
+def cv_eval(
+    model: object,
+    model_name: str,
+    folds: list,
+    df: pd.DataFrame,
+    features: list,
+    target: str,
+    df_name: str,
+    save_scores_path: str,
+    hyperparam_opt: tuple[Literal["grid_search", "bayesian_search"], dict] | None = None,
+    verbose: bool = False,
+) -> None:
     """
     Perform cross-validation evaluation, saves the results to a given file.
     :param model: prediction model.
@@ -18,6 +32,7 @@ def cv_eval(model: object, model_name: str, folds: list, df: pd.DataFrame, featu
     :param target: name of the target variable.
     :param df_name: name of the dataset
     :param save_scores_path: path to save scores.
+    :param hyperparam_opt: tuple of type of hyperparameter optimization and parameter grid, None if none optimization should be performed
     :param verbose: whether to print model scores.
     :return: None
     """
@@ -30,6 +45,13 @@ def cv_eval(model: object, model_name: str, folds: list, df: pd.DataFrame, featu
 
     for fold in folds:
         train_idx, test_idx = fold
+        if hyperparam_opt is not None:
+            type_opt, param_grid = hyperparam_opt
+            opt_split = custom_data_split(df.loc[train_idx, :].reset_index(), target, train_size=0.6)
+            best_score, best_params = param_search(model, df.loc[train_idx, :].reset_index(), features, target, opt_split, param_grid, type_opt)
+            model.set_params(**best_params)
+            if verbose:
+                print(f"Best score: {best_score}\n Best params: {best_params}")
         # Data split
         X_train = df.loc[train_idx, features]  # pylint: disable=invalid-name
         y_train = df.loc[train_idx, target]
