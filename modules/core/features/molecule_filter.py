@@ -63,7 +63,9 @@ if __name__ == "__main__":
     molecule_filter = MoleculeFilter()
     expert_smiles = pd.read_csv("../../../data/processed/data_experts_1.csv")["smiles"].drop_duplicates().values
     standardized_expert_smiles = [Chem.MolToSmiles(Chem.MolFromSmiles(smiles)) for smiles in expert_smiles]
-    generated_smiles = pd.read_csv("/home/witold/PycharmProjects/bmd-mol-generation/outputs/reinvent_sampling_experts_1_50epochs_20000_smiles.csv")["SMILES"].drop_duplicates().values
+
+    # generated_smiles = pd.read_csv("../../../data/sampling/reinvent_sampling_experts_1_50epochs_20000_smiles.csv")["SMILES"].drop_duplicates().values
+    generated_smiles = pd.read_csv("../../../data/sampling/ak_results/filtered_smiles_50epochs_second_trial.csv")["SMILES"].drop_duplicates().values
 
     logger.info(f"Expert smiles: {len(standardized_expert_smiles)}")
     logger.info(f"Generated smiles: {len(generated_smiles)}")
