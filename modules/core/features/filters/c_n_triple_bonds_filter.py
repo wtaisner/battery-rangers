@@ -1,7 +1,7 @@
 """Filter that leaves molecules with triple bonds between C and N atoms."""
 from rdkit import Chem
 
-from modules.core.features.filters import GenericMoleculeFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 
 
 class CNTripleBondsFilter(GenericMoleculeFilter):

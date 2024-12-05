@@ -10,5 +10,6 @@ dependencies:
   - vtk >= 9.3.1
   - scikit-optimize >= 0.10.2
   - py-xgboost >= 2.1.2
+  - networkx >= 3.4.2
   - pip:
       - pre-commit >= 3.8.0

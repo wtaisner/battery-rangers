@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from tqdm import tqdm
 
-from modules.core.features.filters import GenericMoleculeFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import analyse_symmetry_point_group, translate_point_group_to_symmetry_description
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles
 
@@ -38,11 +38,11 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         return both_symmetrical_smiles
 
     @staticmethod
-    def _point_group_symmetry(pymatgen_molecules, smiles_lst):
+    def _point_group_symmetry(pymatgen_molecules, smiles_lst, translation_table_path: str = "/home/witoldt/repositories/battery-rangers/data/symmetries/symmetry_translation.csv"):
         pointgroup_symmetrical = []
         for i, mol in enumerate(pymatgen_molecules):
-            _, _, pointgroup, _ = analyse_symmetry_point_group(mol)
-            symm = translate_point_group_to_symmetry_description(pointgroup)
+            _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path=translation_table_path)
+            symm = translate_point_group_to_symmetry_description(pointgroup, translation_table_path=translation_table_path)
             if symm.startswith("no"):
                 continue
             pointgroup_symmetrical.append(smiles_lst[i])
