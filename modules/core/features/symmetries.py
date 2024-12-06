@@ -30,7 +30,7 @@ def translate_point_group_to_symmetry_description(symmetry_code: str) -> str:
     Returns:
         str: The translated symmetry code.
     """
-    translation_table_path = os.path.join("../../../data/symmetries/symmetry_translation.csv")  # TODO: change
+    translation_table_path = os.path.join("/home/witoldt/repositories/battery-rangers/data/symmetries/symmetry_translation.csv")
 
     table = pd.read_csv(translation_table_path).astype(str)
 
