@@ -1,9 +1,7 @@
 """Filter that leaves molecules without single C-C bonds outside rings."""
-from warnings import deprecated
-
 from rdkit import Chem
 
-from modules.core.features.filters import GenericMoleculeFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 
 
 class SingleCCBondsOutsideRingsFilter(GenericMoleculeFilter):
@@ -25,7 +23,6 @@ class SingleCCBondsOutsideRingsFilter(GenericMoleculeFilter):
         return final_smiles
 
     @staticmethod
-    @deprecated
     def __check_single_carbon_bond_outside_ring(smiles):  # pylint: disable=unused-private-member
         m = Chem.MolFromSmiles(smiles)
         ri = m.GetRingInfo()

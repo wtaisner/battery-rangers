@@ -1,7 +1,7 @@
 """Filter that leaves molecules with flatness."""
 from tqdm import tqdm
 
-from modules.core.features.filters import GenericMoleculeFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.flatness import get_flatness_smiles
 
 

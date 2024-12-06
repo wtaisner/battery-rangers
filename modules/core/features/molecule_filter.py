@@ -4,7 +4,13 @@ import time
 import pandas as pd
 from rdkit import Chem
 
-from modules.core.features.filters import *  # pylint: disable=wildcard-import
+from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
+from modules.core.features.filters.flatness_filter import FlatnessFilter
+from modules.core.features.filters.generic_filter import GenericMoleculeFilter
+from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.features.filters.single_c_c_bonds_outside_rings_filter import SingleCCBondsOutsideRingsFilter
+from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.core.features.filters.symmetry_filter import SymmetryFilter
 
 
 class MoleculeFilter:
@@ -49,9 +55,13 @@ class MoleculeFilter:
 
 if __name__ == "__main__":
     molecule_filter = MoleculeFilter()
-    expert_smiles = pd.read_csv("/home/witold/PycharmProjects/bmd-mol-generation/data/batteries.csv")["smiles"].drop_duplicates().values
+    expert_smiles = pd.read_csv("/home/witoldt/repositories/battery-rangers/data/data_experts1.csv")["smiles"].drop_duplicates().values
     standardized_expert_smiles = [Chem.MolToSmiles(Chem.MolFromSmiles(smiles)) for smiles in expert_smiles]
-    generated_smiles = pd.read_csv("/home/witold/PycharmProjects/bmd-mol-generation/REINVENT4/reinvent_sampling_50epochs_10000smiles_v5.csv")["SMILES"].drop_duplicates().values
+    generated_smiles = (
+        pd.read_csv("/home/witoldt/repositories/battery-rangers/data/sampling/bionemo_sampling/bionemo_megamolbart_data_experts_1.csv__num_samples_100_scaled_radius_1.0.csv")["SMILES"]
+        .drop_duplicates()
+        .values
+    )
 
     print(f"Expert smiles: {len(standardized_expert_smiles)}")
     print(f"Generated smiles: {len(generated_smiles)}")

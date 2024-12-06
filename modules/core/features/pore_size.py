@@ -1,11 +1,10 @@
 """Pore size calculation functions."""
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem.rdDistGeom import EmbedMolecule
-from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule
+from rdkit.Chem import AllChem
 
 
-def calculate_repeating_unit_length(smiles: str) -> float:
+def calculate_repeating_unit_length(smiles: str, random_seed: int = 42) -> float | None:
     """
     Calculates the length of the repeating unit for a given molecule as the largest distance between any two atoms.
 
@@ -17,12 +16,16 @@ def calculate_repeating_unit_length(smiles: str) -> float:
     """
 
     try:
-        molecule = Chem.MolFromSmiles(smiles)
+        molecule = Chem.MolFromSmiles(smiles, sanitize=True)
     except ValueError as e:
         raise ValueError("Invalid SMILES string.") from e
-
-    EmbedMolecule(molecule)
-    MMFFOptimizeMolecule(molecule)
+    molecule = Chem.AddHs(molecule)
+    a = AllChem.EmbedMolecule(molecule, randomSeed=random_seed, maxAttempts=500)
+    if a < 0:
+        a = AllChem.EmbedMolecule(molecule, randomSeed=random_seed, maxAttempts=500, useRandomCoords=True)
+        if a < 0:
+            return None
+    AllChem.MMFFOptimizeMolecule(molecule)
 
     conf = molecule.GetConformer()
     max_distance = 0
@@ -40,7 +43,7 @@ def calculate_repeating_unit_length(smiles: str) -> float:
     return max_distance
 
 
-def calculate_hexagonal_pore_diameter(smiles: str) -> float:
+def calculate_hexagonal_pore_diameter(smiles: str) -> float | None:
     """
     Calculates the diameter of a hexagonal pore given the length of the unit.
 
@@ -52,6 +55,8 @@ def calculate_hexagonal_pore_diameter(smiles: str) -> float:
     """
 
     unit_length_pm = calculate_repeating_unit_length(smiles)
+    if unit_length_pm is None:
+        return None
     perimeter = unit_length_pm * 6
 
     pore_diameter = perimeter / np.pi
