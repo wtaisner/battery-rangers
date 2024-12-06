@@ -7,8 +7,10 @@ from rdkit import Chem
 from rdkit.Chem import Draw, Mol, rdDepictor, rdDistGeom
 from sklearn.linear_model import LinearRegression
 
+from modules.core.features.preprocessing import canon_smiles
 
-def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> Chem.Mol:
+
+def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> Chem.Mol | None:
     """
     Embed a molecule using RDKit.
 
@@ -23,13 +25,17 @@ def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> C
     mol = Chem.AddHs(mol)
 
     rdDepictor.Compute2DCoords(mol)
-    rdDistGeom.EmbedMolecule(mol)
+    a = rdDistGeom.EmbedMolecule(mol, randomSeed=random_seed, maxAttempts=500)
+    if a < 0:
+        a = rdDistGeom.EmbedMolecule(mol, randomSeed=random_seed, maxAttempts=500, useRandomCoords=True)
+        if a < 0:
+            return None
     rdDistGeom.EmbedMultipleConfs(mol, sample_size, randomSeed=random_seed)
 
     return mol
 
 
-def get_flatness_smiles(smiles: str, plot_visualization: bool = False, **kwargs) -> float:
+def get_flatness_smiles(smiles: str, plot_visualization: bool = False, **kwargs) -> float | None:
     """
     Calculate the flatness of a molecule from a SMILES string.
 
@@ -41,12 +47,14 @@ def get_flatness_smiles(smiles: str, plot_visualization: bool = False, **kwargs)
     Returns:
         The flatness of the molecule.
     """
-    can_smi = Chem.CanonSmiles(smiles)
-    mol = Chem.MolFromSmiles(can_smi)
+    can_smi = canon_smiles(smiles)
+    if can_smi is None:
+        return None
+    mol = Chem.MolFromSmiles(can_smi, sanitize=True)
     return get_flatness_mol(mol, plot_visualization, **kwargs)
 
 
-def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) -> float:
+def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) -> float | None:
     """
     Calculate the flatness of a molecule.
 
@@ -65,9 +73,8 @@ def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) 
     else:
         embedded_mol = embed_molecule(mol)
 
-    # logging.debug(f"Number of conformers: {embedded_mol.GetNumConformers()}")
-    # logging.debug(f"Is 3D: {embedded_mol.GetConformer().Is3D()}")
-    # logging.debug(f"Number of atoms: {embedded_mol.GetNumAtoms()}")
+    if embedded_mol is None:
+        return None
 
     conformers = embedded_mol.GetNumConformers()
     rmsds = np.zeros(conformers)
