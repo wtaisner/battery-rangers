@@ -150,7 +150,8 @@ def combine_split(df1: pd.DataFrame, split1: list, df2: pd.DataFrame, split2: li
     index_df1 = ["1_" + str(idx) for idx in df1.index]
     index_df2 = ["2_" + str(idx) for idx in df2.index]
     index_original = index_df1 + index_df2
-    df_combined = pd.concat([df1, df2], ignore_index=True)
+    df_combined = pd.concat([df1, df2], ignore_index=True, join="outer")
+    df_combined.fillna(0, inplace=True)
     index_mapping = pd.DataFrame({"ids_org": index_original, "ids_new": df_combined.index})
     for (train_idx1, test_idx1), (train_idx2, test_idx2) in zip(split1, split2):
         train1 = index_mapping.loc[index_mapping.ids_org.isin(["1_" + str(idx) for idx in train_idx1]), "ids_new"].tolist()

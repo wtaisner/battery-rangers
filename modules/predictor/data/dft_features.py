@@ -1,4 +1,5 @@
 """Functions for calculating dft features."""
+import re
 from typing import Literal
 
 import numpy as np
@@ -178,3 +179,51 @@ def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, fun
 
     df_features = pd.DataFrame(feature_list)
     return df_features
+
+
+def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregate DFT features.
+    :param df: dataframe with DFT features.
+    :return: dataframe with aggregated DFT features.
+    """
+    col_names = df.columns.tolist()
+    df.drop(columns=["vibrational_frequencies_min", "vibrational_frequencies_max", "vibrational_frequencies_mean", "internal_energy_0K", "internal_energy_298K"], inplace=True)
+
+    # mo_energy by occ
+    mo_occ = [name for name in col_names if name.startswith("mo_occ")]
+    mo_energy = [name for name in col_names if name.startswith("mo_energy")]
+    mo_energy.sort(key=lambda x: int(x.split("_")[-1]))
+    mo_occ.sort(key=lambda x: int(x.split("_")[-1]))
+    unique_occ_values = pd.concat([df[col] for col in mo_occ]).dropna().unique()
+    print(unique_occ_values)
+
+    for occ_value in unique_occ_values:
+        df[f"mo_energy_mean_occ_{occ_value}"] = 0.0
+    for index, row in df.iterrows():
+        for occ_value in unique_occ_values:
+            filtered_mo_energy = [row[mo_energy_col] for mo_energy_col, mo_occ_col in zip(mo_energy, mo_occ) if row[mo_occ_col] == occ_value]
+            if filtered_mo_energy:
+                df.at[index, f"mo_energy_mean_occ_{occ_value}"] = np.mean(filtered_mo_energy)
+    df.drop(columns=mo_energy + mo_occ, inplace=True)
+
+    # charge by atom
+    charge = [name for name in col_names if name.startswith("charge")]
+    atoms = np.unique([re.split(r"(\d+)", name)[-1] for name in charge])
+    print(atoms)
+    for atom in atoms:
+        df[f"charge_mean_{atom}"] = 0.0
+    for index, row in df.iterrows():
+        for atom in atoms:
+            filtered_charge = np.array([row[charge_col] for charge_col in charge if re.split(r"(\d+)", charge_col)[-1] == atom])
+            filtered_charge = list(filtered_charge[~np.isnan(filtered_charge)])
+            if filtered_charge:
+                df.at[index, f"charge_mean_{atom}"] = np.mean(filtered_charge)
+    df.drop(columns=charge, inplace=True)
+
+    # rotation constants
+    col = "rot_const"
+    to_aggregate = [name for name in col_names if name.startswith("rot_const")]
+    df[f"{col}_mean"] = df[to_aggregate].mean(axis=1, skipna=True)
+    df.drop(columns=to_aggregate, inplace=True)
+    return df

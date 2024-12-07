@@ -67,8 +67,8 @@ def cv_eval(
         ndcg_scores.append(ndcg_score(y_test, y_pred))
         rmse_scores.append(rmse(y_test, y_pred))
         mape_scores.append(mape(y_test, y_pred))
-        baseline_mean_rmse.append(rmse(np.array([y_test.mean()] * len(y_test)), y_test))
-        baseline_median_rmse.append(rmse(np.array([y_test.median()] * len(y_test)), y_test))
+        baseline_mean_rmse.append(rmse(np.array([y_train.mean()] * len(y_test)), y_test))
+        baseline_median_rmse.append(rmse(np.array([y_train.median()] * len(y_test)), y_test))
 
     lines = [
         "\n******************************************************\n",
