@@ -11,12 +11,13 @@ from rdkit.Chem import AllChem, MolToXYZFile, rdDepictor, rdDistGeom
 from modules.core.features.preprocessing import canon_smiles
 
 
-def smiles_to_xyz(smiles: str, directory: str = "./tmp") -> str | None:
+def smiles_to_xyz(smiles: str, save_file: bool = False, directory: str = "./tmp") -> str | None:
     """
     Convert a SMILES string to a 3D xyz file using RDKit.
 
     Args:
         smiles: A SMILES string.
+        save_file: Whether to save the xyz file.
         directory: The directory to save the xyz file.
     Returns:
         The path to the saved xyz file.
@@ -36,27 +37,29 @@ def smiles_to_xyz(smiles: str, directory: str = "./tmp") -> str | None:
     else:
         rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123)
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
     save_dir = f"{directory}/rdkit_mol.xyz"
 
-    MolToXYZFile(rdkit_mol, save_dir)
+    if save_file:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        MolToXYZFile(rdkit_mol, save_dir)
 
     return save_dir
 
 
-def get_pymatgen_molecule_from_smiles(smiles: str, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
+def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = False, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
     """
     Convert a SMILES string to a pymatgen Molecule object.
 
     Args:
         smiles: A SMILES string.
+        save_file: Whether to save the xyz file.
         directory: The directory to save the xyz file.
     Returns:
+        The pymatgen Molecule object or None if the conversion failed.
 
     """
-    path = smiles_to_xyz(smiles, directory)
+    path = smiles_to_xyz(smiles, save_file, directory)
     if path is None:
         return None
     mol = Molecule.from_file(path)
