@@ -1,4 +1,6 @@
 """Filter that leaves molecules without steric hindrance."""
+from itertools import combinations
+
 import numpy as np
 from rdkit import Chem
 
@@ -20,7 +22,8 @@ class StericHindranceFilter(GenericMoleculeFilter):
         """
         no_steric_hindrance_smiles = []
         for sml in smiles:
-            path = smiles_to_xyz(sml, "sh_tmp")
+            path = smiles_to_xyz(sml, save_file=True, directory="sh_tmp")
+            # TODO: 1. check if the file exists 2. Make it possible to skip file saving
             coordinates = np.loadtxt(path, skiprows=1, usecols=(1, 2, 3))
             nitrogen_indices = self.get_indices_of_n(sml)
             distances = self.get_distances_between_n(nitrogen_indices, coordinates)
@@ -67,6 +70,9 @@ class StericHindranceFilter(GenericMoleculeFilter):
         if not isinstance(xyz, np.ndarray) or xyz.shape[1] != 3:
             raise ValueError("xyz must be a numpy array with shape (N, 3)")
 
-        distances = [np.linalg.norm(xyz[idx1] - xyz[idx2]) for i, idx1 in enumerate(nitrogen_indices) for idx2 in nitrogen_indices[i + 1 :]]
-
+        try:
+            distances = [np.linalg.norm(xyz[idx1] - xyz[idx2]) for idx1, idx2 in combinations(nitrogen_indices, 2)]
+        except IndexError as e:
+            print("Error in calculating distances.: ", e)
+            distances = [5.0]
         return np.array(distances)
