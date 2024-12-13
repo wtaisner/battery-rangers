@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from pymatgen.core import Molecule
 from rdkit import Chem
+from rdkit.Chem import Mol
 from rdkit.Chem.rdDistGeom import EmbedMolecule
 from tqdm import tqdm
 
@@ -16,21 +17,21 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 class PointGroupSymmetryFilter(GenericMoleculeFilter):
     """Filter that leaves molecules with a specific point group symmetry."""
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Apply the filter to a list of SMILES strings.
+        Apply the filter to a list of RDKit Mol objects.
 
         Args:
-            smiles (list[str]): The list of SMILES strings to filter.
+            molecules (list[Mol]): The list of RDKit Mol objects to filter.
         Returns:
-            list[str]: The list of SMILES strings that passed the filter.
+            list[Mol]: The list of RDKit Mol objects that passed the filter.
         """
-        tmp_smiles = deepcopy(smiles)
+        tmp_smiles = deepcopy(molecules)
         pymatgen_molecules = []
         bad_smiles = []
         for sml in tqdm(tmp_smiles, total=len(tmp_smiles), desc="Getting pymatgen molecules"):
             try:
-                pymatgen_molecules.append(self._smiles_to_pymatgen_molecule(sml))
+                pymatgen_molecules.append(self._rdkit_mol_to_pymatgen_molecule(sml))
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error(f"Error converting SMILES to pymatgen molecule: {sml}, Error: {str(e)}")
                 bad_smiles.append(sml)
@@ -71,24 +72,21 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         return pointgroup_symmetrical
 
     @staticmethod
-    def _smiles_to_pymatgen_molecule(smiles: str) -> Molecule:
+    def _rdkit_mol_to_pymatgen_molecule(molecule: Mol) -> Molecule:
         """
-        Convert a SMILES string to a pymatgen Molecule object by first converting it
-        to an RDKit molecule and then embedding it in 3D space.
+        Convert a RDKit Mol object to a pymatgen Molecule object.
 
         Args:
-            smiles (str): The SMILES string of the molecule.
+            molecule (Mol): The RDKit Mol object
 
         Returns:
-            Molecule: A pymatgen Molecule object corresponding to the SMILES string.
+            Molecule: A pymatgen Molecule object corresponding to the RDKit Mol object
 
         Raises:
-            ValueError: If the SMILES string is invalid or the molecule embedding fails.
+            ValueError: If the RDKit Mol object is invalid or the molecule embedding fails.
         """
         try:
-            cannonic_smiles = Chem.CanonSmiles(smiles)
-            rdkit_mol = Chem.MolFromSmiles(cannonic_smiles)
-            rdkit_mol = Chem.AddHs(rdkit_mol)
+            rdkit_mol = Chem.AddHs(molecule)
             EmbedMolecule(rdkit_mol, randomSeed=42)
             conformer = rdkit_mol.GetConformer()
             coordinates = conformer.GetPositions()
@@ -97,4 +95,4 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
             return Molecule(symbols, coordinates)
 
         except Exception as e:
-            raise ValueError(f"Error converting SMILES to pymatgen molecule: {smiles}, Error: {str(e)}") from e
+            raise ValueError(f"Error converting RDKit Mol object to pymatgen molecule: {molecule}, Error: {str(e)}") from e

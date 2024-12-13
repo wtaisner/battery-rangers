@@ -17,27 +17,24 @@ from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 class XYZPatternFilter(GenericMoleculeFilter):
     """Filter that leaves molecules without single C-C bonds outside rings."""
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Apply the filter to a list of SMILES strings.
+        Apply the filter to a list of RDKit molecules.
 
         Args:
-            smiles (list[str]): The list of SMILES strings to filter.
+            molecules (list[Mol]): The list of RDKit molecules to filter.
         Returns:
-            list[str]: The list of SMILES strings that passed the filter.
+            list[Mol]: The list of RDKit molecules that passed the filter.
         """
         final_smiles = []
-        for sml in smiles:
+        for sml in molecules:
             if not self.check_x_y_z_pattern(sml):
                 final_smiles.append(sml)
         return final_smiles
 
     @staticmethod
-    def check_x_y_z_pattern(smiles: str) -> bool:
+    def check_x_y_z_pattern(mol: Mol) -> bool:
         """Check whether a molecule has a X-Y-Z pattern. If it does, it will be removed."""
-        mol: Mol = Chem.MolFromSmiles(smiles)
-        if not mol:  # Ensure the molecule is valid.
-            raise ValueError("Invalid SMILES string.")
 
         # Define a generic SMARTS pattern for any three connected atoms
         pattern_single_aromatic = Chem.MolFromSmarts("*-*-*")  # * matches any atom, - matches single bonds

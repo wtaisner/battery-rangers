@@ -3,49 +3,47 @@ from itertools import combinations
 
 import numpy as np
 from rdkit import Chem
+from rdkit.Chem import Mol
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
-from modules.core.features.utils import smiles_to_xyz
+from modules.core.features.utils import mol_to_xyz
 
 
 class StericHindranceFilter(GenericMoleculeFilter):
     """Filter that leaves molecules without steric hindrance."""
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Apply the filter to a list of SMILES strings.
+        Apply the filter to a list of RDKIT molecules.
 
         Args:
-            smiles (list[str]): The list of SMILES strings to filter.
+            molecules (list[Mol]): The list of RDKIT molecules to filter.
         Returns:
-            list[str]: The list of SMILES strings that passed the filter.
+            list[Mol]: The list of RDKIT molecules that passed the filter.
         """
-        no_steric_hindrance_smiles = []
-        for sml in smiles:
-            path = smiles_to_xyz(sml, save_file=True, directory="sh_tmp")
+        no_steric_hindrance_molecules = []
+        for mol in molecules:
+            path = mol_to_xyz(mol, save_file=True, directory="sh_tmp")
             # TODO: 1. check if the file exists 2. Make it possible to skip file saving
             coordinates = np.loadtxt(path, skiprows=1, usecols=(1, 2, 3))
-            nitrogen_indices = self.get_indices_of_n(sml)
+            nitrogen_indices = self.get_indices_of_n(mol)
             distances = self.get_distances_between_n(nitrogen_indices, coordinates)
             if np.any(distances < 4.1):
                 continue
-            no_steric_hindrance_smiles.append(sml)
-        return no_steric_hindrance_smiles
+            no_steric_hindrance_molecules.append(mol)
+        return no_steric_hindrance_molecules
 
     @staticmethod
-    def get_indices_of_n(smiles: str) -> list[int]:
+    def get_indices_of_n(mol: Mol) -> list[int]:
         """
-        Get the indices of nitrogen atoms involved in triple bonds with carbon in a given SMILES string.
+        Get the indices of nitrogen atoms involved in triple bonds with carbon in a given molecule.
 
         Args:
-            smiles (str): A SMILES representation of the molecule.
+            mol (Mol): A RDKit Mol object
 
         Returns:
             List[int]: A list of indices for nitrogen atoms bonded to carbon via a triple bond.
         """
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            raise ValueError("Invalid SMILES string")
 
         nitrogen_indices = [
             bond.GetEndAtomIdx() if bond.GetBeginAtom().GetSymbol() == "C" and bond.GetEndAtom().GetSymbol() == "N" else bond.GetBeginAtomIdx()

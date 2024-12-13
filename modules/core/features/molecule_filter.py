@@ -4,6 +4,7 @@ import time
 
 import pandas as pd
 from rdkit import Chem
+from rdkit.Chem import Mol
 
 from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
 from modules.core.features.filters.flatness_filter import FlatnessFilter
@@ -41,21 +42,35 @@ class MoleculeFilter:
         else:
             self.filters = filters
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[str | Mol], return_mols: bool = False, **kwargs) -> list[str]:
         """
         Apply the filter to a list of SMILES strings.
 
         Args:
-            smiles (list[str]): The list of SMILES strings to filter.
+            molecules (list[str | Mol]): The list of molecules either as SMILES strings or RDKit Mol objects.
+            If SMILES strings, they are converted to RDKit Mol objects.
+            return_mols (bool): If True, return the list of RDKit Mol objects instead of SMILES strings.
         Returns:
-            list[str]: The list of SMILES strings that passed the filter.
+            list[str | Mol]: The list of SMILES strings or RDkit Mol objects that passed the filter, depending on the value of return_mols.
         """
+        if len(molecules) == 0:
+            return []
+        logging.info(f"Applying filters to {len(molecules)} molecules.")
+        if isinstance(molecules[0], str):
+            molecules = [Chem.MolFromSmiles(smiles) for smiles in molecules]
+            # filter out None values
+            molecules = [mol for mol in molecules if mol is not None]
+            logger.info(f"Number of molecules that could be converted to RDKit Mol objects: {len(molecules)}")
+
         for filter_operator in self.filters:
             logger.info(f"Applying filter: {filter_operator.__class__.__name__}")
             start_time = time.time()
-            smiles = filter_operator.apply(smiles, **kwargs)
-            logger.info(f"Filtering time: {time.time() - start_time:.2f} s. Remaining SMILES: {len(smiles)}")
-        return smiles
+            molecules = filter_operator.apply(molecules, **kwargs)
+            logger.info(f"Filtering time: {time.time() - start_time:.2f} s. Remaining SMILES: {len(molecules)}")
+
+        if return_mols:
+            return molecules
+        return [Chem.MolToSmiles(mol) for mol in molecules]
 
 
 if __name__ == "__main__":

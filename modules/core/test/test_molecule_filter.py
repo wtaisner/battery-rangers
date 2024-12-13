@@ -1,5 +1,6 @@
 """Test molecule filters"""
 import pytest
+from rdkit import Chem
 
 # pylint: disable=import-error
 from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
@@ -41,8 +42,10 @@ def test_entire_pipeline(smiles, expected):
 )
 def test_c_n_triple_bonds_filter(smiles, expected):
     """Test the CNTripleBondsFilter"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = CNTripleBondsFilter()
-    assert molecule_filter.apply(smiles) == expected
+    filtered = molecule_filter.apply(smiles)
+    assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
 
 
 @pytest.mark.parametrize(
@@ -58,8 +61,10 @@ def test_c_n_triple_bonds_filter(smiles, expected):
 )
 def test_flatness_filter(smiles, expected):
     """Test the FlatnessFilter"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = FlatnessFilter()
-    assert molecule_filter.apply(smiles) == expected
+    filtered = molecule_filter.apply(smiles)
+    assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
 
 
 @pytest.mark.parametrize(
@@ -75,8 +80,10 @@ def test_flatness_filter(smiles, expected):
 )
 def test_point_group_symmetry_filter(smiles, expected):
     """Test the PointGroupSymmetryFilter"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = PointGroupSymmetryFilter()
-    assert sorted(molecule_filter.apply(smiles)) == sorted(expected)
+    filtered = molecule_filter.apply(smiles)
+    assert sorted([Chem.MolToSmiles(mol) for mol in filtered]) == sorted(expected)
 
 
 @pytest.mark.parametrize(
@@ -96,8 +103,10 @@ def test_point_group_symmetry_filter(smiles, expected):
 )
 def test_xyz_pattern_filter(smiles, expected):
     """Test the XYZPatternFilter"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = XYZPatternFilter()
-    assert molecule_filter.apply(smiles) == expected
+    filtered = molecule_filter.apply(smiles)
+    assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
 
 
 @pytest.mark.parametrize(
@@ -113,8 +122,10 @@ def test_xyz_pattern_filter(smiles, expected):
 )
 def test_steric_hindrance_filter(smiles, expected):
     """Test the StericHindranceFilter"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = StericHindranceFilter()
-    assert molecule_filter.apply(smiles) == expected
+    filtered = molecule_filter.apply(smiles)
+    assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
 
 
 @pytest.mark.parametrize(
@@ -130,5 +141,7 @@ def test_steric_hindrance_filter(smiles, expected):
 )
 def test_symmetry_filter(smiles, expected):
     """Test the SymmetryFilter"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = SymmetryFilter()
-    assert molecule_filter.apply(smiles) == expected
+    filtered = molecule_filter.apply(smiles)
+    assert [Chem.MolToSmiles(mol) for mol in filtered] == expected

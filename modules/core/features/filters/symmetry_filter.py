@@ -7,7 +7,7 @@ from networkx.algorithms.isomorphism.ismags import ISMAGS
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import AvailableSymmetry
-from modules.core.features.utils import get_graph_from_smile
+from modules.core.features.utils import get_graph_from_molecule
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 
@@ -15,24 +15,24 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 class SymmetryFilter(GenericMoleculeFilter):
     """Check if any of the defined symmetries are present in the molecule."""
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[str], **kwargs) -> list[str]:
         """
         Filters the given list of SMILES strings by symmetry. This filter transforms the SMILES strings into graphs first,
         then checks the presence of the defined symmetries in the graphs.
 
         Args:
-            smiles (List[str]): A list of SMILES strings representing molecules.
+            molecules (List[str]): A list of SMILES strings representing molecules.
             **kwargs: Additional keyword arguments.
 
         Returns:
             List[str]: A list of SMILES strings that pass the filter.
         """
-        mol_graphs = [get_graph_from_smile(smiles) for smiles in smiles]
+        mol_graphs = [get_graph_from_molecule(smiles) for smiles in molecules]
         symmetrical = []
         for i, mol in enumerate(mol_graphs):
             s = self._check_any_symmetry(mol)
             if s:
-                symmetrical.append(smiles[i])
+                symmetrical.append(molecules[i])
         return symmetrical
 
     def _check_any_symmetry(self, graph: nx.Graph) -> bool:
