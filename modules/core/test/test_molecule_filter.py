@@ -5,9 +5,9 @@ import pytest
 from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
 from modules.core.features.filters.flatness_filter import FlatnessFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-from modules.core.features.filters.single_c_c_bonds_outside_rings_filter import SingleCCBondsOutsideRingsFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.filters.symmetry_filter import SymmetryFilter
+from modules.core.features.filters.xyz_pattern_filter import XYZPatternFilter
 from modules.core.features.molecule_filter import MoleculeFilter
 
 
@@ -88,11 +88,15 @@ def test_point_group_symmetry_filter(smiles, expected):
         ),
         ([], []),
         (["N#Cc1ccnc(C#N)n1", "CCC", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
+        (
+            ["Cc1ccc(C#N)c(SCC#N)n1", "N#CCC#N", "N#Cc1c2c(c(C#N)c3ccccc13)CCCC2", "N#Cc1ccc2oc(-c3cc4ccc(C#N)cc4[nH]3)cc2c1"],
+            ["N#Cc1ccc2oc(-c3cc4ccc(C#N)cc4[nH]3)cc2c1"],
+        ),
     ],
 )
-def test_single_c_c_bonds_outside_rings_filter(smiles, expected):
-    """Test the SingleCCBondsOutsideRingsFilter"""
-    molecule_filter = SingleCCBondsOutsideRingsFilter()
+def test_xyz_pattern_filter(smiles, expected):
+    """Test the XYZPatternFilter"""
+    molecule_filter = XYZPatternFilter()
     assert molecule_filter.apply(smiles) == expected
 
 

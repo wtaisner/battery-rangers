@@ -113,3 +113,31 @@ def get_graph_from_smile(smile: str) -> nx.Graph:
 
     adjacency_matrix = Chem.GetAdjacencyMatrix(mol, useBO=True)
     return nx.from_numpy_array(adjacency_matrix)
+
+
+def get_aromatic_rings(mol: Chem.Mol) -> list[tuple[int]]:
+    """
+    Get all aromatic rings in a molecule.
+
+    Args:
+        mol: A RDKit molecule.
+    Returns:
+        A list of tuples with the indices of the atoms in the aromatic rings.
+
+    Example:
+            N#Cc1c(Cl)c(C#N)c(Cl)c(C#N)c1Cl
+            [(14, 12, 9, 7, 4, 2)]
+
+            N#Cc1c2c(c(C#N)c3ccccc13)CCCC2
+            [(17, 19, 7, 4, 3, 2), (9, 10, 11, 12, 19, 8)]
+
+            N#CC(=N)C#N
+            []
+    """
+    ri = mol.GetRingInfo()
+
+    aromatic_rings = []
+    for ring in ri.AtomRings():
+        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
+            aromatic_rings.append(tuple(ring))
+    return aromatic_rings

@@ -9,9 +9,9 @@ from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsF
 from modules.core.features.filters.flatness_filter import FlatnessFilter
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-from modules.core.features.filters.single_c_c_bonds_outside_rings_filter import SingleCCBondsOutsideRingsFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.filters.symmetry_filter import SymmetryFilter
+from modules.core.features.filters.xyz_pattern_filter import XYZPatternFilter
 
 # Set up the logger for the module
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
@@ -36,8 +36,7 @@ class MoleculeFilter:
                 PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
                 FlatnessFilter(),  # Filter that leaves molecules with a specific flatness.
                 StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
-                SingleCCBondsOutsideRingsFilter()
-                # Filter that leaves molecules without single C-C bonds outside rings.
+                XYZPatternFilter(),  # Filter that leaves molecules without X-Y-Z patterns.
             ]
         else:
             self.filters = filters
