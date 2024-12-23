@@ -7,7 +7,9 @@ Dalej idąc w górę struktury, mamy 1 atom C z pierścienia benzenowego, który
 Wracając do pierwotnego pytania. Elektrony pi z pierścienia benzenowego nie mogą przemieścić się do C=(potrójne)N, ponieważ rozdziela je C-S-C-C, w związku z tym, nie ma "sprzężenia" pomiędzy pierścieniem benzenowym a C=(potrójne)N.
 Siarkę można oznaczyć symbolicznie jako X, ponieważ istota tutaj jest charakter wiązania chemicznego pomiędzy atomami a nie rodzaj atomu.
 """
+import itertools
 
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Mol
 
@@ -28,13 +30,19 @@ class XYZPatternFilter(GenericMoleculeFilter):
         """
         final_smiles = []
         for sml in molecules:
-            if not self.check_x_y_z_pattern(sml):
+            if not self.check_x_y_z_pattern(sml) or self.check_any_n_n_path(sml):
                 final_smiles.append(sml)
         return final_smiles
 
     @staticmethod
     def check_x_y_z_pattern(mol: Mol) -> bool:
-        """Check whether a molecule has a X-Y-Z pattern. If it does, it will be removed."""
+        """Check whether a molecule has an X-Y-Z pattern. If it does, it will be removed.
+
+        Args:
+            mol (Mol): The molecule to check.
+        Returns:
+            bool: True if the molecule has an X-Y-Z pattern, False otherwise.
+        """
 
         # Define a generic SMARTS pattern for any three connected atoms
         pattern_single_aromatic = Chem.MolFromSmarts("*-*-*")  # * matches any atom, - matches single bonds
@@ -43,6 +51,126 @@ class XYZPatternFilter(GenericMoleculeFilter):
         if len(matches) == 0:
             return False
         return True
+
+    def check_any_n_n_path(self, mol: Mol) -> bool:
+        """Check whether there exists a path between two nitrogen atoms that has sprzężenie.
+
+        Args:
+            mol (Mol): The molecule to check.
+        Returns:
+            bool: True if there exists a path between two nitrogen atoms that has sprzężenie, False otherwise.
+        """
+        # Find all nitrogen atoms in the molecule
+        smarts = "N#*"  # N atom with a triple bond to any atom
+        pattern = Chem.MolFromSmarts(smarts)
+
+        # Get all matches of the SMARTS pattern
+        matches = mol.GetSubstructMatches(pattern, uniquify=True)
+
+        # Check if there are at least two nitrogen atoms in the molecule
+        if len(matches) < 2:
+            return False
+
+        nitrogens = [x if mol.GetAtomWithIdx(x).GetSymbol() == "N" else y for x, y in matches]
+
+        # get all possible pairs of nitrogen atoms
+        pairs = itertools.combinations(nitrogens, 2)
+
+        # Get all paths between each pair of nitrogen atoms
+        all_paths = []
+        for pair in pairs:
+            all_paths += self.get_all_paths_dfs(mol, pair[0], pair[1])
+
+        # check if any path has an X-Y-Z pattern
+        valid_paths = [path for path in all_paths if not self.has_two_single_bonds_in_path(mol, path)]
+
+        return len(valid_paths) > 0
+
+    def get_all_paths_dfs(self, mol: Chem.Mol, start_idx: int, end_idx: int) -> list[list[int]]:
+        """
+        Find all paths between two atoms in a molecule using DFS.
+
+        Args:
+            mol (rdkit.Chem.Mol): The molecule to search.
+            start_idx (int): Index of the starting atom.
+            end_idx (int): Index of the target atom.
+
+        Returns:
+            list of list: A list containing all possible paths, each as a list of atom indices.
+        """
+        adj_list = self.get_adjacency_list(mol)
+
+        def dfs(current: int, target: int, visited: set, path: list[int]) -> None:
+            """
+            Recursive DFS function.
+
+            Args:
+                current (int): Current atom index.
+                target (int): Target atom index.
+                visited (set): Set of visited atom indices.
+                path (list): Current path being explored.
+
+            Returns:
+                None. Appends valid paths to the result list.
+            """
+            path.append(current)
+            visited.add(current)
+
+            if current == target:
+                paths.append(path[:])  # Save a copy of the current path
+            else:
+                for neighbor in adj_list[current]:
+                    if neighbor not in visited:
+                        dfs(neighbor, target, visited, path)
+
+            path.pop()
+            visited.remove(current)
+
+        paths: list[list[int]] = []
+        dfs(start_idx, end_idx, set(), [])
+        return paths
+
+    @staticmethod
+    def has_two_single_bonds_in_path(mol: Chem.Mol, atom_path: list[int]) -> bool:
+        """
+        Check if there exists any triplet in the given atom path where both bonds are single.
+
+        Args:
+            mol (Chem.Mol): RDKit molecule object.
+            atom_path (list[int]): A list of atom IDs representing a valid path in the molecule.
+
+        Returns:
+            bool: True if at least one triplet has two single bonds, False otherwise.
+        """
+        # Iterate over consecutive triplets in the path
+        for i in range(len(atom_path) - 2):
+            a, b, c = int(atom_path[i]), int(atom_path[i + 1]), int(atom_path[i + 2])
+
+            # Get the bonds in the triplet
+            bond1 = mol.GetBondBetweenAtoms(a, b)
+            bond2 = mol.GetBondBetweenAtoms(b, c)
+
+            # Check if both bonds are single
+            if bond1.GetBondType() == Chem.rdchem.BondType.SINGLE and bond2.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                return True  # Found a triplet with two single bonds
+
+        return False  # No triplet with two single bonds found
+
+    @staticmethod
+    def get_adjacency_list(mol: Chem.Mol) -> dict[int, list[int]]:
+        """
+        Generate an adjacency list for the molecule using RDKit's adjacency matrix.
+
+        Args:
+            mol (rdkit.Chem.Mol): The molecule to process.
+
+        Returns:
+            dict: A dictionary where keys are atom indices and values are lists of neighboring atom indices.
+        """
+        # Get the adjacency matrix as a NumPy array
+        adjacency_matrix = Chem.rdmolops.GetAdjacencyMatrix(mol)
+        adjacency_list = {i: list(np.nonzero(adjacency_matrix[i])[0]) for i in range(len(adjacency_matrix))}
+        return adjacency_list
 
     @staticmethod
     def __check_single_carbon_bond_outside_ring(smiles: str) -> bool:  # pylint: disable=unused-private-member

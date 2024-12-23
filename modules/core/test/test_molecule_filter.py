@@ -97,7 +97,7 @@ def test_point_group_symmetry_filter(smiles, expected):
         (["N#Cc1ccnc(C#N)n1", "CCC", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
         (
             ["Cc1ccc(C#N)c(SCC#N)n1", "N#CCC#N", "N#Cc1c2c(c(C#N)c3ccccc13)CCCC2", "N#Cc1ccc2oc(-c3cc4ccc(C#N)cc4[nH]3)cc2c1"],
-            ["N#Cc1ccc2oc(-c3cc4ccc(C#N)cc4[nH]3)cc2c1"],
+            ["N#Cc1c2c(c(C#N)c3ccccc13)CCCC2", "N#Cc1ccc2oc(-c3cc4ccc(C#N)cc4[nH]3)cc2c1"],
         ),
     ],
 )
