@@ -164,3 +164,4 @@ cython_debug/
 /modules/bionemo/data/
 sh_tmp/
 tmp/
+.env
