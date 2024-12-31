@@ -1,4 +1,7 @@
 name: battery
+channels:
+  - conda-forge
+  - defaults
 dependencies:
   - python = 3.12
   - numpy >= 1.26.4
@@ -13,5 +16,6 @@ dependencies:
   - scikit-optimize >= 0.10.2
   - py-xgboost >= 2.1.2
   - networkx >= 3.4.2
+  - pyscf >= 2.7.0
   - pip:
       - pre-commit >= 3.8.0

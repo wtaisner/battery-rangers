@@ -46,9 +46,7 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         return both_symmetrical_smiles
 
     @staticmethod
-    def _point_group_symmetry(
-        pymatgen_molecules: list[Molecule], smiles_lst: list[str], translation_table_path: str = "/home/witoldt/repositories/battery-rangers/data/symmetries/symmetry_translation.csv"
-    ) -> list[str]:
+    def _point_group_symmetry(pymatgen_molecules: list[Molecule], smiles_lst: list[str], translation_table_path: str = "data/symmetries/symmetry_translation.csv") -> list[str]:
         """
         Filters out SMILES strings corresponding to molecules that do not exhibit
         a point group symmetry, based on pymatgen analysis.
