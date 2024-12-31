@@ -29,7 +29,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t test-dockerfile .
+          docker build -t test-dockerfile -f test.Dockerfile .
 
 #      - name: Set up python
 #        uses: actions/setup-python@v4
