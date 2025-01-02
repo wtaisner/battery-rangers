@@ -190,6 +190,13 @@ def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
     col_names = df.columns.tolist()
     df.drop(columns=["vibrational_frequencies_min", "vibrational_frequencies_max", "vibrational_frequencies_mean", "internal_energy_0K", "internal_energy_298K"], inplace=True)
 
+    stats = {
+        "mean": np.mean,
+        "std": np.std,
+        # 'min': np.min,
+        # 'max': np.max,
+    }
+
     # mo_energy by occ
     mo_occ = [name for name in col_names if name.startswith("mo_occ")]
     mo_energy = [name for name in col_names if name.startswith("mo_energy")]
@@ -199,12 +206,14 @@ def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
     print(unique_occ_values)
 
     for occ_value in unique_occ_values:
-        df[f"mo_energy_mean_occ_{occ_value}"] = 0.0
+        for stat in stats:
+            df[f"mo_energy_{stat}_occ_{occ_value}"] = 0.0
     for index, row in df.iterrows():
         for occ_value in unique_occ_values:
             filtered_mo_energy = [row[mo_energy_col] for mo_energy_col, mo_occ_col in zip(mo_energy, mo_occ) if row[mo_occ_col] == occ_value]
             if filtered_mo_energy:
-                df.at[index, f"mo_energy_mean_occ_{occ_value}"] = np.mean(filtered_mo_energy)
+                for stat, func in stats.items():
+                    df.at[index, f"mo_energy_{stat}_occ_{occ_value}"] = func(filtered_mo_energy)
     df.drop(columns=mo_energy + mo_occ, inplace=True)
 
     # charge by atom
@@ -212,13 +221,15 @@ def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
     atoms = np.unique([re.split(r"(\d+)", name)[-1] for name in charge])
     print(atoms)
     for atom in atoms:
-        df[f"charge_mean_{atom}"] = 0.0
+        for stat in stats:
+            df[f"charge_{stat}_{atom}"] = 0.0
     for index, row in df.iterrows():
         for atom in atoms:
             filtered_charge = np.array([row[charge_col] for charge_col in charge if re.split(r"(\d+)", charge_col)[-1] == atom])
             filtered_charge = list(filtered_charge[~np.isnan(filtered_charge)])
             if filtered_charge:
-                df.at[index, f"charge_mean_{atom}"] = np.mean(filtered_charge)
+                for stat, func in stats.items():
+                    df.at[index, f"charge_{stat}_{atom}"] = func(filtered_charge)
     df.drop(columns=charge, inplace=True)
 
     # rotation constants

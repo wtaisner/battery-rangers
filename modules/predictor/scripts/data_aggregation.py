@@ -7,7 +7,9 @@ from modules.predictor.data.dft_features import aggregate_and_drop_dft
 
 if __name__ == "__main__":
     DATA_PATH = "../../../data/processed_dft_features/"
-    SAVE_PATH = "../../../data/aggregated_dft_features/"
+    SAVE_PATH = "../../../data/aggregated_selected_dft_features/"
+
+    os.makedirs(SAVE_PATH, exist_ok=True)
 
     DF_EXPERTS1_PATH = "data_experts1.csv"
     DF_EXPERTS2_PATH = "data_experts2.csv"
@@ -21,4 +23,5 @@ if __name__ == "__main__":
         print(data_type)
         df = pd.read_csv(os.path.join(DATA_PATH, df_path))
         df_aggregated = aggregate_and_drop_dft(df)
+        df.drop(columns=["e1", "nuc", "free_enegry", "enthalpy_energy"], inplace=True)
         df.to_csv(os.path.join(SAVE_PATH, df_path), index=False)
