@@ -117,7 +117,7 @@ def remove_unuseful_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def data_preprocessing_and_feature_engineering(
-    data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2"], translation_data_path: str, save_path: str | None = None, remove_unuseful: bool = False
+    data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"], translation_data_path: str, save_path: str | None = None, remove_unuseful: bool = False
 ) -> pd.DataFrame:
     """
     Preprocesses data and performs feature engineering

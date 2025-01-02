@@ -1,0 +1,42 @@
+zwiazek,smiles,liczba_pierscieni,srednia_liczba_N_w_pierscieniu,liczba_substratu_w_porze,odleglosc_miedzy_najdalszymi_grupami [nm],Temp pirolizy lub syntezy,N_perc_triaz,wielkosc_pora teoretyczna,BET,V total,objetosc_mikroporow,pojemnosc_3_H2SO4_CV,pojemnosc_3_H2SO4_GCD,pojemnosc_3_NaOH_CV,pojemnosc_3_NaOH_GCD,DOI
+CCOF-900,Nc2nc(N)nc(/N=C/c1ccc(C=O)cc1)n2,3,,,,900,,,456,,,1236,,,,https://doi.org/10.1016/j.molstruc.2023.136659
+PPDA,Nc3ccc(Oc2ccc(/N=C/c1ccc(C=O)cc1)cc2)cc3,3,,,,900,,,898.1,,,575,,,,https://doi.org/10.1016/j.apsusc.2023.157148
+TPP-CTFs,N#Cc5ccc(c4cc(c1ccc(C#N)cc1)nc(c3ccc(c2ncncn2)cc3)c4)cc5,5,,,,400-500,,,1760,,,231,,,,https://doi.org/10.1016/j.matchemphys.2022.125850
+TPE-Ph-Th CMP,Brc8ccc(C(c1ccc(Br)cc1)C(c2ccc(Br)cc2)c7ccc(c6ccc(c5cc4sc3cc(Br)c(Br)cc3sc4cc5Br)cc6)cc7)cc8,8,,,,100,,,67,,,,,39.45,,https://doi.org/10.1016/j.colsurfa.2023.132675
+TPE-Ph-Tha CMP,Brc8ccc(C(c1ccc(Br)cc1)C(c2ccc(Br)cc2)c7ccc(c6ccc(c5ccc4sc3ccc(Br)cc3sc4c5)cc6)cc7)cc8,8,,,,100,,,18,,,,,51,,https://doi.org/10.1016/j.colsurfa.2023.132675
+TPE-Ph-BSu CMP,O=S8(=O)c1ccc(Br)cc1S(=O)(=O)c7cc(c6ccc(c5ccc(C(c2ccc(Br)cc2)C(c3ccc(Br)cc3)c4ccc(Br)cc4)cc5)cc6)ccc78,8,,,,100,,,41,,,,,52,,https://doi.org/10.1016/j.colsurfa.2023.132675
+Py-QP CMP,OB(O)c%10cc(B(O)O)c%11ccc%13c(B(O)O)cc(c1ccc8c(c1)c2cc(Br)ccc2c9nc7cc6nc5c3ccc(Br)cc3c4cc(Br)ccc4c5nc6cc7nc89)c%12CCc%10c%11c%12%13,12,,,,,,,527,,,,,75.3,,https://doi.org/10.1016/j.colsurfa.2024.133210
+TPP-QP CMP,OB(O)c%13ccc(c%12cc(c%10ccc(c1ccc8c(c1)c2cc(Br)ccc2c9nc7cc6nc5c3ccc(Br)cc3c4cc(Br)ccc4c5nc6cc7nc89)cc%10)cc(c%11ccc(B(O)O)cc%11)n%12)cc%13,12,,,,,,,371,,,,,24.9,,https://doi.org/10.1016/j.colsurfa.2024.133210
+TPT-QP CMP,OB(O)c%13ccc(c%12nc(c1ccc(B(O)O)cc1)nc(c%11ccc(c2ccc9c(c2)c3cc(Br)ccc3c%10nc8cc7nc6c4ccc(Br)cc4c5cc(Br)ccc5c6nc7cc8nc9%10)cc%11)n%12)cc%13,12,,,,,,,365,,,,,121.9,,https://doi.org/10.1016/j.colsurfa.2024.133210
+TPA–DHTP–BZ POP,C#Cc%14ccc(N%13COc%12cc%11CN(c%10ccc(C#Cc9ccc8CN(c7ccc(N(c3ccc(N2COc1cc(Br)ccc1C2)cc3)c6ccc(N5COc4cc(Br)ccc4C5)cc6)cc7)COc8c9)cc%10)COc%11cc%12C%13)cc%14,14,,,,,,,195,,,,,31.37,,10.1039/d3py00158j
+TPA–DHTP–BZ POP (poli),CCc9ccc(NCc8cc(O)c(CNc7ccc(CCc6ccc(CNc5ccc(N(c2ccc(NCc1ccc(Br)cc1O)cc2)c4ccc(NCc3ccc(Br)cc3O)cc4)cc5)c(O)c6)cc7)cc8O)cc9,9,,,,,,,40,,,,,67.07,,10.1039/d3py00158j
+COP-2,Nc7ccc(c6cc(c1ccc(N)cc1)cc(c5ccc([n+]4ccc(c3cc[n+](c2ccc(N(=O)=O)cc2N(=O)=O)cc3)cc4)cc5)c6)cc7,6,,,,120,,,18,,,404,,,,https://doi.org/10.1016/j.est.2023.106714
+ANT-CTF-10-500,c9ncnc(c7cc6c(c1ncncn1)c4cc(c2ncncn2)c(c3ncncn3)cc4c(c5ncncn5)c6cc7c8ncncn8)n9,9,,,,500,,,160,,,,,81.2,,https://doi.org/ 10.1039/d4ma00565a
+TFP-TPA COF,Nc4ccc(N(c1ccc(N)cc1)c3ccc(NC=c2c(O)c(C=O)c(O)c(C=O)c2=O)cc3)cc4,,,,,120,,,457,,,,,,291.1,https://doi.org/10.1016/j.jtice.2019.07.016
+TFP-Car COF,Nc5ccc(n4c1ccc(N)cc1c3cc(NC=c2c(O)c(C=O)c(O)c(C=O)c2=O)ccc34)cc5,,,,,120,,,362,,,,,,150,https://doi.org/10.1016/j.jtice.2019.07.016
+TFP-TPP-COF,Nc5ccc(c4cc(c1ccc(N)cc1)nc(c3ccc(NC=c2c(O)c(C=O)c(O)c(C=O)c2=O)cc3)c4)cc5,,,,,120,,,686,,,,,,209,https://doi.org/10.1016/j.jtice.2019.07.016
+An-CPOP-1,COc7ccc(C(c1ccccc1)=c5c2ccccc2c(=C(c3ccccc3)c4ccccc4)c6ccccc56)cc7,,,,,80,,,580,,,,,72.75,,https://doi.org/10.1016/j.polymer.2020.122857
+An-CPOP-2,Clc8nc(Cl)nc(c7ccc(C(c1ccccc1)=c5c2ccccc2c(=C(c3ccccc3)c4ccccc4)c6ccccc56)cc7)n8,,,,,80,,,1130,,,,,98.4,,https://doi.org/10.1016/j.polymer.2020.122857
+PCz-res,Nc9cc(n8c(=O)c7cc(n3c1ccccc1c2ccccc23)c(n6c4ccccc4c5ccccc56)cc7c8=O)c(O)cc9O,,,,,120,,,1015,,,367,,,,https://doi.org/10.1016/j.reactfunctpolym.2020.104670
+CHCPN-1,C=Cc1ccc(/C=C(C#N)/CC#N)cc1,,,,,700,,,1450,,,,330,,,https://doi.org/10.1039/c7py01240c
+Car-TPA,Nc7ccc(n6c1ccc(N)cc1c5cc(/N=C/c4ccc(N(c2ccc(C=O)cc2)c3ccc(C=O)cc3)cc4)ccc56)cc7,,,,,140,,,1334,,,13.6,,,,https://doi.org/10.1021/acsami.8b21867
+Car-TPP,Nc8ccc(n7c1ccc(N)cc1c6cc(/N=C/c5ccc(c4cc(c2ccc(C=O)cc2)cc(c3ccc(C=O)cc3)n4)cc5)ccc67)cc8,,,,,140,,,743,,,14.5,,,,https://doi.org/10.1021/acsami.8b21867
+Car-TPT,Nc8ccc(n7c1ccc(N)cc1c6cc(/N=C/c5ccc(c4nc(c2ccc(C=O)cc2)nc(c3ccc(C=O)cc3)n4)cc5)ccc67)cc8,,,,,140,,,721,,,17.4,,,,https://doi.org/10.1021/acsami.8b21867
+TPA-COF 1,Nc6ccc(N(c1ccc(N)cc1)c5ccc(/N=C/c4ccc(N(c2ccc(C=O)cc2)c3ccc(C=O)cc3)cc4)cc5)cc6,,,,,120,,,714,,,,51.3,,,"
+
+   https://doi.org/10.1039/C8TA04781B "
+TPA-COF 2,Nc7ccc(N(c1ccc(N)cc1)c6ccc(/N=C/c5ccc(c4cc(c2ccc(C=O)cc2)cc(c3ccc(C=O)cc3)n4)cc5)cc6)cc7,,,,,120,,,478,,,,14.4,,,"
+
+   https://doi.org/10.1039/C8TA04781B "
+TPA-COF 3,Nc7ccc(N(c1ccc(N)cc1)c6ccc(/N=C/c5ccc(c4nc(c2ccc(C=O)cc2)nc(c3ccc(C=O)cc3)n4)cc5)cc6)cc7,,,,,120,,,557,,,,5.1,,,"
+
+   https://doi.org/10.1039/C8TA04781B "
+TPT-COF 4,Nc7ccc(c6nc(c1ccc(N)cc1)nc(c5ccc(/N=C/c4ccc(N(c2ccc(C=O)cc2)c3ccc(C=O)cc3)cc4)cc5)n6)cc7,,,,,120,,,1132,,,,2.4,,,"
+
+   https://doi.org/10.1039/C8TA04781B "
+TPT-COF 5,Nc8ccc(c7nc(c1ccc(N)cc1)nc(c6ccc(/N=C/c5ccc(c4cc(c2ccc(C=O)cc2)cc(c3ccc(C=O)cc3)n4)cc5)cc6)n7)cc8,,,,,120,,,1747,,,,~0,,,"
+
+   https://doi.org/10.1039/C8TA04781B "
+TPT-COF 6,Nc8ccc(c7nc(c1ccc(N)cc1)nc(c6ccc(/N=C/c5ccc(c4nc(c2ccc(C=O)cc2)nc(c3ccc(C=O)cc3)n4)cc5)cc6)n7)cc8,,,,,120,,,1535,,,,~0,,,"
+
+   https://doi.org/10.1039/C8TA04781B "

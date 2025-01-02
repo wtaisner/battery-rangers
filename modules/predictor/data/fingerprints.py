@@ -44,7 +44,7 @@ class Fingerprints:
         return featurizer.featurize(smiles)
 
     @staticmethod
-    def maccs_fingerprint(smiles: list) -> np.ndarray:
+    def maccs_fingerprint(smiles: list, **kwargs) -> np.ndarray:  # pylint: disable=unused-argument
         """
         Generates MACCS fingerprints for the given SMILES strings.
         :param smiles: list of SMILES strings.
@@ -54,7 +54,7 @@ class Fingerprints:
         return featurizer.featurize(smiles)
 
     @staticmethod
-    def pubchem_fingerprint(smiles: list) -> np.ndarray:
+    def pubchem_fingerprint(smiles: list, **kwargs) -> np.ndarray:  # pylint: disable=unused-argument
         """
         Generates PubChem fingerprints for the given SMILES strings.
         :param smiles: list of SMILES strings.
@@ -64,7 +64,7 @@ class Fingerprints:
         return featurizer.featurize(smiles)
 
     @staticmethod
-    def rdkit_fingerprint(smiles: list) -> np.ndarray:
+    def rdkit_fingerprint(smiles: list, **kwargs) -> np.ndarray:  # pylint: disable=unused-argument
         """
         Generates RDKit fingerprints for the given SMILES strings.
         :param smiles: list of SMILES strings.

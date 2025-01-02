@@ -14,7 +14,7 @@ from modules.core.features.preprocessing import (
 )
 
 
-def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2"]) -> pd.DataFrame:
+def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"]) -> pd.DataFrame:
     """
     preprocessing for the datasets
     :param data_path: path to data
@@ -23,7 +23,7 @@ def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad
     """
     df = pd.read_csv(data_path)
 
-    if data_type == "expert":
+    if data_type in ["expert", "expert3"]:
         df = expert_dataset_preprocessing(df)
     elif data_type == "zhu":
         df = zhu_dataset_preprocessing(df)
