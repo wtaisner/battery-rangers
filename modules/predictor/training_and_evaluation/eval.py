@@ -45,8 +45,8 @@ def cv_eval(
     scores = {}
     for metric in metric_mapping:
         scores[metric] = []
-        scores["baseline_mean_{metric}"] = []
-        scores["baseline_median_{metric}"] = []
+        scores[f"baseline_mean_{metric}"] = []
+        scores[f"baseline_median_{metric}"] = []
 
     for fold in folds:
         train_idx, test_idx = fold
