@@ -17,9 +17,9 @@ You can also run it manually with `pre-commit run --all-files`.
 ```
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
 │   ├── processed      <- The final, canonical data sets for modeling.
+│   ├── symmetries     <- The symmetry translation data.
+│   ├── sampling       <- Results of the sampling.
 │   └── raw            <- The original, immutable data dump.
 │
 ├── docs               <- A default mkdocs project; see www.mkdocs.org for details
