@@ -1,5 +1,6 @@
 """Filter that leaves molecules with triple bonds between C and N atoms."""
 from rdkit import Chem
+from rdkit.Chem import Mol
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 
@@ -7,23 +8,20 @@ from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 class CNTripleBondsFilter(GenericMoleculeFilter):
     """Filter that leaves molecules with triple bonds."""
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
         Apply the filter to a list of SMILES strings.
 
         Args:
-            smiles (list[str]): The list of SMILES strings to filter.
+            molecules (list[Mol]): The list of RDKit molecules to filter.
         Returns:
-            list[str]: The list of SMILES strings that passed the filter.
+            list[Mol]: The list of RDKit molecules that passed the filter.
         """
-        tmp_smiles = []
-        mols = [Chem.MolFromSmiles(x) for x in smiles]
-        mols_sym_triple_bonds = []
-        for i, mol in enumerate(mols):
+        to_pass = []
+        for i, mol in enumerate(molecules):
             if self.count_cn_triple_bonds(mol) >= 2:
-                mols_sym_triple_bonds.append(mol)
-                tmp_smiles.append(smiles[i])
-        return tmp_smiles
+                to_pass.append(molecules[i])
+        return to_pass
 
     @staticmethod
     def count_cn_triple_bonds(mol: Chem.Mol) -> int:

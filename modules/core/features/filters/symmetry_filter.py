@@ -7,30 +7,32 @@ from networkx.algorithms.isomorphism.ismags import ISMAGS
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import AvailableSymmetry
-from modules.core.features.utils import get_graph_from_smile
+from modules.core.features.utils import get_graph_from_molecule
+
+logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 
 
 class SymmetryFilter(GenericMoleculeFilter):
     """Check if any of the defined symmetries are present in the molecule."""
 
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[str], **kwargs) -> list[str]:
         """
         Filters the given list of SMILES strings by symmetry. This filter transforms the SMILES strings into graphs first,
         then checks the presence of the defined symmetries in the graphs.
 
         Args:
-            smiles (List[str]): A list of SMILES strings representing molecules.
+            molecules (List[str]): A list of SMILES strings representing molecules.
             **kwargs: Additional keyword arguments.
 
         Returns:
             List[str]: A list of SMILES strings that pass the filter.
         """
-        mol_graphs = [get_graph_from_smile(smiles) for smiles in smiles]
+        mol_graphs = [get_graph_from_molecule(smiles) for smiles in molecules]
         symmetrical = []
         for i, mol in enumerate(mol_graphs):
             s = self._check_any_symmetry(mol)
             if s:
-                symmetrical.append(smiles[i])
+                symmetrical.append(molecules[i])
         return symmetrical
 
     def _check_any_symmetry(self, graph: nx.Graph) -> bool:
@@ -67,7 +69,7 @@ class SymmetryFilter(GenericMoleculeFilter):
         else:
             cycles_of_len = [cycle for cycle in cycles if len(cycle) == length]
 
-        logging.debug(f"All cycles of length {length}: {cycles_of_len}")
+        logger.debug(f"All cycles of length {length}: {cycles_of_len}")
 
         return cycles_of_len
 
@@ -126,8 +128,7 @@ class SymmetryFilter(GenericMoleculeFilter):
             if symmetry_type == AvailableSymmetry.RING_OUTER_PLANE:
                 cycles_len = None
             cycles = self.find_all_cycles_of_len(graph, cycles_len)
-            if cycles:
-                blacklist = {node for cycle in cycles for node in cycle}
+            blacklist = {node for cycle in cycles for node in cycle}
 
         # Get nodes not in the blacklist
         nodes_not_in_blacklist = [node for node in nodes if node not in blacklist]
@@ -152,9 +153,8 @@ class SymmetryFilter(GenericMoleculeFilter):
                 for i in range(len(cycle) // 2):
                     u1, u2 = cycle[i], cycle[(i + 1) % len(cycle)]
                     u1_second, u2_second = cycle[i + len(cycle) // 2], cycle[(i + 1 + len(cycle) // 2) % len(cycle)]
-                    candidate = ((u1, u2), (u1_second, u2_second))
-                    if candidate not in candidates:
-                        candidates.add(candidate)
+                    if ((u1_second, u2_second), (u1, u2)) not in candidates:  # avoid permutation duplicates
+                        candidates.add(((u1, u2), (u1_second, u2_second)))
 
         elif symmetry_type == AvailableSymmetry.RING_NODES:
             if cycles_len % 2 != 0:
@@ -240,10 +240,10 @@ class SymmetryFilter(GenericMoleculeFilter):
 
             # Analyze the graph after the cut
             if nx.is_connected(graph_copy):
-                logging.debug(f"Cut on {symmetry_type.value} {obj} results in a connected graph")
+                logger.debug(f"Cut on {symmetry_type.value} {obj} results in a connected graph")
             else:
                 components = list(nx.connected_components(graph_copy))
-                logging.debug(f"Cut on {symmetry_type.value} {obj} results in {len(components)} components")
+                logger.debug(f"Cut on {symmetry_type.value} {obj} results in {len(components)} components")
 
                 # Get the two largest components
                 components = sorted(components, key=len, reverse=True)[:2]
@@ -255,8 +255,6 @@ class SymmetryFilter(GenericMoleculeFilter):
                 # Check if the two subgraphs are isomorphic
                 is_isomorphic = self.check_isomorphism(subgraph1, subgraph2)
                 if is_isomorphic:
-                    logging.debug("Two subgraphs are isomorphic")
                     return True
-                logging.debug("Two subgraphs are not isomorphic")
 
         return False

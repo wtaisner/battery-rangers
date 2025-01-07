@@ -6,23 +6,27 @@ import pymatgen.core
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.vis.structure_vtk import StructureVis
 from rdkit import Chem
-from rdkit.Chem import AllChem, MolToXYZFile, rdDepictor, rdDistGeom
+from rdkit.Chem import AllChem, Mol, MolToXYZFile, rdDepictor, rdDistGeom
 
 from modules.core.features.preprocessing import canon_smiles
 
 
-def smiles_to_xyz(smiles: str, directory: str = "./tmp") -> str | None:
+def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = "./tmp") -> str | None:
     """
-    Convert a SMILES string to a 3D xyz file using RDKit.
+    Convert a SMILES string or RDKit molecule to a 3D xyz file using RDKit.
 
     Args:
-        smiles: A SMILES string.
+        molecule: A SMILES string or RDKit molecule.
+        save_file: Whether to save the xyz file.
         directory: The directory to save the xyz file.
     Returns:
         The path to the saved xyz file.
     """
-    canonic_smiles = canon_smiles(smiles)
-    rdkit_mol = Chem.MolFromSmiles(canonic_smiles, sanitize=True)
+    if isinstance(molecule, str):
+        canonic_smiles = canon_smiles(molecule)
+        rdkit_mol = Chem.MolFromSmiles(canonic_smiles, sanitize=True)
+    else:
+        rdkit_mol = molecule
     rdkit_mol = Chem.AddHs(rdkit_mol)
     rdDepictor.Compute2DCoords(rdkit_mol, sampleSeed=42)
     a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500)
@@ -36,27 +40,29 @@ def smiles_to_xyz(smiles: str, directory: str = "./tmp") -> str | None:
     else:
         rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123)
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
     save_dir = f"{directory}/rdkit_mol.xyz"
 
-    MolToXYZFile(rdkit_mol, save_dir)
+    if save_file:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        MolToXYZFile(rdkit_mol, save_dir)
 
     return save_dir
 
 
-def get_pymatgen_molecule_from_smiles(smiles: str, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
+def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = False, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
     """
     Convert a SMILES string to a pymatgen Molecule object.
 
     Args:
         smiles: A SMILES string.
+        save_file: Whether to save the xyz file.
         directory: The directory to save the xyz file.
     Returns:
+        The pymatgen Molecule object or None if the conversion failed.
 
     """
-    path = smiles_to_xyz(smiles, directory)
+    path = mol_to_xyz(smiles, save_file, directory)
     if path is None:
         return None
     mol = Molecule.from_file(path)
@@ -99,14 +105,43 @@ def smiles_to_3d(smiles: str) -> tuple | None:
     return mol, symbols, coords
 
 
-def get_graph_from_smile(smile: str) -> nx.Graph:
+def get_graph_from_molecule(molecule: str | Mol) -> nx.Graph:
     """
     Get a graph from a SMILE string.
     """
-    mol = Chem.MolFromSmiles(smile)
+    if isinstance(molecule, str):
+        molecule = Chem.MolFromSmiles(molecule)
 
-    if mol is None:
-        print(f"Mol: {str(mol)} of {smile} is NONE")
+    if molecule is None:
+        print(f"Mol: {str(molecule)} of {molecule} is NONE")
 
-    adjacency_matrix = Chem.GetAdjacencyMatrix(mol, useBO=True)
+    adjacency_matrix = Chem.GetAdjacencyMatrix(molecule, useBO=True)
     return nx.from_numpy_array(adjacency_matrix)
+
+
+def get_aromatic_rings(mol: Chem.Mol) -> list[tuple[int]]:
+    """
+    Get all aromatic rings in a molecule.
+
+    Args:
+        mol: A RDKit molecule.
+    Returns:
+        A list of tuples with the indices of the atoms in the aromatic rings.
+
+    Example:
+            N#Cc1c(Cl)c(C#N)c(Cl)c(C#N)c1Cl
+            [(14, 12, 9, 7, 4, 2)]
+
+            N#Cc1c2c(c(C#N)c3ccccc13)CCCC2
+            [(17, 19, 7, 4, 3, 2), (9, 10, 11, 12, 19, 8)]
+
+            N#CC(=N)C#N
+            []
+    """
+    ri = mol.GetRingInfo()
+
+    aromatic_rings = []
+    for ring in ri.AtomRings():
+        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
+            aromatic_rings.append(tuple(ring))
+    return aromatic_rings

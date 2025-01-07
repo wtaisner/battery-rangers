@@ -1,25 +1,27 @@
 """Abstract class for a generic molecule filter."""
 from abc import ABC, abstractmethod
 
+from rdkit.Chem import Mol
+
 
 class GenericMoleculeFilter(ABC):
     """
     Abstract base class for molecule filters.
 
     Subclasses must implement the `apply` method to filter molecules
-    represented as SMILES strings.
+    represented as RDKit Mol objects.
     """
 
     @abstractmethod
-    def apply(self, smiles: list[str], **kwargs) -> list[str]:
+    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Filters the given list of SMILES strings.
+        Filters the given list of RDKit Mol objects.
 
         Args:
-            smiles (List[str]): A list of SMILES strings representing molecules.
+            molecules (List[mMol]): A list of RDKit Mol objects representing molecules.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            List[str]: A list of SMILES strings that pass the filter.
+            List[Mol]: A list of RDKit Mol objects that pass the filter.
         """
         raise NotImplementedError

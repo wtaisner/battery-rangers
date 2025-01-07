@@ -93,7 +93,7 @@ def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) 
         if plot_visualization:
             __visualize_the_plane(coords, model)
 
-    logging.info(f"RMSDs: {np.mean(rmsds)} +/- {np.std(rmsds)}")
+    # logging.info(f"RMSDs: {np.mean(rmsds)} +/- {np.std(rmsds)}")
 
     return np.mean(rmsds)
 

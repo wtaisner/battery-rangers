@@ -162,3 +162,6 @@ cython_debug/
 .idea/
 # anything related to data and bionemo docker
 /modules/bionemo/data/
+sh_tmp/
+tmp/
+.env

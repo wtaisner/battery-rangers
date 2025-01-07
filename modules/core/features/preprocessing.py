@@ -25,7 +25,7 @@ def canon_smiles(smiles: str) -> str | None:
     return Chem.MolToSmiles(m)
 
 
-def expert_dataset_preprocessing(df_experts: pd.DataFrame) -> pd.DataFrame:
+def expert_dataset_preprocessing(df_experts: pd.DataFrame, drop=False) -> pd.DataFrame:
     """
     Preprocessing of expert data
     :param df_experts: dataframe with expert data
@@ -56,6 +56,12 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame) -> pd.DataFrame:
     }
 
     df_experts = df_experts.rename(columns=column_names_mapping)
+    df_experts[["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]] = df_experts[
+        ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
+    ].replace("~", "", regex=True)
+    df_experts[["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]] = df_experts[
+        ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
+    ].astype(float)
 
     # Calculate mean capacity
     df_experts["capacity_H2SO4_mean"] = df_experts.loc[:, ["capacity_H2SO4_CV", "capacity_H2SO4_GCD"]].mean(axis=1)
@@ -63,9 +69,9 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame) -> pd.DataFrame:
     df_experts["capacity_mean"] = df_experts.loc[:, ["capacity_H2SO4_mean", "capacity_NaOH_mean"]].mean(axis=1)
 
     # Drop problematic rows
-    problematic_no_target = [20, 21, 22, 23, 24, 44, 46, 50, 52]
-    df_experts.drop(problematic_no_target)
-
+    if drop:
+        problematic_no_target = [20, 21, 22, 23, 24, 44, 46, 50, 52]
+        df_experts.drop(problematic_no_target)
     # Process target
     targets = ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
     df_experts["capacity_max"] = preprocess_target(df_experts, targets=targets)

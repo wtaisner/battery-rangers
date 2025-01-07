@@ -14,7 +14,7 @@ from modules.core.features.preprocessing import (
 )
 
 
-def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2"]) -> pd.DataFrame:
+def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"]) -> pd.DataFrame:
     """
     preprocessing for the datasets
     :param data_path: path to data
@@ -23,7 +23,7 @@ def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad
     """
     df = pd.read_csv(data_path)
 
-    if data_type == "expert":
+    if data_type in ["expert", "expert3"]:
         df = expert_dataset_preprocessing(df)
     elif data_type == "zhu":
         df = zhu_dataset_preprocessing(df)
@@ -73,7 +73,7 @@ def prepare_data_for_regressors(df: pd.DataFrame, numerical_features: list, cate
     :return: standardized dataframe
     """
     enc_features = df[categorical_features]
-    enc = OneHotEncoder(handle_unknown="ignore")
+    enc = OneHotEncoder(handle_unknown="ignore", drop="first")
     enc_features = enc.fit_transform(enc_features).toarray()
     enc_features_names = enc.get_feature_names_out(categorical_features)
     df[enc_features_names] = enc_features
@@ -82,7 +82,6 @@ def prepare_data_for_regressors(df: pd.DataFrame, numerical_features: list, cate
     for c in categorical_features:
         if c in numerical_features:
             numerical_features.remove(c)
-            numerical_features.extend(enc.get_feature_names_out([c]))
 
     st_features = df[numerical_features]
     scaler = StandardScaler().fit(st_features.values)
@@ -137,25 +136,24 @@ def custom_data_split(df: pd.DataFrame, target: str, train_size: float, num_bins
     return [(train_ids, test_ids)]
 
 
-def combine_split(df1: pd.DataFrame, split1: list, df2: pd.DataFrame, split2: list) -> tuple:
+def combine_split(df1: pd.DataFrame, split1: list, df2: pd.DataFrame) -> tuple:
     """
     Combines two dataframes into one dataframe, combines splits of these dataframes.
     :param df1: first dataframe.
     :param split1: split of the first dataframe.
     :param df2: second dataframe.
-    :param split2: split of the second dataframe.
     :return: list with splits, combined dataframe.
     """
     combined_split = []
     index_df1 = ["1_" + str(idx) for idx in df1.index]
     index_df2 = ["2_" + str(idx) for idx in df2.index]
     index_original = index_df1 + index_df2
-    df_combined = pd.concat([df1, df2], ignore_index=True)
+    df_combined = pd.concat([df1, df2], ignore_index=True, join="outer").reset_index(drop=True)
+    df_combined.fillna(0, inplace=True)
     index_mapping = pd.DataFrame({"ids_org": index_original, "ids_new": df_combined.index})
-    for (train_idx1, test_idx1), (train_idx2, test_idx2) in zip(split1, split2):
+    for train_idx1, test_idx1 in split1:
         train1 = index_mapping.loc[index_mapping.ids_org.isin(["1_" + str(idx) for idx in train_idx1]), "ids_new"].tolist()
         test1 = index_mapping.loc[index_mapping.ids_org.isin(["1_" + str(idx) for idx in test_idx1]), "ids_new"].tolist()
-        train2 = index_mapping.loc[index_mapping.ids_org.isin(["2_" + str(idx) for idx in train_idx2]), "ids_new"].tolist()
-        test2 = index_mapping.loc[index_mapping.ids_org.isin(["2_" + str(idx) for idx in test_idx2]), "ids_new"].tolist()
-        combined_split.append((train1 + train2, test1 + test2))
+        train2 = index_mapping.loc[index_mapping["ids_org"].str.startswith("2_"), "ids_new"].tolist()
+        combined_split.append((train1 + train2, test1))
     return combined_split, df_combined
