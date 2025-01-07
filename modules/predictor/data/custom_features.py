@@ -130,7 +130,6 @@ def data_preprocessing_and_feature_engineering(
     """
     df = data_preprocessing(data_path, data_type)
     df = feature_engineering(df, translation_data_path)
-    print("ok")
     # df.dropna(inplace=True)
     if remove_unuseful:
         df = remove_unuseful_features(df)
