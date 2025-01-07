@@ -23,7 +23,7 @@ def batch_train_and_eval(df: pd.DataFrame, df_name: str, folds: list, target: st
     :param save_dir: directory to save model and results
     :return: dictionary with results
     """
-    models = ["knn", "xgboost", "random_forest"]
+    models = ["knn", "xgboost", "random_forest", "lasso"]
     model_results = dict(zip(models, [] * len(models)))
 
     for m in models:

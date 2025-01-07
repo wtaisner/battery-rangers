@@ -3,6 +3,7 @@ import pickle
 from typing import Literal
 
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import Lasso
 from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBRegressor
 
@@ -51,15 +52,24 @@ def _get_rf() -> tuple:
     return rf, rf_params
 
 
-def get_model(name: Literal["knn", "xgboost", "random_forest"], model_path: str | None = None) -> tuple:
+def _get_lasso() -> tuple:
+    """
+    :return: lasso model and its parameter grid
+    """
+    lasso = Lasso(random_state=42)
+    lasso_params = {"alpha": [0.1, 0.5, 1, 2, 5, 10, 20]}
+    return lasso, lasso_params
+
+
+def get_model(name: Literal["knn", "xgboost", "random_forest", "lasso"], model_path: str | None = None) -> tuple:
     """
     Loads a selected model.
-    :param name: name of the model, one of 'knn', 'xgboost', 'random_forest'
-    :param model_path: path to the saved model, if necessary (if this path is given, only a trained mdoel and a name of the model will be returned)
+    :param name: name of the model, one of 'knn', 'xgboost', 'random_forest'.
+    :param model_path: path to the saved model, if necessary (if this path is given, only a trained mdoel and a name of the model will be returned).
     :return: "proper" model name, model and a parameter grid
     """
-    dict_name = {"knn": "KNN Regressor", "xgboost": "XGBoost Regressor", "random_forest": "Random Forest Regressor"}
-    dict_function = {"knn": _get_knn, "xgboost": _get_xgboost, "random_forest": _get_rf}
+    dict_name = {"knn": "KNN Regressor", "xgboost": "XGBoost Regressor", "random_forest": "Random Forest Regressor", "lasso": "Lasso Regressor"}
+    dict_function = {"knn": _get_knn, "xgboost": _get_xgboost, "random_forest": _get_rf, "lasso": _get_lasso}
     if model_path is not None:
         model = get_trained_model(model_path)
         return dict_name[name], model, None
