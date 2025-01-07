@@ -146,7 +146,7 @@ def fingerprints_dataset(
     """
     smiles_list = df[smiles_col].tolist()
     target_list = df[target_col].tolist()
-    feature_list, features_names = Fingerprints().apply(fingerprint_type, smiles_list, **kwargs)
+    feature_list, features_names = Fingerprints().apply(fingerprint_type, smiles_list, **kwargs["kwargs"])
     df_features = pd.DataFrame(feature_list, columns=features_names)
     df_features[target_col] = target_list
     df_features[smiles_col] = smiles_list

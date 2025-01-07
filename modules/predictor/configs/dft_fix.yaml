@@ -1,0 +1,23 @@
+must_have_features: [
+  "total_energy",
+  "homo",
+  "lumo",
+  "dipole_x",
+  "diploe_y",
+  "dipole_z",
+  "vibrational_frequencies_mean",
+  "vibrational_frequencies_max",
+  "vibrational_frequencies_min",
+  "internal_energy_0K",
+  "internal_energy_298K",
+  "zpe",
+  "free_enegry",
+  "enthalpy_energy",
+]
+root_dir: '../../../data/processed_dft_features'
+files_to_fix: [
+  'data_experts1.csv'
+]
+functional: 'pbe'
+dft_type: 'uks'
+spin: None

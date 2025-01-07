@@ -1,0 +1,46 @@
+root_dir: '../../../data'
+target: 'capacity_max'
+num_splits: 4
+num_bins: 4
+random_state: 42
+combo_name: 'all_datasets_all_features'
+save_matrix_dir: '../../../results/comparison'
+data_dict:
+  expert: 'data_experts1.csv'
+  zhu: 'data_zhu.csv'
+  saad: 'data_saad.csv'
+  expert2: 'data_experts2.csv'
+  expert3: 'data_experts3.csv'
+features_dict:
+  custom: 'processed_selected_custom_features'
+  dft: 'aggregated_dft_features'
+  additive_groups: 'additive_groups'
+  fp_ecfp: 'fingerprints_ecfp'
+  fp_maccs: 'fingerprints_maccs'
+  fp_functional_groups: 'fingerprints_functional_groups'
+  fp_estate: 'fingerprints_estate'
+  fp_layered: 'fingerprints_layered'
+  fp_topological: 'fingerprints_topological'
+dataset_combos: [
+  ['expert'],
+  ['expert', 'expert2'],
+  ['expert', 'expert2', 'expert3'],
+  ['expert', 'zhu', 'saad'],
+  ['expert', 'zhu', 'saad', 'expert2'],
+  ['expert', 'zhu', 'saad', 'expert2', 'expert3']
+]
+
+feature_combos: [
+  ['custom', ['custom', 'dft', 'additive_groups', 'fp_ecfp', 'fp_maccs', 'fp_functional_groups', 'fp_estate', 'fp_layered', 'fp_topological']],
+  ['dft', ['dft', 'additive_groups', 'fp_ecfp', 'fp_maccs', 'fp_functional_groups', 'fp_estate', 'fp_layered', 'fp_topological']],
+  ['additive_groups', ['additive_groups']],
+  ['fp_ecfp', ['fp_ecfp']],
+  ['fp_maccs', ['fp_maccs']],
+  ['fp_functional_groups', ['fp_functional_groups']],
+  ['fp_estate', ['fp_estate']],
+  ['fp_layered', ['fp_layered']],
+  ['fp_topological', ['fp_topological']],
+]
+
+cat_features_dict:
+  custom: ['symmetry']
