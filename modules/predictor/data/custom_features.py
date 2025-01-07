@@ -65,7 +65,7 @@ def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str | Non
     :param translation_table_path: path to translation table (symmetry_translation.csv file)
     :return: point group symmetry of a given molecule
     """
-    mol = get_pymatgen_molecule_from_smiles(smiles)
+    mol = get_pymatgen_molecule_from_smiles(smiles, save_file=True)
     if mol is None:
         return None
 
@@ -130,6 +130,7 @@ def data_preprocessing_and_feature_engineering(
     """
     df = data_preprocessing(data_path, data_type)
     df = feature_engineering(df, translation_data_path)
+    print("ok")
     # df.dropna(inplace=True)
     if remove_unuseful:
         df = remove_unuseful_features(df)
