@@ -7,19 +7,27 @@ from modules.predictor.data.utils import combine_split, custom_data_kfold
 from modules.predictor.training_and_evaluation.train_eval_pipeline import dataset_preprocess_and_train
 
 if __name__ == "__main__":
-    SAVE_MATRIX_PATH = "../../../results/comparison_matrix_test_expert1.csv"
+    SAVE_MATRIX_PATH = "../../../results/comparison_matrix_with_additive_groups.csv"
 
-    data_csvs = {"expert1": "data_experts1.csv", "expert2": "data_experts2.csv", "saad": "data_saad.csv", "zhu": "data_zhu.csv"}
+    data_csvs = {"expert1": "data_experts1.csv", "expert2": "data_experts2.csv", "expert3": "data_experts3.csv", "saad": "data_saad.csv", "zhu": "data_zhu.csv"}
     data_paths = {
         "custom": "../../../data/processed_selected_custom_features",
         "dft": "../../../data/aggregated_dft_features",
         "ecfp": "../../../data/fingerprints_ecfp_features",
         "maccs": "../../../data/fingerprints_maccs_features",
+        "additive_groups": "../../../data/additive_groups",
     }
-    COMBO_NAME = "all_data_all_custom_dft_ecfp_maccs"
-    dataset_combos = [["expert1"], ["expert2", "expert1"], ["zhu", "expert1", "saad"], ["expert2", "zhu", "expert1", "saad"]]
-    combo_features = [["custom", i] for i in ["custom", "dft", "ecfp", "maccs"]] + [["dft", i] for i in ["dft", "ecfp", "maccs"]] + [["ecfp", "ecfp"], ["maccs", "maccs"]]
-
+    COMBO_NAME = "all_data_all_custom_ecfp_maccs"
+    dataset_combos = [
+        ["expert1"],
+        ["expert2", "expert1"],
+        # ["expert3", "expert2", "expert1"],
+        ["zhu", "expert1", "saad"],
+        ["expert2", "zhu", "expert1", "saad"],
+        # ["expert3", "expert2", "zhu", "expert1", "saad"]
+    ]
+    # combo_features = [["custom", i] for i in ["custom", "ecfp", "maccs"]] + [['dft', i] for i in ['ecfp', 'maccs']] + [["ecfp", "ecfp"], ["maccs", "maccs"], ['additive_groups', 'additive_groups']]
+    combo_features = [["additive_groups", "additive_groups"]]
     full_results = []
 
     cat_features_dict = {"custom": ["symmetry"]}
@@ -28,6 +36,8 @@ if __name__ == "__main__":
     for features, data_path in data_paths.items():
         df = pd.read_csv(os.path.join(data_path, data_csvs["expert1"]))
         binary_features[features] = [c for c in df.columns if (df[c].nunique() <= 2 and set(df[c].dropna().unique()).issubset({0, 1}))]
+        # if features == 'additive_groups':
+        #     binary_features[features] = list(df.columns)
 
     TARGET = "capacity_max"
     NUM_SPLITS = 4
@@ -40,10 +50,15 @@ if __name__ == "__main__":
 
             dataset_names = [data_csvs[dataset] for dataset in datasets]
             dataset_paths = {data_name: [os.path.join(data_paths[c], data_csvs[data_name]) for c in combo] for data_name in datasets}
-            dfs = {data_name: [pd.read_csv(data_path).sort_values(by="smiles").reset_index(drop=True) for data_path in paths] for data_name, paths in dataset_paths.items()}
 
-            dfs = {data_name: pd.concat(dataframes, axis=1).reset_index(drop=True) for data_name, dataframes in dfs.items()}
-            dfs = {data_name: df.loc[:, ~df.columns.duplicated()].sort_values(by="smiles").reset_index(drop=True) for data_name, df in dfs.items()}
+            dfs = {}
+            for data_name, paths in dataset_paths.items():
+                df = [pd.read_csv(data_path) for data_path in paths]
+                df = pd.concat(df, axis=1).reset_index(drop=True)
+                df.columns = df.columns.str.replace(r"[\[\]>]", "", regex=True)
+                df = df.loc[:, ~df.columns.duplicated()].sort_values(by="smiles").reset_index(drop=True)
+                dfs[data_name] = df
+
             if len(datasets) > 1:
                 df_rest = pd.concat([df for data_name, df in dfs.items() if data_name != "expert1"], ignore_index=True).sort_values(by="smiles").reset_index(drop=True)
             else:
