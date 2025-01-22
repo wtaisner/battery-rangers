@@ -87,8 +87,8 @@ if __name__ == "__main__":
             bin_features = [binary_features[c] for c in combo]
             num_features = [c for c in df_all.columns if c not in ["smiles", target, *cat_features, *bin_features]]
 
-            DATASET_NAME = "_".join(datasets)
-            COMBO_NAME = "_".join(combo)
+            DATASET_NAME = "_".join(sorted(datasets))
+            COMBO_NAME = "_".join(sorted(combo))
             DATANAME = f"{DATASET_NAME}_{COMBO_NAME}"
             results = dataset_preprocess_and_train(df_all, DATANAME, cat_features, num_features, folds_all, target)
             for key, value in results.items():
