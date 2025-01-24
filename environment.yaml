@@ -19,4 +19,3 @@ dependencies:
   - pyscf >= 2.7.0
   - pip:
       - pre-commit >= 3.8.0
-      - deepchem >= 2.6.0
