@@ -24,17 +24,17 @@ dft_features_params:
 fingerprints: True
 fingerprints_types:
   ecfp: True
-  maccs: True
-  functional_groups: True
-  estate: True
+  maccs: False
+  functional_groups: False
+  estate: False
   layered: True
   topological: True
 fingerprints_params:
   ecfp:
-    dir: 'fingerprints_ecfp'
+    dir: 'fingerprints_ecfp_256'
     kwargs:
         radius: 2
-        size: 128
+        size: 256
         count: False
   maccs:
       dir: 'fingerprints_maccs'
@@ -49,14 +49,14 @@ fingerprints_params:
       kwargs:
           variant: 'sum'
   layered:
-      dir: 'fingerprints_layered'
+      dir: 'fingerprints_layered_256'
       kwargs:
-          size: 128
+          size: 256
           linear_paths_only: False
   topological:
-      dir: 'fingerprints_topological'
+      dir: 'fingerprints_topological_256'
       kwargs:
-          size: 128
+          size: 256
           torsion_atoms: 4
           count: False
 

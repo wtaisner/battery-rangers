@@ -6,6 +6,7 @@ data_dict:
   zhu: 'data_zhu.csv'
   saad: 'data_saad.csv'
   expert2: 'data_experts2.csv'
+  expert3: 'data_experts3.csv'
 drop_columns: [
   "e1", "nuc", "free_enegry", "enthalpy_energy"
 ]

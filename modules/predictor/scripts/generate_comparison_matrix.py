@@ -1,13 +1,13 @@
 """Script for generating comparison matrix."""
 import os
+from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import yaml
 
 from modules.predictor.data.utils import combine_split, custom_data_kfold  # pylint: disable=import-error
-from modules.predictor.training_and_evaluation.train_eval_pipeline import (  # pylint: disable=import-error
-    dataset_preprocess_and_train,
-)
+from modules.predictor.training_and_evaluation.train_eval import CrossValidationPipeline  # pylint: disable=import-error
 
 if __name__ == "__main__":
     CONFIG_PATH = "../configs/comparison_matrix.yaml"
@@ -24,6 +24,9 @@ if __name__ == "__main__":
 
     dataset_combos = config["dataset_combos"]
     feature_combos = config["feature_combos"]
+
+    metrics = config["metrics"]
+    models = config["models"]
 
     feature_combos = [[group[0], group[1][i]] for group in feature_combos for i in range(len(group[1]))]
 
@@ -73,7 +76,7 @@ if __name__ == "__main__":
                 df_rest = None  # pylint: disable=invalid-name
             df_expert1 = dfs["expert"]
 
-            folds_experts1 = custom_data_kfold(df_expert1, target, num_splits, num_bins, random_state)
+            folds_experts1 = custom_data_kfold(df_expert1, df_expert1.loc[:, [target]], num_splits, num_bins, random_state)
             if df_rest is not None:
                 folds_all, df_all = combine_split(df_expert1, folds_experts1, df_rest)
             else:
@@ -84,13 +87,23 @@ if __name__ == "__main__":
                 cat_features = cat_features_dict["custom"]
             else:
                 cat_features = []
-            bin_features = [binary_features[c] for c in combo]
+            bin_features = list(np.array([binary_features[c] for c in combo]).flatten())
             num_features = [c for c in df_all.columns if c not in ["smiles", target, *cat_features, *bin_features]]
 
             DATASET_NAME = "_".join(sorted(datasets))
             COMBO_NAME = "_".join(sorted(combo))
             DATANAME = f"{DATASET_NAME}_{COMBO_NAME}"
-            results = dataset_preprocess_and_train(df_all, DATANAME, cat_features, num_features, folds_all, target)
+
+            date = datetime.today().strftime("%d-%m-%Y")
+            SAVE_DIR = f"../../../results/{DATANAME}/{date}/"
+            if not os.path.exists(SAVE_DIR):
+                os.makedirs(SAVE_DIR)
+
+            X_all = df_all.drop(columns=[target, "smiles"])
+            y_all = df_all.loc[:, [target]]
+
+            cv = CrossValidationPipeline(X_all, y_all, num_features, cat_features, folds_all, metrics, SAVE_DIR, DATANAME, (True, "grid_search"), None, verbose=True)
+            results = cv.batch_train_and_eval(models)
             for key, value in results.items():
                 results_model = value
                 results_model["model"] = key
