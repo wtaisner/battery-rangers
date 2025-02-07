@@ -26,7 +26,8 @@ from modules.core.features.molecule_filter import MoleculeFilter
 def test_entire_pipeline(smiles, expected):
     """Test the entire pipeline"""
     molecule_filter = MoleculeFilter()
-    assert molecule_filter.apply(smiles) == expected
+    filtered, _ = molecule_filter.apply(smiles)
+    assert filtered == expected
 
 
 @pytest.mark.parametrize(

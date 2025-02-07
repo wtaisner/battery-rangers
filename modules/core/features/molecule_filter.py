@@ -195,6 +195,5 @@ if __name__ == "__main__":
     generated_smiles = set_diff(generated_smiles, expert_smiles)
     logger.info(f"Generated smiles after removing expert smiles: {len(generated_smiles)}")
 
-    filtered_smiles = molecule_filter.apply_against_all_filters(expert_smiles)
-    # filtered_smiles, ffr = molecule_filter.apply(generated_smiles)
+    filtered_smiles, ffr = molecule_filter.apply(generated_smiles)
     logger.info(f"Final number of smiles after filtering: {len(filtered_smiles)}")
