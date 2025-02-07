@@ -30,13 +30,7 @@ class CNTripleBondsFilter(GenericMoleculeFilter):
         Args:
             mol (Chem.Mol): The molecule to analyze.
         Returns:
-            int: The number of triple bonds between C and N atoms.
+            int: The number of C#N or N#C bonds in the molecule.
         """
-        triple_bond_count = 0
-        for bond in mol.GetBonds():
-            if bond.GetBondType() == Chem.BondType.TRIPLE:
-                begin_atom = bond.GetBeginAtom().GetSymbol()
-                end_atom = bond.GetEndAtom().GetSymbol()
-                if (begin_atom == "C" and end_atom == "N") or (begin_atom == "N" and end_atom == "C"):
-                    triple_bond_count += 1
-        return triple_bond_count
+
+        return len(mol.GetSubstructMatches(Chem.MolFromSmarts("C#N")))
