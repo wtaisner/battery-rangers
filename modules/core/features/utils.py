@@ -107,13 +107,18 @@ def smiles_to_3d(smiles: str) -> tuple | None:
 
 def get_graph_from_molecule(molecule: str | Mol) -> nx.Graph:
     """
-    Get a graph from a SMILE string.
+    Get a graph representation of a molecule.
+
+    Args:
+        molecule: A SMILES string or RDKit molecule.
+    Returns:
+        (nx.Graph) The graph representation of the molecule
     """
     if isinstance(molecule, str):
         molecule = Chem.MolFromSmiles(molecule)
 
     if molecule is None:
-        print(f"Mol: {str(molecule)} of {molecule} is NONE")
+        raise ValueError(f"Mol: {str(molecule)} of {molecule} is None")
 
     adjacency_matrix = Chem.GetAdjacencyMatrix(molecule, useBO=True)
     return nx.from_numpy_array(adjacency_matrix)
