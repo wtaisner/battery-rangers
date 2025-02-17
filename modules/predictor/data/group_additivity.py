@@ -102,7 +102,7 @@ class AdditiveGroups:
                     groups[group] += count
                 else:
                     groups[group] = count
-            groups_matrix.append({"smiles": self.molecules[i], **graph_groups})
+            groups_matrix.append({"smiles": molecules[i], **graph_groups})
         groups_matrix = pd.DataFrame(groups_matrix)
         groups_matrix.fillna(0, inplace=True)
         return groups, groups_matrix, coverage

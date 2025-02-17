@@ -76,27 +76,29 @@ def prepare_data_for_regressors(df_to_transform: pd.DataFrame, dfs: tuple, numer
     :return: standardized dataframe
     """
     df, _ = dfs
-    enc_features = pd.concat(dfs)[categorical_features]
-    c_features = []
-    for c in enc_features.columns:
-        c_features.append(enc_features[c].unique())
-    enc_features_to_transform = df_to_transform[categorical_features]
-    enc = OneHotEncoder(drop="first", categories=c_features)
-    enc.fit(enc_features)
-    enc_features_to_transform = enc.transform(enc_features_to_transform).toarray()
-    enc_features_names = enc.get_feature_names_out(categorical_features)
-    df_to_transform[enc_features_names] = enc_features_to_transform
-    df_to_transform.drop(categorical_features, axis=1, inplace=True)
+    if len(categorical_features) > 0:
+        enc_features = pd.concat(dfs)[categorical_features]
+        c_features = []
+        for c in enc_features.columns:
+            c_features.append(enc_features[c].unique())
+        enc_features_to_transform = df_to_transform[categorical_features]
+        enc = OneHotEncoder(drop="first", categories=c_features)
+        enc.fit(enc_features)
+        enc_features_to_transform = enc.transform(enc_features_to_transform).toarray()
+        enc_features_names = enc.get_feature_names_out(categorical_features)
+        df_to_transform[enc_features_names] = enc_features_to_transform
+        df_to_transform.drop(categorical_features, axis=1, inplace=True)
 
     for c in categorical_features:
         if c in numerical_features:
             numerical_features.remove(c)
 
-    st_features = df[numerical_features]
-    st_features_to_transform = df_to_transform[numerical_features]
-    scaler = StandardScaler().fit(st_features.values)
-    st_features_to_transform = scaler.transform(st_features_to_transform.values)
-    df_to_transform[numerical_features] = st_features_to_transform
+    if len(numerical_features) > 0:
+        st_features = df[numerical_features]
+        st_features_to_transform = df_to_transform[numerical_features]
+        scaler = StandardScaler().fit(st_features.values)
+        st_features_to_transform = scaler.transform(st_features_to_transform.values)
+        df_to_transform[numerical_features] = st_features_to_transform
 
     return df_to_transform
 

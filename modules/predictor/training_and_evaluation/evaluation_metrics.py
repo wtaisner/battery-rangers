@@ -114,3 +114,15 @@ def mape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     :return: Mean absolute percentage error.
     """
     return sklearn.metrics.mean_absolute_percentage_error(y_true, y_pred)
+
+
+@EvalMetrics.register("smape")
+def smape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Calculates symmetric mean absolute percentage error given predictions and ground truth labels.
+    :param y_true: Ground truth labels.
+    :param y_pred: Predictions.
+    :return: Symmetric mean absolute percentage error.
+    """
+    epsilon = 1e-10
+    return np.mean(2 * np.abs(y_pred - y_true) / (max(np.abs(y_true) + np.abs(y_pred), epsilon)))

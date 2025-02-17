@@ -50,8 +50,11 @@ if __name__ == "__main__":
         dfs = {}
         try:
             for data_name, paths in dataset_paths.items():
-                df = [pd.read_csv(data_path) for data_path in paths]
-                df = pd.concat(df, axis=1).reset_index(drop=True)
+                df_read = [pd.read_csv(data_path) for data_path in paths]
+                df = df_read[0]
+                for data in df_read[1:]:
+                    data = data.drop(columns=["capacity_max"])
+                    df = pd.merge(df, data, on="smiles", how="inner")
                 df.columns = df.columns.str.replace(r"[\[\]>]", "", regex=True)
                 df = df.loc[:, ~df.columns.duplicated()].sort_values(by="smiles").reset_index(drop=True)
                 dfs[data_name] = df

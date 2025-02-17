@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV
 from skopt import BayesSearchCV
 
 from modules.predictor.data.utils import custom_data_split
-from modules.predictor.training_and_evaluation.evaluation_metrics import mape
+from modules.predictor.training_and_evaluation.evaluation_metrics import smape
 
 # pylint: disable=invalid-name
 
@@ -24,7 +24,7 @@ def feature_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: 
     :param fixed_features: list with features to keep.
     :return: best score and best features.
     """
-    scorer = make_scorer(mape, greater_is_better=False)
+    scorer = make_scorer(smape, greater_is_better=False)
     folds = custom_data_split(X, y, train_size=train_size)
     fixed_features_ids = tuple(X.columns.get_loc(f) for f in fixed_features)
 
@@ -44,14 +44,14 @@ def param_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: fl
     :param opt_method: optimization method, either grid_search or bayesian_search
     :return: best score and best parameters.
     """
-    scorer = make_scorer(mape, greater_is_better=False)
+    scorer = make_scorer(smape, greater_is_better=False)
     folds = custom_data_split(X, y, train_size=train_size)
     if opt_method == "grid_search":
         opt = GridSearchCV(estimator=model, param_grid=param_grid, cv=folds, scoring=scorer, refit=True, n_jobs=-1, return_train_score=True)
     else:
         opt = BayesSearchCV(estimator=model, search_spaces=param_grid, cv=folds, scoring=scorer, refit=True, n_jobs=-1, return_train_score=True)
 
-    opt.fit(X, y[y.columns[0]])
+    opt.fit(X.to_numpy(), y[y.columns[0]].to_numpy())
     return opt.best_score_, opt.best_params_
 
 
