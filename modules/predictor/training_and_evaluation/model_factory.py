@@ -68,8 +68,9 @@ def _get_xgboost() -> tuple:
     """
     xgb = XGBRegressor(random_state=42, n_jobs=-1)
     xgb_params = {
-        "learning_rate": (0.05, 0.10, 0.15),
-        "max_depth": [5, 6, 8, None],
+        "n_estimators": [10, 15, 25, 40, 50, 75, 100],
+        "learning_rate": [0.05, 0.10, 0.15],
+        "max_depth": [3, 5, 8, 10, None],
         "min_child_weight": [1, 3, 5, 7],
         "gamma": [0.0, 0.1, 0.2],
         "colsample_bytree": [0.1, 0.2, 0.3, 0.4],
@@ -83,7 +84,7 @@ def _get_rf() -> tuple:
     :return: random forest model, its parameter grid and name
     """
     rf = RandomForestRegressor(random_state=42, n_jobs=-1)
-    rf_params = {"n_estimators": [10, 15, 25, 40, 50, 75, 100], "max_depth": [None, 3, 5, 10], "min_samples_split": [2, 3, 4, 5], "min_samples_leaf": [1, 2, 4], "bootstrap": [True, False]}
+    rf_params = {"n_estimators": [10, 15, 25, 40, 50, 75, 100], "max_depth": [None, 3, 5, 8, 10], "min_samples_split": [2, 3, 4, 5], "min_samples_leaf": [1, 2, 4], "bootstrap": [True, False]}
     return rf, rf_params, "Random Forest Regressor"
 
 

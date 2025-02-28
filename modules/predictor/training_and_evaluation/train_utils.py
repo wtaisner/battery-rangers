@@ -28,8 +28,11 @@ def feature_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: 
     folds = custom_data_split(X, y, train_size=train_size)
     fixed_features_ids = tuple(X.columns.get_loc(f) for f in fixed_features)
 
-    sfs = SequentialFeatureSelector(model, k_features=(len(fixed_features), len(X.columns)), forward=True, floating=False, scoring=scorer, cv=folds, n_jobs=-1, fixed_features=fixed_features_ids)
+    sfs = SequentialFeatureSelector(
+        model, k_features=(max(len(fixed_features), 1), len(X.columns)), forward=True, floating=False, scoring=scorer, cv=folds, n_jobs=-1, fixed_features=fixed_features_ids
+    )
     sfs.fit(X, y[y.columns[0]])
+    print(sfs.k_feature_names_, sfs.k_score_)
     return sfs.k_feature_names_
 
 

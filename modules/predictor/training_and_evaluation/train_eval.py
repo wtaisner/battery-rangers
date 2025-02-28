@@ -111,7 +111,7 @@ class CrossValidationPipeline:
         if self.oversampling:
             try:
                 numeric_cols = [i for i, col in enumerate(X_train.columns) if col in self.numerical_features]
-                X_train_oversampled, y_train_oversampled = smoter(X_train.values, y_train.values.flatten(), te=0.2, o=300, k=5, numeric_cols=numeric_cols, oversampling_type="SMOTER")
+                X_train_oversampled, y_train_oversampled = smoter(X_train.values, y_train.values.flatten(), te=0.5, o=300, k=5, numeric_cols=numeric_cols, oversampling_type="SMOTER")
                 X_train = pd.DataFrame(X_train_oversampled, columns=X_train.columns)
                 y_train = pd.DataFrame(y_train_oversampled, columns=y_train.columns)
             except ValueError:
@@ -126,7 +126,7 @@ class CrossValidationPipeline:
         :param X_test: test data.
         :param model: prediction model.
         """
-        if self.feature_selection is not None:
+        if self.feature_selection is not None and self.feature_selection[0]:
             fixed_features = self.feature_selection[1]
             selected_features = feature_search(model, X_train, y_train, 0.6, fixed_features)
             X_train = X_train.loc[:, selected_features]

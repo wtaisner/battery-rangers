@@ -124,5 +124,5 @@ def smape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     :param y_pred: Predictions.
     :return: Symmetric mean absolute percentage error.
     """
-    epsilon = 1e-10
-    return np.mean(2 * np.abs(y_pred - y_true) / (max(np.abs(y_true) + np.abs(y_pred), epsilon)))
+    epsilon = np.full(y_true.shape, 1e-10)
+    return np.mean(2 * np.abs(y_pred - y_true) / (np.maximum(np.abs(y_true) + np.abs(y_pred), epsilon)))

@@ -3,8 +3,10 @@ import logging
 from enum import Enum
 
 import pandas as pd
+from matplotlib import pyplot as plt
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
+from pymatgen.vis.structure_vtk import StructureVis
 
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
 
@@ -77,7 +79,11 @@ def analyse_symmetry_point_group(molecule: Molecule, translation_table_path: str
 
     if visualize:
         structure = molecule.get_boxed_structure(23, 23, 23)
-        visualize_structure(structure, show_polyhedron=False)
+        # visualize_structure(structure, show_polyhedron=False)
+        stvis = StructureVis(show_polyhedron=False)
+        stvis.set_structure(structure)
+        plt.show()
+        # stvis.write_image("./tmp/structure.png")
 
     return (
         symmetry_operations,

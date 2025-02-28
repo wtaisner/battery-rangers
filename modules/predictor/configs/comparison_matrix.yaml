@@ -3,9 +3,10 @@ target: 'capacity_max'
 num_splits: 4
 num_bins: 4
 random_state: 42
+oversampling: False
 metrics: ["pairwise_accuracy_score", "ndcg_score", "rmse", "mape"]
 models: ["knn", "lasso", "random_forest", "xgboost"]
-combo_name: 'all_datasets_all_features_sorted'
+combo_name: 'all_datasets_all_features_sorted_new'
 save_matrix_dir: '../../../results/comparison'
 data_dict:
   expert: 'data_experts1.csv'
@@ -25,24 +26,24 @@ features_dict:
   fp_topological: 'fingerprints_topological_256'
 dataset_combos: [
   ['expert'],
-#  ['expert', 'expert2'],
-#  ['expert', 'expert2', 'expert3'],
-#  ['expert', 'zhu', 'saad'],
-#  ['expert', 'zhu', 'saad', 'expert2'],
-#  ['expert', 'zhu', 'saad', 'expert2', 'expert3']
+  ['expert', 'expert2'],
+  ['expert', 'expert2', 'expert3'],
+  ['expert', 'zhu', 'saad'],
+  ['expert', 'zhu', 'saad', 'expert2'],
+  ['expert', 'zhu', 'saad', 'expert2', 'expert3']
 ]
 
 feature_combos: [
-#  ['custom', ['custom', 'dft', 'additive_groups', 'fp_ecfp', 'fp_maccs', 'fp_functional_groups', 'fp_estate', 'fp_layered', 'fp_topological']],
-#  ['custom', ['dft']],
-#  ['dft', ['dft', 'additive_groups', 'fp_ecfp', 'fp_maccs', 'fp_functional_groups', 'fp_estate', 'fp_layered', 'fp_topological']],
-#  ['additive_groups', ['additive_groups']],
-#  ['fp_ecfp', ['fp_ecfp']],
+  ['custom', ['custom', 'dft', 'additive_groups', 'fp_ecfp', 'fp_maccs', 'fp_functional_groups', 'fp_estate', 'fp_layered', 'fp_topological']],
+  ['custom', ['dft']],
+  ['dft', ['dft', 'additive_groups', 'fp_ecfp', 'fp_maccs', 'fp_functional_groups', 'fp_estate', 'fp_layered', 'fp_topological']],
+  ['additive_groups', ['additive_groups']],
+  ['fp_ecfp', ['fp_ecfp']],
   ['fp_maccs', ['fp_maccs']],
-#  ['fp_functional_groups', ['fp_functional_groups']],
-#  ['fp_estate', ['fp_estate']],
-#  ['fp_layered', ['fp_layered']],
-#  ['fp_topological', ['fp_topological']],
+  ['fp_functional_groups', ['fp_functional_groups']],
+  ['fp_estate', ['fp_estate']],
+  ['fp_layered', ['fp_layered']],
+  ['fp_topological', ['fp_topological']],
 ]
 
 cat_features_dict:

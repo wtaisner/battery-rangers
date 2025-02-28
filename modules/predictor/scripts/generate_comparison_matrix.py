@@ -2,7 +2,6 @@
 import os
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 import yaml
 
@@ -10,7 +9,7 @@ from modules.predictor.data.utils import combine_split, custom_data_kfold  # pyl
 from modules.predictor.training_and_evaluation.train_eval import CrossValidationPipeline  # pylint: disable=import-error
 
 if __name__ == "__main__":
-    CONFIG_PATH = "../configs/comparison_matrix.yaml"
+    CONFIG_PATH = "../configs/comparison_matrix_combined_all_fs.yaml"
     with open(CONFIG_PATH, encoding="UTF-8") as file:
         config = yaml.safe_load(file)
 
@@ -21,6 +20,10 @@ if __name__ == "__main__":
     COMBO_NAME = config["combo_name"]
     data_csvs = config["data_dict"]
     feature_dict = config["features_dict"]
+    oversampling = config["oversampling"]
+    feature_selection = config["feature_selection"]
+    feature_selection = (feature_selection, [])
+    print(oversampling, feature_selection)
 
     dataset_combos = config["dataset_combos"]
     feature_combos = config["feature_combos"]
@@ -46,6 +49,7 @@ if __name__ == "__main__":
 
     for datasets in dataset_combos:
         for combo in feature_combos:
+            print(datasets, combo)
             combo = list(set(combo))
 
             dataset_names = [data_csvs[dataset] for dataset in datasets]
@@ -54,8 +58,11 @@ if __name__ == "__main__":
             dfs = {}
             try:
                 for data_name, paths in dataset_paths.items():
-                    df = [pd.read_csv(data_path) for data_path in paths]
-                    df = pd.concat(df, axis=1).reset_index(drop=True)
+                    df_read = [pd.read_csv(data_path) for data_path in paths]
+                    df = df_read[0]
+                    for data in df_read[1:]:
+                        data = data.drop(columns=["capacity_max"])
+                        df = pd.merge(df, data, on="smiles", how="inner")
                     df.columns = df.columns.str.replace(r"[\[\]>]", "", regex=True)
                     df = df.loc[:, ~df.columns.duplicated()].sort_values(by="smiles").reset_index(drop=True)
                     dfs[data_name] = df
@@ -70,11 +77,15 @@ if __name__ == "__main__":
                     )
                 continue
 
-            if len(datasets) > 1:
-                df_rest = pd.concat([df for data_name, df in dfs.items() if data_name != "expert"], ignore_index=True).sort_values(by="smiles").reset_index(drop=True)
-            else:
-                df_rest = None  # pylint: disable=invalid-name
-            df_expert1 = dfs["expert"]
+            # if len(datasets) > 1:
+            #     df_rest = pd.concat([df for data_name, df in dfs.items() if data_name != "expert"], ignore_index=True).sort_values(by="smiles").reset_index(drop=True)
+            # else:
+            #     df_rest = None  # pylint: disable=invalid-name
+            # df_expert1 = dfs["expert"]
+            df_expert1 = pd.concat([df for data_name, df in dfs.items()], ignore_index=True).sort_values(by="smiles").reset_index(drop=True)
+            df_expert1.fillna(0, inplace=True)
+            df_rest = None
+            print(df_expert1[df_expert1.isnull().any(axis=1)])
 
             folds_experts1 = custom_data_kfold(df_expert1, df_expert1.loc[:, [target]], num_splits, num_bins, random_state)
             if df_rest is not None:
@@ -87,7 +98,7 @@ if __name__ == "__main__":
                 cat_features = cat_features_dict["custom"]
             else:
                 cat_features = []
-            bin_features = list(np.array([binary_features[c] for c in combo]).flatten())
+            bin_features = [item for sublist in [binary_features[c] for c in combo] for item in sublist]
             num_features = [c for c in df_all.columns if c not in ["smiles", target, *cat_features, *bin_features]]
 
             DATASET_NAME = "_".join(sorted(datasets))
@@ -102,7 +113,7 @@ if __name__ == "__main__":
             X_all = df_all.drop(columns=[target, "smiles"])
             y_all = df_all.loc[:, [target]]
 
-            cv = CrossValidationPipeline(X_all, y_all, num_features, cat_features, folds_all, metrics, SAVE_DIR, DATANAME, (True, "grid_search"), None, verbose=True)
+            cv = CrossValidationPipeline(X_all, y_all, num_features, cat_features, folds_all, metrics, SAVE_DIR, DATANAME, oversampling, False, (True, "grid_search"), feature_selection, verbose=True)
             results = cv.batch_train_and_eval(models)
             for key, value in results.items():
                 results_model = value
