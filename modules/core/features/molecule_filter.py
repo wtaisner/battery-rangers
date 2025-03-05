@@ -7,12 +7,12 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 
 from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
+from modules.core.features.filters.conjugation_filter import ConjugationFilter
 from modules.core.features.filters.flatness_filter import FlatnessFilter
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.filters.symmetry_filter import SymmetryFilter
-from modules.core.features.filters.xyz_pattern_filter import XYZPatternFilter
 
 # Set up the logger for the module
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
@@ -37,7 +37,7 @@ class MoleculeFilter:
                 PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
                 FlatnessFilter(),  # Filter that leaves molecules with a specific flatness.
                 StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
-                XYZPatternFilter(),  # Filter that leaves molecules without X-Y-Z patterns.
+                ConjugationFilter(),  # Filter that leaves molecules with a conjugation
             ]
         else:
             self.filters = filters
@@ -119,6 +119,7 @@ class MoleculeFilter:
         logging.info(f"Applying filters to {len(molecules)} molecules.")
         filter_failure_reasons: dict[str, list[str]] = {}  # Store failure reasons per molecule
         filter_total_times: dict[str, float] = {filter_operator.__class__.__name__: 0.0 for filter_operator in self.filters}  # Store total times per filter
+
         if isinstance(molecules[0], str):
             mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules]
             # Filter out None values and keep track of original SMILES
