@@ -2,7 +2,9 @@
 import argparse
 import os
 import shutil
+from ast import literal_eval
 
+import pandas as pd
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image
 from rdkit import Chem
@@ -21,10 +23,11 @@ def read_model_data(input_file: str) -> dict:
     Returns:
         dict: Dictionary of models and their SMILES strings.
     """
-    # TODO: Implement file reading and parsing logic
-    # Example return format:
-    print(input_file)
-    return {"Model_1": ["CCO", "CC(=O)O"], "Model_2": ["C1=CC=CC=C1", "CCN(CC)CC"]}
+    data = pd.read_csv(input_file)
+    data["smiles_after_filtering"] = data["smiles_after_filtering"].apply(literal_eval)
+    # change df to dict model_name: smiles_after_filtering
+    data = data.set_index("model_name")["smiles_after_filtering"].to_dict()
+    return data
 
 
 def generate_excel(model_data: dict, output_file: str, output_folder: str):

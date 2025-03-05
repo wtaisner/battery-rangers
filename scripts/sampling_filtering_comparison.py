@@ -63,16 +63,22 @@ def process_file(file: str | os.PathLike) -> dict:
     except:  # pylint: disable=bare-except
         smiles = pd.read_csv(file)["smiles"].drop_duplicates().values
 
-    smiles_filtered = molecule_filter.apply(smiles)
+    smiles_filtered, failure_reasons = molecule_filter.apply(smiles)
 
     logger.info(f"Finished processing file: {file.split('/')[-1]}.")
-    return {"filename": file.split("/")[-1], "num_total_molecules": len(smiles), "num_filtered_molecules": len(smiles_filtered), "smiles_after_filtering": smiles_filtered}
+    return {
+        "filename": file.split("/")[-1],
+        "num_total_molecules": len(smiles),
+        "num_filtered_molecules": len(smiles_filtered),
+        "smiles_after_filtering": smiles_filtered,
+        "failure_reasons": failure_reasons,
+    }
 
 
 def main(args: argparse.Namespace):
     """Run the main script."""
     # Dictionary to store results
-    result_dict = {"filenames": [], "num_total_molecules": [], "num_filtered_molecules": [], "smiles_after_filtering": []}
+    result_dict = {"filenames": [], "num_total_molecules": [], "num_filtered_molecules": [], "smiles_after_filtering": [], "failure_reasons": []}  # TODO: think how to handle this sensibly?
     # Get all files to evaluate
     files = glob(args.files)
     logger.info(f"Found {len(files)} files to evaluate.")

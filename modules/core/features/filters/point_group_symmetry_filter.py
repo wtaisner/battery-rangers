@@ -6,7 +6,6 @@ from pymatgen.core import Molecule
 from rdkit import Chem
 from rdkit.Chem import Mol
 from rdkit.Chem.rdDistGeom import EmbedMolecule
-from tqdm import tqdm
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import analyse_symmetry_point_group, translate_point_group_to_symmetry_description
@@ -29,7 +28,7 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         tmp_smiles = deepcopy(molecules)
         pymatgen_molecules = []
         bad_smiles = []
-        for sml in tqdm(tmp_smiles, total=len(tmp_smiles), desc="Getting pymatgen molecules"):
+        for sml in tmp_smiles:
             try:
                 pymatgen_molecules.append(self._rdkit_mol_to_pymatgen_molecule(sml))
             except Exception as e:  # pylint: disable=broad-exception-caught
@@ -37,7 +36,6 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
                 bad_smiles.append(sml)
                 continue
 
-        logger.debug(f"Pymatgen modules created: {len(pymatgen_molecules)} | Smiles that could not be converted: {len(bad_smiles)}")
         if len(pymatgen_molecules) != len(tmp_smiles):
             tmp_smiles = [x for x in tmp_smiles if x not in bad_smiles]
 
