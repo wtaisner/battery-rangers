@@ -1,51 +1,74 @@
-"""Data preparation script."""
+"""Data preparation script. Generating custom, dft, fingerprints and additive groups features."""
 import os
 
-from modules.predictor.data.dft_features import df_to_features_pyscf
+import pandas as pd
+import yaml
 
-# from modules.predictor.data.fingerprints import fingerprints_dataset
+from modules.predictor.data.custom_features import data_preprocessing_and_feature_engineering
+from modules.predictor.data.dft_features import df_to_features_pyscf
+from modules.predictor.data.fingerprints import fingerprints_dataset
+from modules.predictor.data.group_additivity import AdditiveGroups
 from modules.predictor.data.utils import data_preprocessing
 
-# from modules.predictor.data.custom_features import data_preprocessing_and_feature_engineering
-
-
 if __name__ == "__main__":
-    DATA_PATH = "../../../data/raw/"
-    SAVE_PATH = "../../../data/processed_selected_custom_features/"
-    SAVE_PATH_DFT = "../../../data/processed_dft_features/"
+    CONFIG_PATH = "../configs/data_preparation.yaml"
+    with open(CONFIG_PATH, encoding="UTF-8") as file:
+        config = yaml.safe_load(file)
 
-    TRANSLATION_TABLE_PATH = "../../../data/symmetries/symmetry_translation.csv"
+    root_dir, raw_data_dir, data_dict = config["root_dir"], config["raw_data_dir"], config["data_dict"]
+    data_path = os.path.join(root_dir, raw_data_dir)
 
-    DF_EXPERTS1_PATH = "data_experts1.csv"
-    DF_EXPERTS2_PATH = "data_experts2.csv"
-    DF_EXPERTS3_PATH = "data_experts3.csv"
-    DF_SAAD_PATH = "data_saad.csv"
-    DF_ZHU_PATH = "data_zhu.csv"
+    if config["custom_features"]:
+        config_custom_features = config["custom_features_params"]
+        translation_table_path = os.path.join(root_dir, config_custom_features["translation_table"])
+        save_path = os.path.join(root_dir, config_custom_features["dir"])
+        os.makedirs(save_path, exist_ok=True)
+        for data_type, data in data_dict.items():
+            print(data_type)
+            data_preprocessing_and_feature_engineering(os.path.join(data_path, data), data_type, translation_table_path, os.path.join(save_path, data), remove_unuseful=True)
 
-    fingerprint_dict = {
-        "ecfp": "../../../data/fingerprints_ecfp_features",
-        "maccs": "../../../data/fingerprints_maccs_features",
-        "rdkit": "../../../data/fingerprints_rdkit_features",
-    }
+    if config["dft_features"]:
+        config_dft_features = config["dft_features_params"]
+        save_path = os.path.join(root_dir, config_dft_features["dir"])
+        os.makedirs(save_path, exist_ok=True)
+        for data_type, data in data_dict.items():
+            print(f"{data_type}, dft")
+            df = data_preprocessing(os.path.join(data_path, data), data_type)
+            df = df_to_features_pyscf(df, "smiles", "capacity_max", functional=config_dft_features["functional"], n_jobs=config_dft_features["n_jobs"])
+            df.to_csv(os.path.join(save_path, data), index=False)
 
-    data_paths = [DF_EXPERTS3_PATH]  # [DF_EXPERTS1_PATH, DF_ZHU_PATH, DF_SAAD_PATH, DF_EXPERTS2_PATH, DF_EXPERTS3_PATH]
-    data_types = ["expert3"]  # ["expert", "zhu", "saad", "expert2", "expert3"]
+    if config["fingerprints"]:
+        config_fingerprints = config["fingerprints_types"]
+        for fingerprint, use in config_fingerprints.items():
+            if use:
+                settings = config["fingerprints_params"][fingerprint]
+                save_path = os.path.join(root_dir, settings["dir"])
+                os.makedirs(save_path, exist_ok=True)
+                kwargs = settings["kwargs"] if "kwargs" in settings else {}
+                for data_type, data in data_dict.items():
+                    print(f"{data_type}, {fingerprint}")
+                    df = data_preprocessing(os.path.join(data_path, data), data_type)
+                    df = fingerprints_dataset(df, "smiles", "capacity_max", fingerprint, kwargs=kwargs)
+                    df.to_csv(os.path.join(save_path, data), index=False)
 
-    # for df_path, data_type in zip(data_paths, data_types):
-    #     print(data_type)
-    #     data_preprocessing_and_feature_engineering(os.path.join(DATA_PATH, df_path), data_type, TRANSLATION_TABLE_PATH, os.path.join(SAVE_PATH, df_path), remove_unuseful=True)
+    if config["additive_groups"]:
+        config_additive_groups = config["additive_groups_params"]
+        save_path = os.path.join(root_dir, config_additive_groups["dir"])
+        os.makedirs(save_path, exist_ok=True)
+        training_set = config_additive_groups["training_set"]
+        training_df = []
+        for data_type in training_set:
+            data = data_dict[data_type]
+            df = data_preprocessing(os.path.join(data_path, data), data_type)
+            training_df.append(df)
+        training_df = pd.concat(training_df)
+        molecules = training_df["smiles"].tolist()
 
-    for df_path, data_type in zip(data_paths, data_types):
-        print(f"{data_type}, dft")
-        df = data_preprocessing(os.path.join(DATA_PATH, df_path), data_type)
-        df = df_to_features_pyscf(df, "smiles", "capacity_max", functional="pbe")
-        df.to_csv(os.path.join(SAVE_PATH_DFT, df_path), index=False)
+        ag = AdditiveGroups(molecules)
 
-    # for df_path, data_type in zip(data_paths, data_types):
-    #     for fingerprint, fingerprint_path in fingerprint_dict.items():
-    #         print(f"{data_type}, {fingerprint}")
-    #         if not os.path.exists(fingerprint_path):
-    #             os.makedirs(fingerprint_path)
-    #         df = data_preprocessing(os.path.join(DATA_PATH, df_path), data_type)
-    #         df = fingerprints_dataset(df, "smiles", "capacity_max", fingerprint, save_path=fingerprint_path, kwargs={"radius": 6, "size": 128})
-    #         df.to_csv(os.path.join(fingerprint_path, df_path), index=False)
+        for data_type, data in data_dict.items():
+            print(f"{data_type}, additive groups")
+            df = data_preprocessing(os.path.join(data_path, data), data_type)
+            _, df_groups, _ = ag.generate_groups(df["smiles"].tolist())
+            df_groups["capacity_max"] = df["capacity_max"]
+            df_groups.to_csv(os.path.join(save_path, data), index=False)

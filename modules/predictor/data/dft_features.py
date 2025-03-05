@@ -163,19 +163,20 @@ def smiles_to_features_pyscf(smiles: str, target: float, target_col: str, functi
         }
 
 
-def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, functional: str = "B3LYP") -> pd.DataFrame:
+def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, functional: str = "B3LYP", n_jobs: int = 8) -> pd.DataFrame:
     """
     Takes a dataframe with smiles strings and generates quantum features using PySCF.
     :param df: dataframe with smiles and target columns.
     :param smiles_col: name of the column with smiles.
     :param target_col: name of the target column.
     :param functional: Exchange-correlation functional (default: "B3LYP").
+    :param n_jobs: number of parallel jobs.
     :return: dataframe with generated quantum features.
     """
     smiles_list = df[smiles_col].tolist()
     target_list = df[target_col].tolist()
 
-    feature_list = Parallel(n_jobs=8)(delayed(smiles_to_features_pyscf)(smiles, target, target_col, functional) for smiles, target in zip(smiles_list, target_list))
+    feature_list = Parallel(n_jobs=n_jobs)(delayed(smiles_to_features_pyscf)(smiles, target, target_col, functional) for smiles, target in zip(smiles_list, target_list))
 
     df_features = pd.DataFrame(feature_list)
     return df_features
@@ -193,8 +194,8 @@ def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
     stats = {
         "mean": np.mean,
         "std": np.std,
-        # 'min': np.min,
-        # 'max': np.max,
+        "min": np.min,
+        "max": np.max,
     }
 
     # mo_energy by occ
@@ -203,7 +204,7 @@ def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
     mo_energy.sort(key=lambda x: int(x.split("_")[-1]))
     mo_occ.sort(key=lambda x: int(x.split("_")[-1]))
     unique_occ_values = pd.concat([df[col] for col in mo_occ]).dropna().unique()
-    print(unique_occ_values)
+    # print(unique_occ_values)
 
     for occ_value in unique_occ_values:
         for stat in stats:
@@ -219,7 +220,7 @@ def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
     # charge by atom
     charge = [name for name in col_names if name.startswith("charge")]
     atoms = np.unique([re.split(r"(\d+)", name)[-1] for name in charge])
-    print(atoms)
+    # print(atoms)
     for atom in atoms:
         for stat in stats:
             df[f"charge_{stat}_{atom}"] = 0.0

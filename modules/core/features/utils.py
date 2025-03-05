@@ -6,7 +6,7 @@ import pymatgen.core
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.vis.structure_vtk import StructureVis
 from rdkit import Chem
-from rdkit.Chem import AllChem, Mol, MolToXYZFile, rdDepictor, rdDistGeom
+from rdkit.Chem import AllChem, Mol, MolToXYZFile, rdDepictor
 
 from modules.core.features.preprocessing import canon_smiles
 
@@ -29,16 +29,16 @@ def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = ".
         rdkit_mol = molecule
     rdkit_mol = Chem.AddHs(rdkit_mol)
     rdDepictor.Compute2DCoords(rdkit_mol, sampleSeed=42)
-    a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500)
-    if a < 0:
-        a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500, useRandomCoords=True)
-        if a < 0:
-            return None
-        a = 3
-    if a == 3:
-        rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123, useRandomCoords=True)
-    else:
-        rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123)
+    # a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500)
+    # if a < 0:
+    #     a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500, useRandomCoords=True)
+    #     if a < 0:
+    #         return None
+    #     a = 3
+    # if a == 3:
+    #     rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123, useRandomCoords=True)
+    # else:
+    #     rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123)
 
     save_dir = f"{directory}/rdkit_mol.xyz"
 

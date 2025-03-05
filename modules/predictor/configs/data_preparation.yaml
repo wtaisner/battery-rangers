@@ -1,0 +1,66 @@
+root_dir: '../../../data'
+raw_data_dir: 'raw'
+data_dict:
+  expert: 'data_experts1.csv'
+  zhu: 'data_zhu.csv'
+  saad: 'data_saad.csv'
+  expert2: 'data_experts2.csv'
+  expert3: 'data_experts3.csv'
+
+
+custom_features: False
+custom_features_params:
+  dir: 'processed_selected_custom_features'
+  translation_table: 'symmetries/symmetry_translation.csv'
+
+
+dft_features: False
+dft_features_params:
+  dir: 'processed_dft_features'
+  functional: 'pbe'
+  n_jobs: 8
+
+
+fingerprints: True
+fingerprints_types:
+  ecfp: True
+  maccs: False
+  functional_groups: False
+  estate: False
+  layered: True
+  topological: True
+fingerprints_params:
+  ecfp:
+    dir: 'fingerprints_ecfp_256'
+    kwargs:
+        radius: 2
+        size: 256
+        count: False
+  maccs:
+      dir: 'fingerprints_maccs'
+      kwargs:
+        count: False
+  functional_groups:
+      dir: 'fingerprints_functional_groups'
+      kwargs:
+          count: False
+  estate:
+      dir: 'fingerprints_estate'
+      kwargs:
+          variant: 'sum'
+  layered:
+      dir: 'fingerprints_layered_256'
+      kwargs:
+          size: 256
+          linear_paths_only: False
+  topological:
+      dir: 'fingerprints_topological_256'
+      kwargs:
+          size: 256
+          torsion_atoms: 4
+          count: False
+
+additive_groups: True
+additive_groups_params:
+  dir: 'additive_groups'
+  training_set: ['expert', 'expert2', 'zhu', 'saad', 'expert3']
