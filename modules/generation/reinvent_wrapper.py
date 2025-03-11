@@ -68,8 +68,10 @@ class ReinventRunner:
 
 
 if __name__ == "__main__":
-    CONFIG_FILE = "modules/REINVENT4/configs/toml/sampling.toml"
-    runner = ReinventRunner(CONFIG_FILE)
-
+    # CONFIG_FILE = "configs/reinvent/transfer_learning.toml"
+    # runner = ReinventRunner(CONFIG_FILE)
     # runner.run_transfer_learning("outputs/transfer_learning")
+
+    CONFIG_FILE = "configs/reinvent/sampling.toml"
+    runner = ReinventRunner(CONFIG_FILE)
     runner.run_sampling("outputs/sampling")

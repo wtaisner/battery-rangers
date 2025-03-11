@@ -11,18 +11,19 @@ json_out_config = "json_transfer_learning.json"  # write this TOML to JSON
 
 [parameters]
 
-num_epochs = 3  # number of steps to run
-save_every_n_epochs = 3  # save checkpoint model file very N steps
-batch_size = 50
-num_refs = 100  # number of reference molecules randomly chosen for similarity
+num_epochs = 50  # number of steps to run
+save_every_n_epochs = 50  # save checkpoint model file very N steps
+batch_size = 8
+num_refs = 4  # number of reference molecules randomly chosen for similarity
                 # set this to zero for large datasets (>200 molecules)!
 sample_batch_size = 100  # number of sampled molecules to compute sample loss
+
 # Uncomment one of the comment blocks below.  Each generator needs a model
 # file and possibly a SMILES file with seed structures.
 
 ## Reinvent
 input_model_file = "modules/REINVENT4/priors/reinvent.prior"
-smiles_file = "compounds.smi"  # read 1st column
+smiles_file = "data/raw/experts_merged.smi"  # read 1st column
 output_model_file = "TL_reinvent.model"
 #validation_smiles_file = "TL_reinvent_100.smi"
 
