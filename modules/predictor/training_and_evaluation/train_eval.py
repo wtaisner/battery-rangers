@@ -60,7 +60,7 @@ class CrossValidationPipeline:
             self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features)
         else:
             self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features, cat_features=self.categorical_features)
-        self.X = X
+        # self.X = X
         self.oversampling = oversampling
         self.y = y
         self.folds = folds

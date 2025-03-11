@@ -4,7 +4,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import Draw, Mol, rdDepictor, rdDistGeom
+from rdkit.Chem import Mol, rdDepictor, rdDistGeom
 from sklearn.linear_model import LinearRegression
 
 from modules.core.features.preprocessing import canon_smiles
@@ -31,7 +31,6 @@ def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> C
         if a < 0:
             return None
     rdDistGeom.EmbedMultipleConfs(mol, sample_size, randomSeed=random_seed)
-
     return mol
 
 
@@ -141,10 +140,10 @@ if __name__ == "__main__":
 
     # Example usage
     # smiles = 'Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1'
-    SMILES = "N#Cc1c(F)c(F)c(C#N)c(F)c1F"
+    SMILES = "FC1=C(F)C(C(O[Co]([OH2])([OH2])[N]2(C3)C[N@@](C[N@@]3C4)C[N@@]4C2)=O)=C(F)C(F)=C1C([O])=O"
 
     f = get_flatness_smiles(SMILES, plot_visualization=True, sample_size=1)
     logging.info(f"Flatness: {f}")
 
     mol = Chem.MolFromSmiles(SMILES)
-    Draw.MolToFile(mol, "mol.png")
+    # Draw.MolToFile(mol, "mol.png")
