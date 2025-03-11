@@ -13,9 +13,7 @@ class SMARTSFilter(GenericMoleculeFilter):
 
     def __init__(self, smarts: list[str] | None = None):
         if smarts is None:
-            self.smarts = [
-                "C#N",
-            ]
+            self.smarts = ["C#N", "[NH2]"]
         else:
             self.smarts = smarts
 

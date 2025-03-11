@@ -40,6 +40,14 @@ def test_entire_pipeline(smiles, expected):
         ),
         ([], []),
         (["N#Cc1ccnc(C#N)n1", "CCC", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
+        (
+            [
+                "Nc1nc(N)nc(/N=C/N2CCN(/C=N/c3nc(N)nc(N)n3)CC2)n1",
+                "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N",
+                "Brc1ccc(C(c2ccc(Br)cc2)C(c2ccc(Br)cc2)c2ccc(-c3ccc(-c4ccc5c(c4)Sc4cc(Br)ccc4S5)cc3)cc2)cc1",
+            ],  # NH2 + one random without any substructure
+            ["Nc1nc(N)nc(/N=C/N2CCN(/C=N/c3nc(N)nc(N)n3)CC2)n1", "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N"],
+        ),
     ],
 )
 def test_smarts_filter(smiles, expected):
