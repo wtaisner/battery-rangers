@@ -2,11 +2,12 @@
 import pytest
 from rdkit import Chem
 
-# pylint: disable=import-error
-from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
 from modules.core.features.filters.conjugation_filter import ConjugationFilter
 from modules.core.features.filters.flatness_filter import FlatnessFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+
+# pylint: disable=import-error
+from modules.core.features.filters.smarts_filter import SMARTSFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.filters.symmetry_filter import SymmetryFilter
 from modules.core.features.molecule_filter import MoleculeFilter
@@ -41,10 +42,10 @@ def test_entire_pipeline(smiles, expected):
         (["N#Cc1ccnc(C#N)n1", "CCC", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
     ],
 )
-def test_c_n_triple_bonds_filter(smiles, expected):
-    """Test the CNTripleBondsFilter"""
+def test_smarts_filter(smiles, expected):
+    """Test the SMARTSFilter"""
     smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
-    molecule_filter = CNTripleBondsFilter()
+    molecule_filter = SMARTSFilter()
     filtered = molecule_filter.apply(smiles)
     assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
 
