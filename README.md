@@ -4,9 +4,21 @@
 
 ## Setup
 
+### 0. Clone the repository
+Clone the repository with `git clone --recurse-submodules` in order to also clone the submodules. Use `
+git submodule update --init --recursive` if you did not clone with submodule. Finally, use `git submodule update` to update the submodules.
+
+#### [REINVENT4](https://github.com/MolecularAI/REINVENT4)
+Requires additional setup, follow the instructions in their README. Everything should be installed as a separate venv (i.e. `.reinvnet_venv`) with `uv`. In general, all command from the README should simply be preceeded by `uv`, i.e. `uv pip install ...`.
+
 ### 1. Python environment
+
+#### Mamba/Conda
 Using either `conda` or `mamba`, run `mamba env create -f environment.yaml` to create an environment.
 Use `mamba activate battery` to activate it in the terminal.
+
+#### UV
+Assuming you have `uv` installed, you can run `uv sync --all-extras --build` to install the environment.
 
 ### 2. [pre-commit](https://pre-commit.com)
 Install pre-commit hooks: `pre-commit install`. From now on, it will run check automatically on `git commit`.

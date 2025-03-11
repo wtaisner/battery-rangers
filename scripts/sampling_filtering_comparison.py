@@ -96,8 +96,8 @@ def main(args: argparse.Namespace):
         result_dict["smiles_after_filtering"].append(result["smiles_after_filtering"])
         all_smiles_that_passed |= set(result["smiles_after_filtering"])
 
-    pd.DataFrame(result_dict).to_csv(args.output_comparison, index=False)
     pd.DataFrame({"smiles": list(all_smiles_that_passed)}).to_csv(args.output_filtered, index=False)
+    pd.DataFrame(result_dict).to_csv(args.output_comparison, index=False)
 
 
 if __name__ == "__main__":

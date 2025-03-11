@@ -8,7 +8,6 @@ from rdkit.Chem import Mol
 
 from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
 from modules.core.features.filters.conjugation_filter import ConjugationFilter
-from modules.core.features.filters.flatness_filter import FlatnessFilter
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
@@ -35,7 +34,7 @@ class MoleculeFilter:
                 SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
                 CNTripleBondsFilter(),  # Filter that leaves molecules with triple bonds.
                 PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
-                FlatnessFilter(),  # Filter that leaves molecules with a specific flatness.
+                # FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
                 StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
                 ConjugationFilter(),  # Filter that leaves molecules with a conjugation
             ]

@@ -1,6 +1,5 @@
 """Filter that leaves molecules with flatness."""
 from rdkit.Chem import Mol
-from tqdm import tqdm
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.flatness import get_flatness_mol
@@ -19,7 +18,7 @@ class FlatnessFilter(GenericMoleculeFilter):
             list[Mol]: The list of RDKit molecules that passed the filter.
         """
         flatness = []
-        for mol in tqdm(molecules, total=len(molecules), desc="Calculating flatness"):
+        for mol in molecules:
             f = get_flatness_mol(mol, plot_visualization=False, sample_size=20)
             flatness.append((f, mol))
         flatness = sorted(flatness, key=lambda x: x[0])
