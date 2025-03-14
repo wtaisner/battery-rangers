@@ -2,11 +2,12 @@
 import pytest
 from rdkit import Chem
 
-# pylint: disable=import-error
-from modules.core.features.filters.c_n_triple_bonds_filter import CNTripleBondsFilter
 from modules.core.features.filters.conjugation_filter import ConjugationFilter
 from modules.core.features.filters.flatness_filter import FlatnessFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+
+# pylint: disable=import-error
+from modules.core.features.filters.smarts_filter import SMARTSFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.filters.symmetry_filter import SymmetryFilter
 from modules.core.features.molecule_filter import MoleculeFilter
@@ -39,12 +40,20 @@ def test_entire_pipeline(smiles, expected):
         ),
         ([], []),
         (["N#Cc1ccnc(C#N)n1", "CCC", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
+        (
+            [
+                "Nc1nc(N)nc(/N=C/N2CCN(/C=N/c3nc(N)nc(N)n3)CC2)n1",
+                "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N",
+                "Brc1ccc(C(c2ccc(Br)cc2)C(c2ccc(Br)cc2)c2ccc(-c3ccc(-c4ccc5c(c4)Sc4cc(Br)ccc4S5)cc3)cc2)cc1",
+            ],  # NH2 + one random without any substructure
+            ["Nc1nc(N)nc(/N=C/N2CCN(/C=N/c3nc(N)nc(N)n3)CC2)n1", "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N"],
+        ),
     ],
 )
-def test_c_n_triple_bonds_filter(smiles, expected):
-    """Test the CNTripleBondsFilter"""
+def test_smarts_filter(smiles, expected):
+    """Test the SMARTSFilter"""
     smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
-    molecule_filter = CNTripleBondsFilter()
+    molecule_filter = SMARTSFilter()
     filtered = molecule_filter.apply(smiles)
     assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
 

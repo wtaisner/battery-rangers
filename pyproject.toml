@@ -5,6 +5,7 @@ description = "A repository for molecule machine learning for batteries."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "accelerate>=1.5.1",
     "deepchem>=2.8.0",
     "diffusers>=0.32.2",
     "jupyter>=1.1.1",
@@ -21,9 +22,11 @@ dependencies = [
     "scikit-learn>=1.6.1",
     "scikit-optimize>=0.10.2",
     "seaborn>=0.13.2",
+    "selfies>=2.2.0",
     "tomlkit>=0.13.2",
     "torch>=2.5.1",
     "torchvision>=0.20.1",
+    "transformers>=4.49.0",
     "vtk>=9.4.1",
     "xgboost>=2.1.3",
 ]
