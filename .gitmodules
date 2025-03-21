@@ -1,3 +1,6 @@
 [submodule "modules/REINVENT4"]
 	path = modules/REINVENT4
 	url = https://github.com/MolecularAI/REINVENT4.git
+[submodule "modules/Mol-AIR"]
+	path = modules/Mol-AIR
+	url = git@github.com:wtaisner/Mol-AIR.git
