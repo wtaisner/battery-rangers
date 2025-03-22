@@ -4,7 +4,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import Mol, rdDepictor, rdDistGeom
+from rdkit.Chem import Mol, rdDistGeom
 from sklearn.linear_model import LinearRegression
 
 from modules.core.features.preprocessing import canon_smiles
@@ -22,15 +22,11 @@ def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> C
     Returns:
         The embedded molecule.
     """
+    random_coords = mol.GetNumAtoms() > 90 or mol.GetNumBonds() > 100  # rule of thumb, obtained from data
+
     mol = Chem.AddHs(mol)
 
-    rdDepictor.Compute2DCoords(mol)
-    a = rdDistGeom.EmbedMolecule(mol, randomSeed=random_seed, maxAttempts=500)
-    if a < 0:
-        a = rdDistGeom.EmbedMolecule(mol, randomSeed=random_seed, maxAttempts=500, useRandomCoords=True)
-        if a < 0:
-            return None
-    rdDistGeom.EmbedMultipleConfs(mol, sample_size, randomSeed=random_seed)
+    rdDistGeom.EmbedMultipleConfs(mol, sample_size, randomSeed=random_seed, numThreads=-1, useRandomCoords=random_coords)
     return mol
 
 
