@@ -167,3 +167,7 @@ tmp/
 /.reinvent_venv/
 /outputs/
 /results/
+
+# exclude all chembl related files
+/chembl_35/
+chembl_*
