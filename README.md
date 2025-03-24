@@ -11,6 +11,9 @@ git submodule update --init --recursive` if you did not clone with submodule. Fi
 #### [REINVENT4](https://github.com/MolecularAI/REINVENT4)
 Requires additional setup, follow the instructions in their README. Everything should be installed as a separate venv (i.e. `.reinvnet_venv`) with `uv`. In general, all command from the README should simply be preceeded by `uv`, i.e. `uv pip install ...`.
 
+#### [Mol-AIR](https://github.com/wtaisner/Mol-AIR)
+Setup is already done with `uv`.
+
 ### 1. Python environment
 
 #### Mamba/Conda
