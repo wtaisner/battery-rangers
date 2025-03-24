@@ -14,7 +14,15 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 
 
 class PointGroupSymmetryFilter(GenericMoleculeFilter):
-    """Filter that leaves molecules with a specific point group symmetry."""
+    """Filter that leaves molecules with a specific point group symmetry.
+
+    Args:
+        translation_table_path (str): Path to the translation table for symmetry analysis. Defaults to "data/symmetries/symmetry_translation.csv".
+    """
+
+    def __init__(self, translation_table_path: str = "data/symmetries/symmetry_translation.csv"):
+        super().__init__()
+        self.translation_table_path = translation_table_path
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
@@ -43,8 +51,7 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         both_symmetrical_smiles = list(set(molecules_copy).intersection(set(point_group_symmetrical_smiles)))
         return both_symmetrical_smiles
 
-    @staticmethod
-    def _point_group_symmetry(pymatgen_molecules: list[Molecule], smiles_lst: list[str], translation_table_path: str = "data/symmetries/symmetry_translation.csv") -> list[str]:
+    def _point_group_symmetry(self, pymatgen_molecules: list[Molecule], smiles_lst: list[str]) -> list[str]:
         """
         Filters out SMILES strings corresponding to molecules that do not exhibit
         a point group symmetry, based on pymatgen analysis.
@@ -59,8 +66,8 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         pointgroup_symmetrical = []
 
         for i, mol in enumerate(pymatgen_molecules):
-            _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path=translation_table_path)
-            symm = translate_point_group_to_symmetry_description(pointgroup, translation_table_path=translation_table_path)
+            _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path=self.translation_table_path)
+            symm = translate_point_group_to_symmetry_description(pointgroup, translation_table_path=self.translation_table_path)
 
             if not symm.startswith("no"):  # Skip molecules with no symmetry
                 pointgroup_symmetrical.append(smiles_lst[i])

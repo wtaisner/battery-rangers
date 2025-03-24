@@ -31,12 +31,12 @@ class SymmetryFilter(GenericMoleculeFilter):
         mol_graphs = [get_graph_from_molecule(mol) for mol in molecules]
         symmetrical = []
         for i, mol in enumerate(mol_graphs):
-            s = self._check_any_symmetry(mol)
+            s = self.check_any_symmetry(mol)
             if s:
                 symmetrical.append(molecules[i])
         return symmetrical
 
-    def _check_any_symmetry(self, graph: nx.Graph) -> bool:
+    def check_any_symmetry(self, graph: nx.Graph) -> bool:
         """
         Check all symmetries available and return if any of them can be satisfied
 

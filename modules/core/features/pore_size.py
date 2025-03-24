@@ -1,7 +1,7 @@
 """Pore size calculation functions."""
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, rdDepictor
 
 
 def calculate_repeating_unit_length(smiles: str, random_seed: int = 42) -> float | None:
@@ -74,6 +74,46 @@ def sanity_check_with_experts() -> None:
     pore_diameter_2cnpp = calculate_hexagonal_pore_diameter(smiles_2cnpp)
     print(f"Pore diameter for Terephtalonitrile {pore_diameter_terephtalonitrile}")
     print(f"Pore diameter for 2CNPP {pore_diameter_2cnpp}")
+
+
+# TODO: Delete this function after the target one is implemented.
+def get_furthest_atom_id(mol, atom_indices, atom_name=None):
+    """Find atom index furthest from the molecular center."""
+    conf = mol.GetConformer(0)
+    if atom_name:
+        atom_ids_with_symbol = [a for a in atom_indices if mol.GetAtomWithIdx(a).GetSymbol() == atom_name]
+        positions = np.array([conf.GetAtomPosition(idx) for idx in atom_indices if mol.GetAtomWithIdx(idx).GetSymbol() == atom_name])
+        # Compute distances from center and find the atom furthest away
+        distances = np.linalg.norm(positions, axis=1)
+        max_dist_index = np.argmax(distances)
+
+        return atom_ids_with_symbol[max_dist_index]
+    positions = np.array([conf.GetAtomPosition(idx) for idx in atom_indices])
+    distances = np.linalg.norm(positions, axis=1)
+    max_dist_index = np.argmax(distances)
+
+    return atom_indices[max_dist_index]
+
+
+# TODO: Delete this function after the target one is implemented.
+def estimate_pore_size(sml: str) -> float:
+    """Temporary method until a target one is implemented"""
+    molecule = Chem.MolFromSmiles(sml, sanitize=True)
+    molecule = Chem.AddHs(molecule)
+    rdDepictor.Compute2DCoords(molecule, sampleSeed=42)
+
+    conf = molecule.GetConformer(0)
+
+    match = list(range(0, molecule.GetNumAtoms()))
+    furthest_atom_idx = get_furthest_atom_id(molecule, match)
+
+    pos_j = np.array(conf.GetAtomPosition(furthest_atom_idx))
+
+    # Calculate the distance between the two points
+    distance = np.linalg.norm(np.array([0, 0, 0]) - pos_j)
+    distance = distance * 6 / np.pi / 10
+
+    return distance
 
 
 if __name__ == "__main__":
