@@ -78,7 +78,7 @@ class CrossValidationPipeline:
         """
         Preprocess the data.
         :param num_features: numerical features.
-        :param cat_features: categorical features
+        :param cat_features: categorical features.
         :param X_train: training data.
         :param X_test: test data.
         :return: preprocessed data.
