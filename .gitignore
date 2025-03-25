@@ -171,3 +171,7 @@ tmp/
 # exclude all chembl related files
 /chembl_35/
 chembl_*
+
+*.out
+
+wandb/
