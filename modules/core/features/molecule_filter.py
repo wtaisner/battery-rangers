@@ -11,7 +11,6 @@ from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
 from modules.core.features.filters.smarts_filter import SMARTSFilter
 from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
-from modules.core.features.filters.symmetry_filter import SymmetryFilter
 
 # Set up the logger for the module
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
@@ -31,7 +30,7 @@ class MoleculeFilter:
         """
         if filters is None:
             self.filters = [
-                SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
+                # SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
                 SMARTSFilter(),  # Filter that leaves molecules with triple bonds.
                 PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
                 # FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
