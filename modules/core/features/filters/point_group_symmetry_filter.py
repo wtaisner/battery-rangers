@@ -18,11 +18,27 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
 
     Args:
         translation_table_path (str): Path to the translation table for symmetry analysis. Defaults to "data/symmetries/symmetry_translation.csv".
+        allowed_symmetries (set[str], optional): Set of allowed symmetries. If not set, defaults to predefined symmetries.
     """
 
-    def __init__(self, translation_table_path: str = "data/symmetries/symmetry_translation.csv"):
+    def __init__(self, translation_table_path: str = "data/symmetries/symmetry_translation.csv", allowed_symmetries: set[str] | None = None):
         super().__init__()
         self.translation_table_path = translation_table_path
+
+        if allowed_symmetries is None:
+            self.allowed_symmetries = {
+                "C3",
+                "C3h",
+                "C3v",
+                "C4v",
+                "D6h",
+                "D3h",
+                "D4h",
+                "D3d",
+                "D4d",
+            }
+        else:
+            self.allowed_symmetries = allowed_symmetries
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
@@ -69,7 +85,7 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
             _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path=self.translation_table_path)
             symm = translate_point_group_to_symmetry_description(pointgroup, translation_table_path=self.translation_table_path)
 
-            if not symm.startswith("no"):  # Skip molecules with no symmetry
+            if symm in self.allowed_symmetries:
                 pointgroup_symmetrical.append(smiles_lst[i])
 
         return pointgroup_symmetrical
