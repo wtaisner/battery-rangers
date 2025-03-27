@@ -98,7 +98,12 @@ def get_furthest_atom_id(mol, atom_indices, atom_name=None):
 # TODO: Delete this function after the target one is implemented.
 def estimate_pore_size(sml: str) -> float:
     """Temporary method until a target one is implemented"""
-    molecule = Chem.MolFromSmiles(sml, sanitize=True)
+    if isinstance(sml, str):
+        molecule = Chem.MolFromSmiles(sml, sanitize=True)
+    elif isinstance(sml, Chem.Mol):
+        molecule = sml
+    else:
+        raise ValueError("Invalid input. Please provide a SMILES string or an RDKit molecule object.")
     molecule = Chem.AddHs(molecule)
     rdDepictor.Compute2DCoords(molecule, sampleSeed=42)
 

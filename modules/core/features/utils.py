@@ -50,7 +50,7 @@ def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = ".
     return save_dir
 
 
-def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = False, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
+def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = True, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
     """
     Convert a SMILES string to a pymatgen Molecule object.
 
