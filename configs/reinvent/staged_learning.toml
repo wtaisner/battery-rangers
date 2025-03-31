@@ -8,10 +8,10 @@
 
 
 run_type = "staged_learning"
-#device = "cuda:0"  # set torch device e.g. "cpu"
-device = "cpu"
-tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
-json_out_config = "_staged_learning.json"  # write this TOML to JSON
+device = "cuda:0"  # set torch device e.g. "cpu"
+#device = "cpu"
+tb_logdir = "outputs/staged_learning/tensorboard"  # name of the TensorBoard logging directory
+json_out_config = "outputs/staged_learning/_staged_learning.json"  # write this TOML to JSON
 
 [parameters]
 
@@ -23,18 +23,18 @@ json_out_config = "_staged_learning.json"  # write this TOML to JSON
 summary_csv_prefix = "staged_learning"  # prefix for the CSV file
 use_checkpoint = false  # if true read diversity filter from agent_file
 purge_memories = false  # if true purge all diversity filter memories after each stage
-smiles_file = "data/raw/experts_merged.smi"
+#smiles_file = "data/raw/experts_merged.smi"
 
 ## Reinvent
-prior_file = "modules/REINVENT4/priors/reinvent.prior"
-agent_file = "modules/REINVENT4/priors/reinvent.prior"
+#prior_file = "modules/REINVENT4/priors/reinvent.prior"
+#agent_file = "modules/REINVENT4/priors/reinvent.prior"
 
 # TODO: use fine-tuned model:
-# prior_file = "outputs/transfer_learning/202503110949/tl.model"
-# agent_file = "outputs/transfer_learning/202503110949/tl.model"
+ prior_file = "outputs/transfer_learning/202503110949/tl.model"
+ agent_file = "outputs/transfer_learning/202503110949/tl.model"
 
 ##ISIM
-#tb_isim = false # if true track isim value of smilies across training epochs in tensorboard
+tb_isim = true # if true track isim value of smilies across training epochs in tensorboard
 
 ## LibInvent
 #prior_file = "priors/libinvent.prior"
@@ -60,7 +60,7 @@ agent_file = "modules/REINVENT4/priors/reinvent.prior"
 #sample_strategy = "multinomial"  # multinomial or beamsearch (deterministic)
 #distance_threshold = 100
 
-batch_size = 64          # network
+batch_size = 128          # network
 
 unique_sequences = true  # if true remove all duplicates raw sequences in each step
 # only here for backward compatibility
@@ -88,7 +88,7 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 # Reinvent only: guide RL in the initial phase
 #[inception]  # optional, comment sectionout or remove if unneeded
 
-#smiles_file = "sampled.smi"  # "good" SMILES for guidance
+#smiles_file = "data/raw/experts_merged.smi"  # "good" SMILES for guidance
 #memory_size = 100  # number of total SMILES held in memory
 #sample_size = 10  # number of SMILES randomly chosen each epoch
 
@@ -97,12 +97,12 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 ### Note that stages must always be a list i.e. double brackets
 [[stage]]
 
-chkpt_file = 'test1.chkpt'  # name of the checkpoint file, can be reused as agent
+chkpt_file = 'outputs/staged_learning/rl_from_finetuned.chkpt'  # name of the checkpoint file, can be reused as agent
 
 termination = "simple"  # termination criterion fot this stage
 max_score = 1.0  # terminate if this total score is exceeded
 min_steps = 25  # run for at least this number of steps
-max_steps = 100  # terminate entire run when exceeded
+max_steps = 200  # terminate entire run when exceeded
 
 # Optionally, a DF can be set for each stage but note that the global DF
 # section above will always overwrite the stage section and you need to
@@ -119,7 +119,7 @@ type = "geometric_mean"  # aggregation function
 [stage.scoring.component.BatteryProperties]
 
 [[stage.scoring.component.BatteryProperties.endpoint]]
-#known_smiles_path = "None"  # path to known SMILES file
+known_smiles_path = "data/raw/experts_merged.smi"  # path to known SMILES file
 
 ## Custom alerts if used in a custom_product filter out unwanted groups
 #[stage.scoring.component.custom_alerts]
