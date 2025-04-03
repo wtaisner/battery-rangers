@@ -1,5 +1,4 @@
 # REINVENT4 TOML input example for sampling
-#
 run_type = "sampling"
 device = "cuda:0"  # set torch device e.g. "cpu"
 json_out_config = "outputs/sampling/_sampling.json"  # write this TOML to JSON
@@ -11,7 +10,8 @@ json_out_config = "outputs/sampling/_sampling.json"  # write this TOML to JSON
 
 ## Reinvent: de novo sampling
 #model_file = "outputs/transfer_learning/202503110949/tl.model" # fine-tuned only
-model_file = "outputs/staged_learning/rl_from_finetuned.chkpt" # only staged learning
+#model_file = "outputs/staged_learning/rl_from_finetuned_with_cs_symmetry.chkpt" #
+model_file = "outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt" #
 
 ## LibInvent: find R-groups for the given scaffolds
 #model_file = "priors/libinvent.prior"
@@ -35,7 +35,8 @@ model_file = "outputs/staged_learning/rl_from_finetuned.chkpt" # only staged lea
 #temperature = 1.0 # temperature in multinomial sampling
 #tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
 
-output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned.csv'  # sampled SMILES and NLL in CSV format
+#output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_with_cs.csv'
+output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_no_cs.csv'  # TODO
 
 num_smiles = 10000  # number of SMILES to be sampled, 1 per input SMILES
 unique_molecules = true  # if true remove all duplicatesd canonicalize smiles
