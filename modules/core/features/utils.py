@@ -1,5 +1,6 @@
 """Utility functions for the features."""
 import os
+import uuid
 
 import networkx as nx
 import pymatgen.core
@@ -30,7 +31,8 @@ def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = ".
     rdkit_mol = Chem.AddHs(rdkit_mol)
     rdDepictor.Compute2DCoords(rdkit_mol, sampleSeed=42)
 
-    save_dir = f"{directory}/rdkit_mol.xyz"
+    uid = uuid.uuid4()
+    save_dir = f"{directory}/rdkit_mol_{uid}.xyz"
 
     if save_file:
         if not os.path.exists(directory):
@@ -56,6 +58,11 @@ def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = True, direc
     if path is None:
         return None
     mol = Molecule.from_file(path)
+
+    try:
+        os.remove(path)
+    except OSError as e:
+        print(f"Error removing file {path}: {e}")
 
     return mol
 
