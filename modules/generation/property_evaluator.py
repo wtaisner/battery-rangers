@@ -15,9 +15,8 @@ from modules.core.features.flatness import get_flatness_mol
 from modules.core.features.pore_size import estimate_pore_size
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
 # Define the log message format
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 console_handler.setFormatter(formatter)
@@ -103,13 +102,14 @@ class PropertyEvaluator:
         else:
             similarity_score = 1e-10
 
-        logger.info(
-            f" {smiles} \n"
-            f"Properties: Pore size: {pore_size_score}, SMARTS: {smarts_score}, Conjugation: {conjugation_score}, Symmetry: {symmetry_score}, Flatness: {flatness_score}, Mean Similarity: {similarity_score}, Steric Hindrance: {steric_hindrance_score}"
-        )
-
         # Combine the scores
         total_score = pore_size_score + smarts_score + conjugation_score + symmetry_score + flatness_score + similarity_score + steric_hindrance_score
+
+        logger.debug(
+            f" {smiles} \n"
+            f"Properties: Total score: {total_score}, Pore size: {pore_size_score}, SMARTS: {smarts_score}, Conjugation: {conjugation_score}, Symmetry: {symmetry_score}, Flatness: {flatness_score}, Mean Similarity: {similarity_score}, Steric Hindrance: {steric_hindrance_score}"
+        )
+
         if total_score < 0 or math.isnan(total_score):
             logger.debug("Total score set to 1e-10.")
             total_score = 1e-10  # Set to a small positive value to avoid negative scores
@@ -174,12 +174,10 @@ class PropertyEvaluator:
 
 if __name__ == "__main__":
     evaluator = PropertyEvaluator(known_smiles_path="data/raw/experts_merged.smi")
-    # score = evaluator.evaluate(
-    #     "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
-    # )
-    # print(score_value_exponential(4.8, 0, 1.6, 0.2))
-
-    score = evaluator.evaluate("C12=CC=C(C=C1)CCC2")
+    evaluator.evaluate(
+        "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
+    )
+    evaluator.evaluate("C12=CC=C(C=C1)CCC2")
     # flatness -> nan for
     # C12=CC=C(C=C1)CCC2
     # C12=CC=C(C=C1)COC=C2
