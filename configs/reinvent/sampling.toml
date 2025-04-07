@@ -9,10 +9,12 @@ json_out_config = "outputs/sampling/_sampling.json"  # write this TOML to JSON
 # file and possibly a SMILES file with seed structures.
 
 ## Reinvent: de novo sampling
-#model_file = "outputs/transfer_learning/202503110949/tl.model" # fine-tuned only
-#model_file = "outputs/staged_learning/rl_from_finetuned_with_cs_symmetry.chkpt" #
-model_file = "outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt" #
+# model_file = "outputs/transfer_learning/202503110949/tl.model" # fine-tuned only
+model_file = "outputs/staged_learning/new_smiles_rl_from_finetuned_no_cs_symmetry.chkpt"
+# model_file = "outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt"
 
+output_file = 'data/sampling/reinvent/sampling_staged_learning_new_smiles_no_cs.csv'
+# output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_no_cs.csv'  # TODO
 ## LibInvent: find R-groups for the given scaffolds
 #model_file = "priors/libinvent.prior"
 #smiles_file = "scaffolds.smi"  # 1 scaffold per line with attachment points
@@ -34,9 +36,6 @@ model_file = "outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt" #
 #sample_strategy = "beamsearch"  # multinomial or beamsearch (deterministic)
 #temperature = 1.0 # temperature in multinomial sampling
 #tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
-
-#output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_with_cs.csv'
-output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_no_cs.csv'  # TODO
 
 num_smiles = 10000  # number of SMILES to be sampled, 1 per input SMILES
 unique_molecules = true  # if true remove all duplicatesd canonicalize smiles

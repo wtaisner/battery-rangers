@@ -32,30 +32,11 @@ purge_memories = false  # if true purge all diversity filter memories after each
 prior_file = "outputs/transfer_learning/202503110949/tl.model"
 agent_file = "outputs/transfer_learning/202503110949/tl.model"
 
-##ISIM
-#tb_isim = true # if true track isim value of smilies across training epochs in tensorboard
-
-## LibInvent
-#prior_file = "priors/libinvent.prior"
-#agent_file = "priors/libinvent.prior"
-#smiles_file = "scaffolds.smi"  # 1 scaffold per line with attachment points
-
-## LinkInvent
-#prior_file = "priors/linkinvent.prior"
-#agent_file = "priors/linkinvent.prior"
-#smiles_file = "warheads.smi"  # 2 warheads per line separated with '|'
 
 ## Mol2Mol
 #prior_file = "priors/mol2mol_scaffold_generic.prior"
 #agent_file = "priors/mol2mol_scaffold_generic.prior"
 #smiles_file = "mol2mol.smi"  # 1 compound per line
-#sample_strategy = "multinomial"  # multinomial or beamsearch (deterministic)
-#distance_threshold = 100
-
-## Pepinvent
-#prior_file = "priors/pepinvent.prior"
-#agent_file = "priors/pepinvent.prior"
-#smiles_file = "pepinvent.smi"
 #sample_strategy = "multinomial"  # multinomial or beamsearch (deterministic)
 #distance_threshold = 100
 
@@ -96,21 +77,13 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 ### Note that stages must always be a list i.e. double brackets
 [[stage]]
 
-#chkpt_file = 'outputs/staged_learning/rl_from_finetuned_with_cs_symmetry.chkpt'
-chkpt_file = 'outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt'  # TODO
+# chkpt_file = 'outputs/staged_learning/new_smiles_rl_from_finetuned_with_cs_symmetry.chkpt'
+chkpt_file = 'outputs/staged_learning/new_smiles_rl_from_finetuned_no_cs_symmetry.chkpt'  # TODO
 
 termination = "simple"  # termination criterion fot this stage
 max_score = 1.0  # terminate if this total score is exceeded
 min_steps = 25  # run for at least this number of steps
 max_steps = 200  # terminate entire run when exceeded
-
-# Optionally, a DF can be set for each stage but note that the global DF
-# section above will always overwrite the stage section and you need to
-# delete [diversity_filter] to avoid this
-#
-#[stage.diversity_filter]
-#type = "IdenticalMurckoScaffold"
-# etc.
 
 [stage.scoring]
 type = "geometric_mean"  # aggregation function
