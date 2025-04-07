@@ -85,9 +85,12 @@ class PropertyEvaluator:
         Returns:
             float: The evaluated score for the molecule.
         """
-        if len(smiles) == 0:
+        if len(smiles) == 0 or smiles is None:
             return 1e-10  # Set to a small positive value to avoid negative scores
         molecule = Chem.MolFromSmiles(smiles)
+
+        if molecule is None:
+            return 1e-10
 
         # Evaluate the properties
         pore_size_score = self._calculate_pore_size(molecule)
@@ -113,14 +116,14 @@ class PropertyEvaluator:
         if total_score < 0 or math.isnan(total_score):
             logger.debug("Total score set to 1e-10.")
             total_score = 1e-10  # Set to a small positive value to avoid negative scores
-        return total_score
+        return total_score / 7  # for REINVENT
 
     @staticmethod
     def _calculate_pore_size(molecule: Mol) -> float:
         try:
             pore_size = estimate_pore_size(molecule)
             return score_value_exponential(pore_size, min_val=2, max_val=50, decay_rate=0.1)
-        except ValueError as e:
+        except AttributeError as e:
             logger.error(f"Error calculating pore size: {e}")
             return 1e-10
 
@@ -131,7 +134,7 @@ class PropertyEvaluator:
             if not math.isnan(flatness_error):
                 return score_value_exponential(flatness_error, min_val=1e-10, max_val=1.60, decay_rate=0.2)
             return 1e-10
-        except ValueError as e:
+        except AttributeError as e:
             logger.error(f"Error calculating flatness: {e}")
             return 1e-10
 
@@ -174,12 +177,14 @@ class PropertyEvaluator:
 
 if __name__ == "__main__":
     evaluator = PropertyEvaluator(known_smiles_path="data/raw/experts_merged.smi")
-    evaluator.evaluate(
-        "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
-    )
-    evaluator.evaluate("C12=CC=C(C=C1)CCC2")
+    # evaluator.evaluate(
+    #     "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
+    # )
+    # evaluator.evaluate("C12=CC=C(C=C1)CCC2")
     # flatness -> nan for
     # C12=CC=C(C=C1)CCC2
     # C12=CC=C(C=C1)COC=C2
     # C1=C(F)C(Cl)=CC=C1C(=O)C
     # C12=CC=C(C=C1)C(CC2)NC=CC
+    score = evaluator.evaluate("XYZ")
+    print(score)
