@@ -103,7 +103,7 @@ def estimate_pore_size(sml: str) -> float:
     elif isinstance(sml, Chem.Mol):
         molecule = sml
     else:
-        raise ValueError("Invalid input. Please provide a SMILES string or an RDKit molecule object.")
+        return 1000.0
     molecule = Chem.AddHs(molecule)
     rdDepictor.Compute2DCoords(molecule, sampleSeed=42)
 
