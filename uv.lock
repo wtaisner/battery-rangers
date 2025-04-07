@@ -255,6 +255,7 @@ dependencies = [
     { name = "deepchem" },
     { name = "diffusers" },
     { name = "jupyter" },
+    { name = "lets-plot" },
     { name = "mlxtend" },
     { name = "molscore" },
     { name = "networkx" },
@@ -289,6 +290,7 @@ requires-dist = [
     { name = "deepchem", specifier = ">=2.8.0" },
     { name = "diffusers", specifier = ">=0.32.2" },
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "lets-plot", specifier = ">=4.6.2" },
     { name = "mlxtend", specifier = ">=0.23.4" },
     { name = "molscore", specifier = ">=1.9.1" },
     { name = "networkx", specifier = ">=3.4.2" },
@@ -1486,6 +1488,27 @@ wheels = [
 ]
 
 [[package]]
+name = "lets-plot"
+version = "4.6.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "palettable" },
+    { name = "pypng" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/0a/f910551cd019df2858800607ae0e9be4fc4a9a34f99363c3bb521c8a1450/lets_plot-4.6.2-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:9ae23c27db34c9925fbedcb737bc0c466f15d81b44bf6b28b98e5e00c77dad51", size = 3265493 },
+    { url = "https://files.pythonhosted.org/packages/04/33/4b186ae06ac8ff472b02878df203dc470f14e0902d00a58343aee6dff010/lets_plot-4.6.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8ee4e0a4a2125959c222c68e554c347b4104314bd21848b2eaa38dc7b3a6cab2", size = 3212315 },
+    { url = "https://files.pythonhosted.org/packages/71/15/307d84d450c5fd0780006a5901c9e73878c06f8ef5d3b8a4e4b6d0a059da/lets_plot-4.6.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:03198b2da36c52d1a7bddfa61cb986563aafae24dcba81061dc37ad678a9b5c2", size = 3381581 },
+    { url = "https://files.pythonhosted.org/packages/3f/64/e72be7b84b6db0f6749a1ad1ae711909931b9f4526d7ffd5c612ef53e1bc/lets_plot-4.6.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8602d254f218f175c2ce51664879b0657a84e14bc3fff2140b96b18a1f0a2629", size = 3430242 },
+    { url = "https://files.pythonhosted.org/packages/f7/30/880ea4c6b6fdba58b24dfff5e3d0da7b72af1cbb75c3c7b426215e1cbac1/lets_plot-4.6.2-cp312-cp312-win_amd64.whl", hash = "sha256:ba48c49f063da851d172d84388c18af4222abbec0574c2acd90e1a797c4ab538", size = 3110977 },
+    { url = "https://files.pythonhosted.org/packages/55/24/6bb37fd04571ec44ca55cf96c6f61d67ce9909042b5a17d9e43cbc1c4cfd/lets_plot-4.6.2-cp313-cp313-macosx_10_15_x86_64.whl", hash = "sha256:33c0cb946d8bcf6ba0f1a023f68350c5d2df75164b0f66b5db68d6ccdb2691a7", size = 3265496 },
+    { url = "https://files.pythonhosted.org/packages/8d/08/4e81517365e8356ee307a0708206d656d35b3f59a27a44bd34061a068edb/lets_plot-4.6.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:c639377a294bdeb391b0f6232bb900f515539b7fe50fe81c50bfd70e6905580a", size = 3212311 },
+    { url = "https://files.pythonhosted.org/packages/0f/3e/2816bd92b8919b3d88d73521c20b4adccd9b85c24a6cf9f62e12ab0484ef/lets_plot-4.6.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d7d2452dfc74ee07ea2717c8678a971a0f8cb6b9da3d0986987cf30674311c8c", size = 3381531 },
+    { url = "https://files.pythonhosted.org/packages/e1/1e/8857c119c67c753a436f06e84c8a5397aebaa25acb2e1ff7af2c38915ff5/lets_plot-4.6.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ab6d5d05e458287356c84dd36f592e0313374a5012d074398051a8bf74cbbee", size = 3430174 },
+    { url = "https://files.pythonhosted.org/packages/30/57/452beacbeca5a2254f51c0c566f6124890400ee997469f2dcf48f08b624b/lets_plot-4.6.2-cp313-cp313-win_amd64.whl", hash = "sha256:f5c5943c2180b213c12e319f3f2feb9fdc429fb3043a5cf9dc112a18c485dedf", size = 3110974 },
+]
+
+[[package]]
 name = "levenshtein"
 version = "0.27.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2622,6 +2645,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bb/22/f1129e69d94ffff626bdb5c835506b3a5b4f3d070f17ea295e12c2c6f60f/pyparsing-3.2.3.tar.gz", hash = "sha256:b9c13f1ab8b3b542f72e28f634bad4de758ab3ce4546e4301970ad6fa77c38be", size = 1088608 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/05/e7/df2285f3d08fee213f2d041540fa4fc9ca6c2d44cf36d3a035bf2a8d2bcc/pyparsing-3.2.3-py3-none-any.whl", hash = "sha256:a749938e02d6fd0b59b356ca504a24982314bb090c383e3cf201c95ef7e2bfcf", size = 111120 },
+]
+
+[[package]]
+name = "pypng"
+version = "0.20220715.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/cd/112f092ec27cca83e0516de0a3368dbd9128c187fb6b52aaaa7cde39c96d/pypng-0.20220715.0.tar.gz", hash = "sha256:739c433ba96f078315de54c0db975aee537cbc3e1d0ae4ed9aab0ca1e427e2c1", size = 128992 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/b9/3766cc361d93edb2ce81e2e1f87dd98f314d7d513877a342d31b30741680/pypng-0.20220715.0-py3-none-any.whl", hash = "sha256:4a43e969b8f5aaafb2a415536c1a8ec7e341cd6a3f957fd5b5f32a4cfeed902c", size = 58057 },
 ]
 
 [[package]]
