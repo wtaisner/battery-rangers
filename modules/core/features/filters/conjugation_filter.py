@@ -44,6 +44,9 @@ class ConjugationFilter(GenericMoleculeFilter):
             bool: True if the molecule is conjugated, False otherwise.
         """
 
+        if not mol:
+            return False
+
         # Define a generic SMARTS pattern for any three connected atoms
         pattern_single_aromatic = Chem.MolFromSmarts("*-*-*")  # * matches any atom, - matches single bonds
         matches = mol.GetSubstructMatches(pattern_single_aromatic, uniquify=True)

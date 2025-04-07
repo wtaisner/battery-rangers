@@ -36,6 +36,9 @@ class SMARTSFilter(GenericMoleculeFilter):
         Returns:
             bool: True if the molecule contains at least one of the SMARTS patterns in cardinality >=2, False otherwise.
         """
+        # handle None mols
+        if not mol:
+            return False
         for smarts in self.smarts:
             matches = mol.GetSubstructMatches(Chem.MolFromSmarts(smarts))
             if len(matches) >= 2:
