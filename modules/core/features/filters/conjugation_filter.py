@@ -44,7 +44,7 @@ class ConjugationFilter(GenericMoleculeFilter):
             bool: True if the molecule is conjugated, False otherwise.
         """
 
-        if not mol:
+        if mol is None:
             return False
 
         # Define a generic SMARTS pattern for any three connected atoms
