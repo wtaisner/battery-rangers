@@ -10,7 +10,8 @@
 run_type = "staged_learning"
 device = "cuda:0"  # set torch device e.g. "cpu"
 tb_logdir = "outputs/staged_learning/tensorboard"  # name of the TensorBoard logging directory
-json_out_config = "outputs/staged_learning/_staged_learning.json"  # write this TOML to JSON
+# json_out_config = "outputs/staged_learning/_staged_learning.json"  # write this TOML to JSON
+seed = 23
 
 [parameters]
 
@@ -24,14 +25,13 @@ use_checkpoint = false  # if true read diversity filter from agent_file
 purge_memories = false  # if true purge all diversity filter memories after each stage
 #smiles_file = "data/raw/experts_merged.smi"
 
-## Reinvent
-#prior_file = "modules/REINVENT4/priors/reinvent.prior"
-#agent_file = "modules/REINVENT4/priors/reinvent.prior"
+# first finetuning (only experts 1 SMILES)
+# prior_file = "outputs/transfer_learning/202503110949/experts1_fine_tuning.model"
+# agent_file = "outputs/transfer_learning/202503110949/experts1_fine_tuning.model"
 
-# TODO: use fine-tuned model:
-prior_file = "outputs/transfer_learning/202503110949/tl.model"
-agent_file = "outputs/transfer_learning/202503110949/tl.model"
-
+# second finetuning (all SMILES)
+prior_file = "outputs/transfer_learning/new_smiles_fine_tuning.model"
+agent_file = "outputs/transfer_learning/new_smiles_fine_tuning.model"
 
 ## Mol2Mol
 #prior_file = "priors/mol2mol_scaffold_generic.prior"
@@ -40,7 +40,7 @@ agent_file = "outputs/transfer_learning/202503110949/tl.model"
 #sample_strategy = "multinomial"  # multinomial or beamsearch (deterministic)
 #distance_threshold = 100
 
-batch_size = 256          # network
+batch_size = 256 # network
 
 unique_sequences = true  # if true remove all duplicates raw sequences in each step
 # only here for backward compatibility
@@ -66,11 +66,10 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 
 
 # Reinvent only: guide RL in the initial phase
-#[inception]  # optional, comment sectionout or remove if unneeded
-
-#smiles_file = "data/raw/experts_merged.smi"  # "good" SMILES for guidance
-#memory_size = 100  # number of total SMILES held in memory
-#sample_size = 10  # number of SMILES randomly chosen each epoch
+# [inception]  # optional, comment sectionout or remove if unneeded
+# smiles_file = "data/raw/experts_merged.smi"  # "good" SMILES for guidance
+# memory_size = 1  # number of total SMILES held in memory
+# sample_size = 10  # number of SMILES randomly chosen each epoch
 
 
 ### Stage 1
@@ -78,7 +77,7 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 [[stage]]
 
 # chkpt_file = 'outputs/staged_learning/new_smiles_rl_from_finetuned_with_cs_symmetry.chkpt'
-chkpt_file = 'outputs/staged_learning/new_smiles_rl_from_finetuned_no_cs_symmetry.chkpt'  # TODO
+chkpt_file = 'outputs/staged_learning/new_smiles_new_finetuned_no_cs_symmetry.chkpt'  # TODO
 
 termination = "simple"  # termination criterion fot this stage
 max_score = 1.0  # terminate if this total score is exceeded

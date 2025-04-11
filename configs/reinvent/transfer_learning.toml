@@ -7,7 +7,8 @@
 run_type = "transfer_learning"
 device = "cuda:0"  # set torch device e.g. "cpu"
 tb_logdir = "tb_TL"  # name of the TensorBoard logging directory
-json_out_config = "json_transfer_learning.json"  # write this TOML to JSON
+seed =  23
+# number_of_cpus = 16 # optional parameter to control number of cpus for pair generation. If not provided, only one CPU will be used.
 
 [parameters]
 
@@ -24,7 +25,7 @@ sample_batch_size = 100  # number of sampled molecules to compute sample loss
 ## Reinvent
 input_model_file = "modules/REINVENT4/priors/reinvent.prior"
 smiles_file = "data/raw/experts_merged.smi"  # read 1st column
-output_model_file = "TL_reinvent.model"
+output_model_file = "outputs/transfer_learning/new_smiles_fine_tuning.model"
 #validation_smiles_file = "TL_reinvent_100.smi"
 
 ## Mol2Mol
@@ -34,23 +35,8 @@ output_model_file = "TL_reinvent.model"
 #validation_smiles_file = "validation_compounds.smi"  # read 1st column
 
 # Define the type of similarity and its parameters
-pairs.type = "tanimoto"
-pairs.upper_threshold = 1.0
-pairs.lower_threshold = 0.7
-pairs.min_cardinality = 1
-pairs.max_cardinality = 199
-
-### It may not make much sense to use TL for Lib/Linkinvent because
-### both methods use constraints which may leave only a small portion of
-### the molecule to be optimizable
-## LibInvent
-#input_model_file = "priors/libinvent.prior"
-#smiles_file = "TL_libinvent_100.smi"  # read first 2 columns: scaffold, R-groups
-#validation_smiles_file = "TL_libinvent_100.smi"  # read first 2 columns: scaffold, R-groups
-#output_model_file = "TL_libinvent.model"
-#
-## LinkInvent
-#input_model_file = "priors/linkinvent.prior"
-#smiles_file = "TL_linkinvent_100.smi"  # read first 2 columns: warheads, linker
-#output_model_file = "TL_linkinvent.model"
-#validation_smiles_file = "TL_linkinvent_100.smi"  # read first 2 columns: warheads, linker
+# pairs.type = "tanimoto"
+# pairs.upper_threshold = 1.0
+# pairs.lower_threshold = 0.7
+# pairs.min_cardinality = 1
+# pairs.max_cardinality = 199
