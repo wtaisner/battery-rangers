@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "accelerate>=1.5.1",
+    "cairosvg>=2.7.1",
     "deepchem>=2.8.0",
     "diffusers>=0.32.2",
     "jupyter>=1.1.1",
