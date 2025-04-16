@@ -1,0 +1,4 @@
+smiles
+N#Cc1ccc(-c2nc(-c3ccc(C#N)cc3)nc(-c3ccc(C#N)cc3)n2)cc1
+N#Cc1cccc(-c2nc(-c3cccc(C#N)n3)nc(-c3cccc(C#N)n3)n2)n1
+N#Cc1cncc(-c2nc(-c3cncc(C#N)c3)nc(-c3cncc(C#N)c3)n2)c1
