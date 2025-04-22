@@ -164,4 +164,14 @@ cython_debug/
 /modules/bionemo/data/
 sh_tmp/
 tmp/
-.env
+/.reinvent_venv/
+/outputs/
+/results/
+
+# exclude all chembl related files
+/chembl_35/
+chembl_*
+
+*.out
+
+wandb/

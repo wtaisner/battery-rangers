@@ -59,14 +59,12 @@ def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) 
     Args:
         mol: A molecule.
         plot_visualization: Whether to plot the molecule and the fitted plane.
+        **kwargs: Additional arguments for the embedding function.
     Returns:
         The flatness of the molecule.
     """
-    # TODO: this probably can be simplified to kwargs.get("sample_size", 20), or sth similar
-    if "sample_size" in kwargs:
-        embedded_mol = embed_molecule(mol, sample_size=kwargs["sample_size"])
-    else:
-        embedded_mol = embed_molecule(mol)
+
+    embedded_mol = embed_molecule(mol, kwargs.get("sample_size", 10))
 
     if embedded_mol is None:
         return None

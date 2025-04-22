@@ -1,5 +1,5 @@
-"""Filter that leaves molecules without X-Y-Z pattern.
-
+"""Filter that removes molecules which are not conjugated.
+https://www.masterorganicchemistry.com/2017/01/24/conjugation-and-resonance/
 Za "brak sprzężenia"  (oczywiście jest to pojęcie bardzo uproszczone) w tej strukturze związku odpowiadają atomy -S-C-C - i pojedyncze wiązania pomiędzy nimi. Należy zaznaczyć, że ten skrót myślowy - brak sprzężenia - dotyczy elektronów pi znajdujących się na orbitalach p w danym atomie, które tworzą wiązania wielokrotne pomiędzy atomami (podwójne i potrójne). Przykładowo w pierścieniu benzenowym, mamy wiązania wielokrotne podwójne, pomiędzy atomami C=C oraz C=N. Przykładowo, jedno wiązanie w C=C jest wiązaniem sigma, czyli para elektronów (1 elektron od 1 atomu C oraz 1elektron od 2 atomu C) tworzy wiązanie chemiczne pomiędzy atomami C-C. Ta para elektronów znajduje się na osi rdzeni atomowych atomów C-C, dlatego jest nazywane sigma. Są one silnie przyciągane przez rdzenie atomowe obu atomów, stad nie mogą one przemieszczać się pomiędzy atomami. Wszystkie wiązania pojedyncze w strukturach związków mają taki charakter. Czyli w odniesieniu do -S-C-C, wszystkie wiązania mają charakter sigma, elektrony nie przemieszczają się.
 W wiązaniach wielokrotnych, jedno wiązanie ma zawsze charakter sigma, a pozostałe mają charakter pi. Czyli w C=C, 1 wiązanie to sigma a 2 wiązanie to pi. Wiązanie chemiczne pi, oznacza, ze tworzą to wiązanie elektrony pi znajdujące się na orbitalach p. Jeżeli orbitale p sa zorientowane w przestrzeni w taki sposób, ze nie leża w osi rdzeni atomowych, to są słabej przyciagne przez nie i mają większą swobodę ruchu w przestrzeni wokół rdzeni (po orbitalach atomowych). Orbital atomowy - w ujęciu matematycznych - jest to przestrzeń wokół jadra atomowego, która można opisać funkcja, największe prawdopodobieństwo ruchu elektronu wokół jadra atomowego. Orbital s przedstawiany jest jako sfera, a orbital p jako dwie pętle stykające się końcami.
 Analizując strukturę związku chemicznego poniżej przedstawionego, w pierscieniu benzenowym, mamy w sumie 6 wiązań sigma (4 C-C oraz 2 C-N) i 3 wiązania pi. Jeżeli odległość pomiędzy wiązaniami pi jest mała (czyli maksymalnie jedno wiazanie pojedyncze - sigma) je rozdzielające, to elektrony pi mogą swobodnie przemieszczać się w obrębie danej przestrzeni. Czyli w obrębie pierścienia benzenowego, 6 elektronów pi może swobodnie przemieszczać się.
@@ -16,8 +16,8 @@ from rdkit.Chem import Mol
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 
 
-class XYZPatternFilter(GenericMoleculeFilter):
-    """Filter that leaves molecules without single C-C bonds outside rings."""
+class ConjugationFilter(GenericMoleculeFilter):
+    """Filter that removes molecules which are not conjugated."""
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
@@ -30,27 +30,56 @@ class XYZPatternFilter(GenericMoleculeFilter):
         """
         final_smiles = []
         for sml in molecules:
-            if not self.check_x_y_z_pattern(sml) or self.check_any_n_n_path(sml):
+            if not self.check_conjugation(sml) or self.check_any_n_n_path(sml):
                 final_smiles.append(sml)
         return final_smiles
 
     @staticmethod
-    def check_x_y_z_pattern(mol: Mol) -> bool:
-        """Check whether a molecule has an X-Y-Z pattern. If it does, it will be removed.
+    def check_conjugation(mol: Mol) -> bool:
+        """Check whether a molecule is conjugated. If it does, it will be removed.
 
         Args:
             mol (Mol): The molecule to check.
         Returns:
-            bool: True if the molecule has an X-Y-Z pattern, False otherwise.
+            bool: True if the molecule is conjugated, False otherwise.
         """
+
+        if mol is None:
+            return False
 
         # Define a generic SMARTS pattern for any three connected atoms
         pattern_single_aromatic = Chem.MolFromSmarts("*-*-*")  # * matches any atom, - matches single bonds
         matches = mol.GetSubstructMatches(pattern_single_aromatic, uniquify=True)
+        # for each match, check whether two consecutive bonds are conjugated
+        num_conjugated = 0
+        for match in matches:
+            for i in range(len(match) - 2):
+                bond1 = mol.GetBondBetweenAtoms(match[i], match[i + 1])
+                bond2 = mol.GetBondBetweenAtoms(match[i + 1], match[i + 2])
 
-        if len(matches) == 0:
-            return False
-        return True
+                if bond1.GetIsConjugated() and bond2.GetIsConjugated():
+                    num_conjugated += 1
+
+        if len(matches) == num_conjugated or len(matches) == 0:
+            return False  # All matches are conjugated or there are no matches
+        return True  # At least one match is not conjugated
+
+        # for each match, check whether two consecutive bonds are conjugated
+        # num_conjugated = 0
+        # for match in matches:
+        #     for i in range(len(match) - 2):
+        #         middle_atom = mol.GetAtomWithIdx(match[i + 1])
+        #         symbol = middle_atom.GetSymbol()
+        #         # get free electrons
+        #         # maximum number of valence electrons, i.e. for oxygen it is 6
+        #         max_valence = Chem.GetPeriodicTable().GetNOuterElecs(middle_atom.GetSymbol())
+        #
+        #         lone_electrons = max_valence - middle_atom.GetTotalValence()
+        #         if lone_electrons > 0:
+        #             num_conjugated += 1
+        # if len(matches) == num_conjugated or len(matches) == 0:
+        #     return False  # All matches are conjugated or there are no matches
+        # return True  # At least one match is not conjugated
 
     def check_any_n_n_path(self, mol: Mol) -> bool:
         """Check whether there exists a path between two nitrogen atoms that has sprzężenie.
@@ -171,36 +200,3 @@ class XYZPatternFilter(GenericMoleculeFilter):
         adjacency_matrix = Chem.rdmolops.GetAdjacencyMatrix(mol)
         adjacency_list = {i: list(np.nonzero(adjacency_matrix[i])[0]) for i in range(len(adjacency_matrix))}
         return adjacency_list
-
-    @staticmethod
-    def __check_single_carbon_bond_outside_ring(smiles: str) -> bool:  # pylint: disable=unused-private-member
-        """
-        Check if there exists a single carbon-carbon bond outside any ring in the molecule.
-
-        Args:
-            smiles (str): A SMILES representation of the molecule.
-
-        Returns:
-            bool: True if there is at least one single carbon-carbon bond outside a ring, False otherwise.
-        """
-        m = Chem.MolFromSmiles(smiles)
-        ri = m.GetRingInfo()
-        if ri.AtomRings():
-            atoms_in_rings = set()
-            for ring in ri.AtomRings():
-                for atom in ring:
-                    atoms_in_rings.add(atom)
-            for bond in m.GetBonds():
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    if bond.GetBeginAtom().GetSymbol() == "C" and bond.GetEndAtom().GetSymbol() == "C":
-                        if bond.GetBeginAtom().GetIdx() not in atoms_in_rings or bond.GetEndAtom().GetIdx() not in atoms_in_rings:
-                            return True
-                        return False
-                    return False
-                return False
-        else:
-            for bond in m.GetBonds():
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    if bond.GetBeginAtom().GetSymbol() == "C" and bond.GetEndAtom().GetSymbol() == "C":
-                        return True
-        return False

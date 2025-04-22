@@ -1,0 +1,27 @@
+# REINVENT4 TOML input example for sampling
+run_type = "sampling"
+device = "cuda:0"  # set torch device e.g. "cpu"
+# json_out_config = "outputs/sampling/_sampling.json"  # write this TOML to JSON
+seed = 23
+
+[parameters]
+## Reinvent: de novo sampling
+# model_file = "outputs/transfer_learning/202503110949/tl.model" # fine-tuned only
+# model_file = "outputs/staged_learning/new_smiles_rl_from_finetuned_no_cs_symmetry.chkpt"
+# model_file = "outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt"
+# model_file = "outputs/transfer_learning/new_smiles_fine_tuning.model"
+model_file = "outputs/staged_learning/new_smiles_new_finetuned_no_cs_symmetry.chkpt"
+
+output_file = 'data/sampling/reinvent/sampling_new_smiles_new_finetuned.csv'
+# output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_no_cs.csv'  # TODO
+
+## Mol2Mol: find molecules similar to the provided molecules
+#model_file = "priors/mol2mol_medium_similarity.prior"
+#smiles_file = "mol2mol.smi"  # 1 compound per line
+#sample_strategy = "beamsearch"  # multinomial or beamsearch (deterministic)
+#temperature = 1.0 # temperature in multinomial sampling
+#tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
+
+num_smiles = 10000  # number of SMILES to be sampled, 1 per input SMILES
+unique_molecules = true  # if true remove all duplicatesd canonicalize smiles
+randomize_smiles = false # if true shuffle atoms in SMILES randomly

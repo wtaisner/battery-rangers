@@ -5,17 +5,40 @@ from copy import deepcopy
 from pymatgen.core import Molecule
 from rdkit import Chem
 from rdkit.Chem import Mol
-from rdkit.Chem.rdDistGeom import EmbedMolecule
-from tqdm import tqdm
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import analyse_symmetry_point_group, translate_point_group_to_symmetry_description
+from modules.core.features.utils import get_pymatgen_molecule_from_smiles
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 
 
 class PointGroupSymmetryFilter(GenericMoleculeFilter):
-    """Filter that leaves molecules with a specific point group symmetry."""
+    """Filter that leaves molecules with a specific point group symmetry.
+
+    Args:
+        translation_table_path (str): Path to the translation table for symmetry analysis. Defaults to "data/symmetries/symmetry_translation.csv".
+        allowed_symmetries (set[str], optional): Set of allowed symmetries. If not set, defaults to predefined symmetries.
+    """
+
+    def __init__(self, translation_table_path: str = "data/symmetries/symmetry_translation.csv", allowed_symmetries: set[str] | None = None):
+        super().__init__()
+        self.translation_table_path = translation_table_path
+
+        if allowed_symmetries is None:
+            self.allowed_symmetries = {
+                "C3",
+                "C3h",
+                "C3v",
+                "C4v",
+                "D6h",
+                "D3h",
+                "D4h",
+                "D3d",
+                "D4d",
+            }
+        else:
+            self.allowed_symmetries = allowed_symmetries
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
@@ -26,27 +49,25 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         Returns:
             list[Mol]: The list of RDKit Mol objects that passed the filter.
         """
-        tmp_smiles = deepcopy(molecules)
+        molecules_copy = deepcopy(molecules)
         pymatgen_molecules = []
         bad_smiles = []
-        for sml in tqdm(tmp_smiles, total=len(tmp_smiles), desc="Getting pymatgen molecules"):
+        for mol in molecules_copy:
             try:
-                pymatgen_molecules.append(self._rdkit_mol_to_pymatgen_molecule(sml))
+                pymatgen_molecules.append(get_pymatgen_molecule_from_smiles(Chem.MolToSmiles(mol)))
             except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.error(f"Error converting SMILES to pymatgen molecule: {sml}, Error: {str(e)}")
-                bad_smiles.append(sml)
+                logger.error(f"Error converting SMILES to pymatgen molecule: {mol}, Error: {str(e)}")
+                bad_smiles.append(mol)
                 continue
 
-        logger.debug(f"Pymatgen modules created: {len(pymatgen_molecules)} | Smiles that could not be converted: {len(bad_smiles)}")
-        if len(pymatgen_molecules) != len(tmp_smiles):
-            tmp_smiles = [x for x in tmp_smiles if x not in bad_smiles]
+        if len(pymatgen_molecules) != len(molecules_copy):
+            molecules_copy = [x for x in molecules_copy if x not in bad_smiles]
 
-        point_group_symmetrical_smiles = self._point_group_symmetry(pymatgen_molecules, tmp_smiles)
-        both_symmetrical_smiles = list(set(tmp_smiles).intersection(set(point_group_symmetrical_smiles)))
+        point_group_symmetrical_smiles = self._point_group_symmetry(pymatgen_molecules, molecules_copy)
+        both_symmetrical_smiles = list(set(molecules_copy).intersection(set(point_group_symmetrical_smiles)))
         return both_symmetrical_smiles
 
-    @staticmethod
-    def _point_group_symmetry(pymatgen_molecules: list[Molecule], smiles_lst: list[str], translation_table_path: str = "data/symmetries/symmetry_translation.csv") -> list[str]:
+    def _point_group_symmetry(self, pymatgen_molecules: list[Molecule], smiles_lst: list[str]) -> list[str]:
         """
         Filters out SMILES strings corresponding to molecules that do not exhibit
         a point group symmetry, based on pymatgen analysis.
@@ -61,36 +82,10 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         pointgroup_symmetrical = []
 
         for i, mol in enumerate(pymatgen_molecules):
-            _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path=translation_table_path)
-            symm = translate_point_group_to_symmetry_description(pointgroup, translation_table_path=translation_table_path)
+            _, _, pointgroup, _ = analyse_symmetry_point_group(mol, translation_table_path=self.translation_table_path)
+            symm = translate_point_group_to_symmetry_description(pointgroup, translation_table_path=self.translation_table_path)
 
-            if not symm.startswith("no"):  # Skip molecules with no symmetry
+            if symm in self.allowed_symmetries:
                 pointgroup_symmetrical.append(smiles_lst[i])
 
         return pointgroup_symmetrical
-
-    @staticmethod
-    def _rdkit_mol_to_pymatgen_molecule(molecule: Mol) -> Molecule:
-        """
-        Convert a RDKit Mol object to a pymatgen Molecule object.
-
-        Args:
-            molecule (Mol): The RDKit Mol object
-
-        Returns:
-            Molecule: A pymatgen Molecule object corresponding to the RDKit Mol object
-
-        Raises:
-            ValueError: If the RDKit Mol object is invalid or the molecule embedding fails.
-        """
-        try:
-            rdkit_mol = Chem.AddHs(molecule)
-            EmbedMolecule(rdkit_mol, randomSeed=42)
-            conformer = rdkit_mol.GetConformer()
-            coordinates = conformer.GetPositions()
-            symbols = [atom.GetSymbol() for atom in rdkit_mol.GetAtoms()]
-
-            return Molecule(symbols, coordinates)
-
-        except Exception as e:
-            raise ValueError(f"Error converting RDKit Mol object to pymatgen molecule: {molecule}, Error: {str(e)}") from e

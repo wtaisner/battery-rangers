@@ -1,0 +1,10 @@
+smiles
+N#Cc1cncc(-c2nc(-c3cncc(C#N)c3)nc(-c3cncc(C#N)c3)n2)c1
+N#Cc1c(F)c(F)c(-c2nc(-c3c(F)c(F)c(C#N)c(F)c3F)nc(-c3c(F)c(F)c(C#N)c(F)c3F)n2)c(F)c1F
+N#Cc1ccc(-c2nc(-c3ccc(C#N)cc3)nc(-c3ccc(C#N)cc3)n2)cc1
+N#Cc1cccc(-c2nc(-c3cccc(C#N)n3)nc(-c3cccc(C#N)n3)n2)n1
+N#Cc1cc(C#N)cc(C#N)c1
+N#CC(C#N)=c1ccc(=C(C#N)c2nc(C(C#N)=c3ccc(=C(C#N)C#N)cc3)nc(C(C#N)=c3ccc(=C(C#N)C#N)cc3)n2)cc1
+N#Cc1ccc(-c2ccc(-c3nc(-c4ccc(-c5ccc(C#N)cc5)cc4)nc(-c4ccc(-c5ccc(C#N)cc5)cc4)n3)cc2)cc1
+N#Cc1c(Cl)c(C#N)c(Cl)c(C#N)c1Cl
+N#CC=Cc1nc(C=CC#N)nc(C=CC#N)n1

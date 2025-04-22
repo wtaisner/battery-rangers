@@ -7,7 +7,7 @@ from multiprocessing import Pool
 
 import pandas as pd
 
-from modules.core.features.molecule_filter import MoleculeFilter
+from modules.core.features.molecule_filter import MoleculeFilter  # pylint: disable=import-error
 
 # Set up the logger for this specific module
 logger = logging.getLogger(__name__)  # Logger specific to this module
@@ -63,16 +63,22 @@ def process_file(file: str | os.PathLike) -> dict:
     except:  # pylint: disable=bare-except
         smiles = pd.read_csv(file)["smiles"].drop_duplicates().values
 
-    smiles_filtered = molecule_filter.apply(smiles)
+    smiles_filtered, failure_reasons = molecule_filter.apply(smiles)
 
     logger.info(f"Finished processing file: {file.split('/')[-1]}.")
-    return {"filename": file.split("/")[-1], "num_total_molecules": len(smiles), "num_filtered_molecules": len(smiles_filtered), "smiles_after_filtering": smiles_filtered}
+    return {
+        "filename": file.split("/")[-1],
+        "num_total_molecules": len(smiles),
+        "num_filtered_molecules": len(smiles_filtered),
+        "smiles_after_filtering": smiles_filtered,
+        "failure_reasons": failure_reasons,
+    }
 
 
 def main(args: argparse.Namespace):
     """Run the main script."""
     # Dictionary to store results
-    result_dict = {"filenames": [], "num_total_molecules": [], "num_filtered_molecules": [], "smiles_after_filtering": []}
+    result_dict = {"filenames": [], "num_total_molecules": [], "num_filtered_molecules": [], "smiles_after_filtering": []}  # TODO: think how to handle this sensibly?
     # Get all files to evaluate
     files = glob(args.files)
     logger.info(f"Found {len(files)} files to evaluate.")
@@ -90,8 +96,8 @@ def main(args: argparse.Namespace):
         result_dict["smiles_after_filtering"].append(result["smiles_after_filtering"])
         all_smiles_that_passed |= set(result["smiles_after_filtering"])
 
-    pd.DataFrame(result_dict).to_csv(args.output_comparison, index=False)
     pd.DataFrame({"smiles": list(all_smiles_that_passed)}).to_csv(args.output_filtered, index=False)
+    pd.DataFrame(result_dict).to_csv(args.output_comparison, index=False)
 
 
 if __name__ == "__main__":
