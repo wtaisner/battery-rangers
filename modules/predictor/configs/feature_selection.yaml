@@ -14,7 +14,7 @@ data_dict:
   expert2: 'data_experts2.csv'
   expert3: 'data_experts3.csv'
 features_dict:
-  custom: 'processed_selected_custom_features'
+  custom: 'custom_features_mlxtend'
   dft: 'aggregated_dft_features'
   additive_groups: 'additive_groups'
   fp_ecfp: 'fingerprints_ecfp_256'
@@ -24,15 +24,10 @@ features_dict:
   fp_layered: 'fingerprints_layered_256'
   fp_topological: 'fingerprints_topological_256'
 dataset_combos: [
-  ['expert'],
-#  ['expert', 'expert2'],
-#  ['expert', 'expert2', 'expert3'],
-#  ['expert', 'zhu', 'saad'],
-#  ['expert', 'zhu', 'saad', 'expert2'],
-#  ['expert', 'zhu', 'saad', 'expert2', 'expert3']
+  ['expert', 'zhu', 'saad', 'expert2', 'expert3']
 ]
 selected_dict:
   primary: 'fp_maccs'
   to_add: 'custom'
 cat_features_dict:
-  custom: ['symmetry']
+    custom: ['symmetry']

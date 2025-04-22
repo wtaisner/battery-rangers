@@ -1,18 +1,17 @@
 root_dir: '../../../data'
 raw_data_dir: 'raw'
 data_dict:
-  expert: 'data_experts1.csv'
-  zhu: 'data_zhu.csv'
-  saad: 'data_saad.csv'
-  expert2: 'data_experts2.csv'
-  expert3: 'data_experts3.csv'
-
+#  expert: 'data_experts1.csv'
+#  zhu: 'data_zhu.csv'
+#  saad: 'data_saad.csv'
+#  expert2: 'data_experts2.csv'
+#  expert3: 'data_experts3.csv'
+  expert2: 'data_experts1_corrected_matched.csv'
 
 custom_features: False
 custom_features_params:
   dir: 'processed_selected_custom_features'
   translation_table: 'symmetries/symmetry_translation.csv'
-
 
 dft_features: False
 dft_features_params:
@@ -20,13 +19,12 @@ dft_features_params:
   functional: 'pbe'
   n_jobs: 8
 
-
 fingerprints: True
 fingerprints_types:
   ecfp: True
-  maccs: False
-  functional_groups: False
-  estate: False
+  maccs: True
+  functional_groups: True
+  estate: True
   layered: True
   topological: True
 fingerprints_params:
@@ -60,7 +58,7 @@ fingerprints_params:
           torsion_atoms: 4
           count: False
 
-additive_groups: True
+additive_groups: False
 additive_groups_params:
   dir: 'additive_groups'
   training_set: ['expert', 'expert2', 'zhu', 'saad', 'expert3']
