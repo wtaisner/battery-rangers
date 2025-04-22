@@ -7,7 +7,7 @@ from rdkit.Chem import Descriptors
 
 from modules.core.features.descriptors import extract_data_from_mol
 from modules.core.features.flatness import get_flatness_smiles
-from modules.core.features.pore_size import calculate_hexagonal_pore_diameter
+from modules.core.features.pore_size import estimate_pore_size
 from modules.core.features.symmetries import analyse_symmetry_point_group
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles
 from modules.predictor.data.utils import data_preprocessing
@@ -85,7 +85,7 @@ def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.Dat
     df["flatness"] = df["smiles"].apply(get_flatness_smiles)
 
     # Pore size
-    df["PS"] = df["smiles"].apply(calculate_hexagonal_pore_diameter)
+    df["PS"] = df["smiles"].apply(estimate_pore_size)
 
     # Symmetry
     df["symmetry"] = df["smiles"].apply(lambda x: check_symmetry_smiles(x, translation_table_path))

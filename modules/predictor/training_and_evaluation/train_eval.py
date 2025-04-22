@@ -194,8 +194,9 @@ class CrossValidationPipeline:
             self.scores[f"baseline_mean_{metric}"].append(baseline_mean_scores[metric])
             self.scores[f"baseline_median_{metric}"].append(baseline_median_scores[metric])
         if self.feature_selection is not None:
-            selected_features = "(" + ",".join(sorted(selected_features)) + ")"
-            self.scores["selected_features"].append(selected_features)
+            if self.feature_selection[0]:
+                selected_features = "(" + ",".join(sorted(selected_features)) + ")"
+                self.scores["selected_features"].append(selected_features)
 
     def aggregate_scores(self):
         """
@@ -210,7 +211,7 @@ class CrossValidationPipeline:
             results[metric] = round(sum(metric_scores) / len(metric_scores), 4)
             results[f"baseline_mean_{metric}"] = round(sum(baseline_mean) / len(baseline_mean), 4)
             results[f"baseline_median_{metric}"] = round(sum(baseline_median) / len(baseline_median), 4)
-        if self.feature_selection is not None:
+        if self.feature_selection is not None and self.feature_selection[0]:
             results["selected_features"] = "-".join(self.scores["selected_features"])
         else:
             results["selected_features"] = "all"

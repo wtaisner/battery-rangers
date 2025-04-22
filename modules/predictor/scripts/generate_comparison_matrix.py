@@ -9,7 +9,7 @@ from modules.predictor.data.utils import combine_split, custom_data_kfold  # pyl
 from modules.predictor.training_and_evaluation.train_eval import CrossValidationPipeline  # pylint: disable=import-error
 
 if __name__ == "__main__":
-    CONFIG_PATH = "../configs/comparison_matrix_combined_all_fs.yaml"
+    CONFIG_PATH = "../configs/comparison_matrix_new_smiles.yaml"
     with open(CONFIG_PATH, encoding="UTF-8") as file:
         config = yaml.safe_load(file)
 
