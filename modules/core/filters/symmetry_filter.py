@@ -9,9 +9,9 @@ from networkx.algorithms.cycles import simple_cycles
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import AvailableSymmetry
 from modules.core.features.utils import get_graph_from_molecule
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 from modules.core.graph_visualization import plot_nx_graphs
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module

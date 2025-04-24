@@ -2,7 +2,7 @@
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class SMARTSFilter(GenericMoleculeFilter):

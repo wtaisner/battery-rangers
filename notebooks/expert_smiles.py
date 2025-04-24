@@ -70,7 +70,7 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    from modules.core.features.filters.flatness_filter import FlatnessFilter
+    from modules.core.filters.flatness_filter import FlatnessFilter
 
     flatness_filter = FlatnessFilter()
     filtered = flatness_filter.apply(df_1["molecule"].tolist(), return_flatness=True)
@@ -128,8 +128,8 @@ def _(Chem, lp, np, pd, smiles_2):
     from rdkit.Chem import Draw
     from tqdm import tqdm
 
-    from modules.core.features.filters.symmetry_filter import SymmetryFilter
     from modules.core.features.utils import get_pymatgen_molecule_from_smiles
+    from modules.core.filters import SymmetryFilter
 
     symmetry_filter = SymmetryFilter()
 

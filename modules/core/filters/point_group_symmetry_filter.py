@@ -7,9 +7,9 @@ from pymatgen.core import Molecule
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import analyse_symmetry_point_group
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 

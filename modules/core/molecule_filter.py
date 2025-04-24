@@ -6,11 +6,11 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.conjugation_filter import ConjugationFilter
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
-from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-from modules.core.features.filters.smarts_filter import SMARTSFilter
-from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.core.filters.conjugation_filter import ConjugationFilter
+from modules.core.filters.generic_filter import GenericMoleculeFilter
+from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.filters.smarts_filter import SMARTSFilter
+from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
 
 # Set up the logger for the module
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module

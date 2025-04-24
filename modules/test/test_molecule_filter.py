@@ -3,12 +3,12 @@ import pytest
 from rdkit import Chem
 
 # pylint: disable=import-error
-from modules.core.features.filters.conjugation_filter import ConjugationFilter
-from modules.core.features.filters.flatness_filter import FlatnessFilter
-from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-from modules.core.features.filters.smarts_filter import SMARTSFilter
-from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
-from modules.core.features.filters.symmetry_filter import SymmetryFilter
+from modules.core.filters.conjugation_filter import ConjugationFilter
+from modules.core.filters.flatness_filter import FlatnessFilter
+from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.filters.smarts_filter import SMARTSFilter
+from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.core.filters.symmetry_filter import SymmetryFilter
 
 
 @pytest.mark.parametrize(

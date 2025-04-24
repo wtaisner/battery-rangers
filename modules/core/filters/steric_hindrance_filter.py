@@ -6,8 +6,8 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.utils import mol_to_xyz
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class StericHindranceFilter(GenericMoleculeFilter):

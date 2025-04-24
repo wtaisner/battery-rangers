@@ -1,8 +1,8 @@
 """Filter that leaves molecules with flatness."""
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.flatness import get_flatness_mol
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class FlatnessFilter(GenericMoleculeFilter):
