@@ -175,3 +175,6 @@ chembl_*
 *.out
 
 wandb/
+
+# disable all marimo related files
+__marimo__
