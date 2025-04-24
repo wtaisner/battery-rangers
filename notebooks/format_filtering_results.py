@@ -12,7 +12,7 @@ def _():
     import marimo as mo
     import pandas as pd
 
-    from modules.core.features.molecule_filter import MoleculeFilter
+    from modules.core.molecule_filter import MoleculeFilter
 
     filter = MoleculeFilter()
     return literal_eval, mo, pd, re
