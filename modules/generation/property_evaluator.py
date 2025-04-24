@@ -7,12 +7,13 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
-from modules.core.features.filters.conjugation_filter import ConjugationFilter
-from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-from modules.core.features.filters.smarts_filter import SMARTSFilter
-from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.features.flatness import get_flatness_mol
 from modules.core.features.pore_size import estimate_pore_size
+from modules.core.filters.conjugation_filter import ConjugationFilter
+from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.filters.smarts_filter import SMARTSFilter
+from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.core.filters.symmetry_filter import SymmetryFilter
 
 logger = logging.getLogger(__name__)
 console_handler = logging.StreamHandler()
@@ -58,23 +59,25 @@ class PropertyEvaluator:
     """Property evaluator class, used to evaluate a set of defined properties for a given molecule(s).
 
     Args:
-        known_smiles_path (str, optional): Path to a .smi file containing known SMILES strings. Defaults to None.
+        reference_smiles (str, optional): Path to a .smi file containing known SMILES strings that will be used to evaluate similarity between the generated molecules and reference ones. Defaults to None.
+        **kwargs: Additional keyword arguments for filters.
     """
 
-    def __init__(self, known_smiles_path: str | None = None, **kwargs):
+    def __init__(self, reference_smiles: str | None = None, **kwargs):
         self.conjugation_filter = ConjugationFilter()
-        self.smarts_filter = SMARTSFilter()
+        self.smarts_filter = SMARTSFilter(kwargs.get("smarts", None))
         self.point_group_symmetry_filter = PointGroupSymmetryFilter(kwargs.get("translation_table_path", "data/symmetries/symmetry_translation.csv"))
         self.steric_hindrance_filter = StericHindranceFilter()
+        self.symmetry_filter = SymmetryFilter(kwargs.get("min_isomorphic_nodes", 8), kwargs.get("types_to_check", None))
 
         self.fingerprint_generator = GetMorganGenerator(radius=2)
 
-        self.known_smiles = None
+        self.reference_smiles = None
 
-        if known_smiles_path:
-            self.known_smiles = pd.read_csv(known_smiles_path, sep=" ", header=None)
-            self.known_smiles.columns = ["smiles"]
-            self.known_smiles["fingerprint"] = self.known_smiles["smiles"].apply(lambda x: self.fingerprint_generator.GetFingerprint(Chem.MolFromSmiles(x)))
+        if reference_smiles:
+            self.reference_smiles = pd.read_csv(reference_smiles, sep=" ", header=None)
+            self.reference_smiles.columns = ["smiles"]
+            self.reference_smiles["fingerprint"] = self.reference_smiles["smiles"].apply(lambda x: self.fingerprint_generator.GetFingerprint(Chem.MolFromSmiles(x)))
 
     def evaluate(self, smiles: str) -> float:
         """Evaluate the properties for a given molecule.
@@ -100,7 +103,7 @@ class PropertyEvaluator:
         flatness_score = self._calculate_flatness(molecule)
         steric_hindrance_score = self._calculate_steric_hindrance(molecule)
 
-        if self.known_smiles is not None:
+        if self.reference_smiles is not None:
             similarity_score = self._calculate_mean_similarity(molecule)
         else:
             similarity_score = 1e-10
@@ -156,15 +159,21 @@ class PropertyEvaluator:
         """
         Evaluate the symmetry of the molecule.
         """
-        symmetrical = self.point_group_symmetry_filter.apply([molecule])
-        return float(len(symmetrical))
+        # symmetry_group, symmetrical_point = self.point_group_symmetry_filter.apply([molecule], return_point_group_symmetry=True)
+
+        symmetrical_graph = self.symmetry_filter.apply([molecule])
+
+        # if symmetry_group[0] == "Cs":
+        #     return 0.0
+        # return float(len(symmetrical))
+        return float(len(symmetrical_graph))
 
     def _calculate_mean_similarity(self, molecule: Mol) -> float:
         """
         Calculate the mean similarity of the molecule to a set of known molecules.
         """
         fingerprint = self.fingerprint_generator.GetFingerprint(molecule)
-        similarities = self.known_smiles["fingerprint"].apply(lambda x: Chem.DataStructs.TanimotoSimilarity(fingerprint, x))
+        similarities = self.reference_smiles["fingerprint"].apply(lambda x: Chem.DataStructs.TanimotoSimilarity(fingerprint, x))
         return similarities.mean()
 
     def _calculate_steric_hindrance(self, molecule: Mol) -> float:
@@ -176,15 +185,15 @@ class PropertyEvaluator:
 
 
 if __name__ == "__main__":
-    evaluator = PropertyEvaluator(known_smiles_path="data/raw/experts_merged.smi")
-    # evaluator.evaluate(
-    #     "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
-    # )
-    # evaluator.evaluate("C12=CC=C(C=C1)CCC2")
+    evaluator = PropertyEvaluator(reference_smiles="data/raw/experts_merged.smi")
+    evaluator.evaluate(
+        "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
+    )
+    # evaluator.evaluate("N#Cc1cc(C#N)c(F)c(C#N)c1F")
     # flatness -> nan for
     # C12=CC=C(C=C1)CCC2
     # C12=CC=C(C=C1)COC=C2
     # C1=C(F)C(Cl)=CC=C1C(=O)C
     # C12=CC=C(C=C1)C(CC2)NC=CC
-    score = evaluator.evaluate("XYZ")
-    print(score)
+    # score = evaluator.evaluate("XYZ")
+    # print(score)
