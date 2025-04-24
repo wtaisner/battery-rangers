@@ -31,7 +31,7 @@ class BatteryProperties:
 
     def __init__(self, params: Parameters):
         self.known_smiles_path = params.known_smiles_path
-        self.property_evaluator = PropertyEvaluator(known_smiles_path=self.known_smiles_path)
+        self.property_evaluator = PropertyEvaluator(reference_smiles=self.known_smiles_path)
 
     def __call__(self, smiles: list[str]) -> ComponentResults:
         """Evaluate the properties for a given molecule.
