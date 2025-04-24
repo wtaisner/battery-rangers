@@ -1,211 +1,37 @@
 """Module for filtering molecules based on symmetry properties."""
 import logging
-import math
 from collections import defaultdict
-from typing import Any, Sequence
+from typing import Any
 
-import matplotlib.pyplot as plt
 import networkx as nx
+from networkx import faster_could_be_isomorphic
 from networkx.algorithms.cycles import simple_cycles
-from networkx.algorithms.isomorphism import GraphMatcher
 from rdkit import Chem
 from rdkit.Chem import Mol
 
 from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.symmetries import AvailableSymmetry
 from modules.core.features.utils import get_graph_from_molecule
+from modules.core.graph_visualization import plot_nx_graphs
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 logger.setLevel(logging.DEBUG)
 
 
-# pylint: disable=too-many-branches, too-many-locals, too-many-statements
-def plot_nx_graphs(
-    graphs: nx.Graph | Sequence[nx.Graph],
-    titles: str | Sequence[str] | None = None,
-    pos_list: Sequence[dict[Any, tuple[float, float]]] | None = None,  # Pass positions
-    node_color_list: Sequence[Sequence[str] | str] | None = None,  # Pass specific node colors
-    edge_color_list: Sequence[Sequence[str] | str] | None = None,  # Pass specific edge colors
-    figsize_per_plot: tuple[int, int] = (6, 5),
-    node_options: dict[str, Any] | None = None,
-    edge_options: dict[str, Any] | None = None,
-    label_options: dict[str, Any] | None = None,
-    filename: str | None = None,
-    show_plot: bool = True,
-) -> None:
-    """
-    Plots one or more NetworkX graphs using Matplotlib, arranging multiple
-    graphs in a grid. Uses Kamada-Kawai layout by default if positions are not provided.
-    Supports passing pre-calculated positions and specific node/edge colors for highlighting.
-
-    Args:
-        graphs: A single NetworkX graph or a sequence (list/tuple) of graphs.
-        titles: A single title or a sequence of titles.
-        pos_list: Optional. A sequence of position dictionaries (node -> (x, y)),
-                  one for each graph. If provided, layout calculation is skipped.
-                  Crucial for keeping layouts consistent across related plots.
-        node_color_list: Optional. Sequence where each item is a list of node colors
-                         for the corresponding graph, or a single color string.
-                         Overrides node_options['node_color'].
-        edge_color_list: Optional. Sequence where each item is a list of edge colors
-                         for the corresponding graph, or a single color string.
-                         Overrides edge_options['edge_color'].
-        figsize_per_plot: Approximate (width, height) in inches for each subplot.
-        node_options: Default dictionary of args for nx.draw_networkx_nodes().
-        edge_options: Default dictionary of args for nx.draw_networkx_edges().
-        label_options: Default dictionary of args for nx.draw_networkx_labels().
-        filename: If provided, saves the plot to this file.
-        show_plot: If True, calls plt.show().
-    """
-    # --- Input Handling ---
-    single_graph_input = not isinstance(graphs, (list, tuple))
-    if single_graph_input:
-        graphs = [graphs]
-        if isinstance(titles, str):
-            titles = [titles]
-        elif titles is not None and not isinstance(titles, (list, tuple)):
-            print("Warning: 'titles' type mismatch. Ignoring.")
-            titles = None
-        # Handle single pos dict, color list etc. if needed, but typically list expected
-        if pos_list is not None and isinstance(pos_list, dict):
-            pos_list = [pos_list]
-        if node_color_list is not None and not isinstance(node_color_list[0], (list, tuple)):
-            node_color_list = [node_color_list]  # Wrap single list/str
-        if edge_color_list is not None and not isinstance(edge_color_list[0], (list, tuple)):
-            edge_color_list = [edge_color_list]  # Wrap single list/str
-
-    num_graphs = len(graphs)
-    if num_graphs == 0:
-        print("No graphs provided.")
-        return None
-
-    # Validate list lengths
-    if titles is not None and len(titles) != num_graphs:
-        print("Warning: Title count != graph count. Using defaults.")
-        titles = None
-    if pos_list is not None and len(pos_list) != num_graphs:
-        print("Warning: pos_list count != graph count. Ignoring pos_list.")
-        pos_list = None
-    if node_color_list is not None and len(node_color_list) != num_graphs:
-        print("Warning: node_color_list count != graph count. Ignoring node_color_list.")
-        node_color_list = None
-    if edge_color_list is not None and len(edge_color_list) != num_graphs:
-        print("Warning: edge_color_list count != graph count. Ignoring edge_color_list.")
-        edge_color_list = None
-
-    # --- Grid and Figure Setup ---
-    cols = max(1, num_graphs if num_graphs <= 3 else int(math.ceil(math.sqrt(num_graphs))))  # Prefer horizontal for 3 plots
-    rows = int(math.ceil(num_graphs / cols))
-    total_figsize = (cols * figsize_per_plot[0], rows * figsize_per_plot[1])
-    _, axes = plt.subplots(rows, cols, figsize=total_figsize, squeeze=False)
-    axes_flat = axes.flatten()
-
-    # --- Default Drawing Options ---
-    default_node_opts = {"node_size": 400, "node_color": "skyblue"}
-    default_edge_opts = {"edge_color": "gray", "width": 1.0}
-    default_label_opts = {"font_size": 9, "font_color": "black"}
-
-    # Merge user options with defaults (important for non-color options)
-    merged_node_opts = {**default_node_opts, **(node_options or {})}
-    merged_edge_opts = {**default_edge_opts, **(edge_options or {})}
-    merged_label_opts = {**default_label_opts, **(label_options or {})}
-
-    # --- Loop through graphs and Plot ---
-    for i, g in enumerate(graphs):
-        ax = axes_flat[i]
-        current_title = titles[i] if titles else f"Graph {i + 1}"
-
-        if g is None or not isinstance(g, (nx.Graph, nx.DiGraph)):
-            print(f"Warning: Item {i} is not a valid NX graph. Skipping.")
-            ax.set_title(f"{current_title} (Invalid Graph)")
-            ax.axis("off")
-            continue
-
-        pos = None
-        layout_error = None
-
-        # --- Position Calculation ---
-        if pos_list and pos_list[i] is not None:
-            pos = pos_list[i]
-            # Ensure positions cover all nodes in the current graph G
-            missing_nodes = set(g.nodes()) - set(pos.keys())
-            if missing_nodes:
-                print(f"Warning: Graph {i + 1} nodes missing from pos_list: {missing_nodes}. Layout might be incomplete.")
-                # Optional: try to compute layout just for missing? Or filter pos?
-                # Filter pos to only include nodes present in G
-                pos = {node: p for node, p in pos.items() if node in g.nodes()}
-
-        if pos is None:  # Calculate layout if not provided
-            try:
-                pos = nx.kamada_kawai_layout(g)
-            except ValueError as e:
-                logger.error(f"Warning: Kamada-Kawai layout failed for graph {i + 1}. Error: {e}")
-
-        if pos is None:
-            ax.set_title(f"{current_title} (Layout Error: {layout_error or 'Unknown'})")
-            ax.axis("off")
-            continue
-
-        # --- Determine Colors for this subplot ---
-        current_node_colors = merged_node_opts.get("node_color", "skyblue")  # Default
-        if node_color_list and node_color_list[i] is not None:
-            current_node_colors = node_color_list[i]
-            if isinstance(current_node_colors, list) and len(current_node_colors) != g.number_of_nodes():
-                print(f"Warning: node_color_list[{i}] length mismatch for graph {i + 1}. Using default color.")
-                current_node_colors = merged_node_opts.get("node_color", "skyblue")
-
-        current_edge_colors = merged_edge_opts.get("edge_color", "gray")  # Default
-        if edge_color_list and edge_color_list[i] is not None:
-            current_edge_colors = edge_color_list[i]
-            if isinstance(current_edge_colors, list) and len(current_edge_colors) != g.number_of_edges():
-                print(f"Warning: edge_color_list[{i}] length mismatch for graph {i + 1}. Using default color.")
-                current_edge_colors = merged_edge_opts.get("edge_color", "gray")
-
-        # --- Drawing ---
-        # Draw nodes, passing specific colors if available
-        node_draw_opts = {**merged_node_opts, "node_color": current_node_colors}  # Start with merged defaults
-        nx.draw_networkx_nodes(g, pos, ax=ax, **node_draw_opts)
-
-        # Draw edges, passing specific colors if available
-        edge_draw_opts = {**merged_edge_opts, "edge_color": current_edge_colors}  # Start with merged defaults
-        nx.draw_networkx_edges(g, pos, ax=ax, **edge_draw_opts)
-
-        # Draw labels (usually doesn't need color override list)
-        nx.draw_networkx_labels(g, pos, ax=ax, **merged_label_opts)
-        # ---------------
-
-        ax.set_title(current_title)
-        ax.axis("off")
-
-    # --- Cleanup and Display ---
-    for i in range(num_graphs, len(axes_flat)):
-        axes_flat[i].axis("off")
-    plt.tight_layout()
-    if filename:
-        try:
-            plt.savefig(filename)
-            print(f"Plot saved to {filename}")
-        except ValueError as e:
-            logger.error(f"Error saving plot: {e}")
-    if show_plot:
-        plt.show()
-    return None
-
-
 class SymmetryFilter(GenericMoleculeFilter):
     """Check if any of the defined symmetries are present in the molecule."""
 
-    def __init__(self, min_isomorphic_nodes: int = 6, types_to_check: list[AvailableSymmetry] | None = None):
+    def __init__(self, min_isomorphic_nodes: int = 8, types_to_check: list[AvailableSymmetry] | None = None):
         """
         Args:
             min_isomorphic_nodes (int): The minimum number of nodes an isomorphic
                 component must have to be counted/considered a valid symmetry.
                 Defaults to 3 (ignores single atoms and diatomic fragments).
-            types_to_check (list[AvailableSymmetry]): List of symmetry types to check. If None, defaults to AvailableSymmetry.WHOLE_RING and RING_NODES
+            types_to_check (list[AvailableSymmetry]): List of symmetry types to check. If None, defaults to AvailableSymmetry.WHOLE_RING, EDGE, NODE and RING_NODES
         """
         self.min_isomorphic_nodes = min_isomorphic_nodes
         if types_to_check is None:
-            self.types_to_check = [AvailableSymmetry.WHOLE_RING, AvailableSymmetry.RING_NODES]
+            self.types_to_check = [AvailableSymmetry.WHOLE_RING, AvailableSymmetry.EDGE, AvailableSymmetry.RING_NODES, AvailableSymmetry.NODE]
         else:
             self.types_to_check = types_to_check
 
@@ -306,8 +132,7 @@ class SymmetryFilter(GenericMoleculeFilter):
             return symmetrical_molecules_list, molecule_branch_summaries
         return symmetrical_molecules_list
 
-    @staticmethod
-    def _find_or_add_distinct_representative(subgraph_to_check: nx.Graph, distinct_rep_list: list[nx.Graph]) -> int:
+    def _find_or_add_distinct_representative(self, subgraph_to_check: nx.Graph, distinct_rep_list: list[nx.Graph]) -> int:
         """
         Checks if subgraph_to_check is isomorphic to any graph in distinct_rep_list.
 
@@ -320,14 +145,13 @@ class SymmetryFilter(GenericMoleculeFilter):
                     If no, appends subgraph_to_check to the list and returns its new index.
         """
         for i, stored_graph in enumerate(distinct_rep_list):
-            if SymmetryFilter.check_isomorphism(subgraph_to_check, stored_graph):
+            if self.check_isomorphism(subgraph_to_check, stored_graph):
                 return i  # Found match at index i
         # No match found, add it as a new distinct representative
         distinct_rep_list.append(subgraph_to_check)
         return len(distinct_rep_list) - 1  # Return its new index
 
-    @staticmethod
-    def check_isomorphism(graph1: nx.Graph, graph2: nx.Graph) -> bool:
+    def check_isomorphism(self, graph1: nx.Graph, graph2: nx.Graph) -> bool:
         """
         Check whether two graphs are isomorphic using networkx GraphMatcher.
 
@@ -343,14 +167,18 @@ class SymmetryFilter(GenericMoleculeFilter):
         if graph1.number_of_edges() != graph2.number_of_edges():
             return False
 
+        if graph1.number_of_nodes() < self.min_isomorphic_nodes or graph2.number_of_nodes() < self.min_isomorphic_nodes:
+            return False
+
         deg_seq1 = sorted([d for n, d in graph1.degree()])
         deg_seq2 = sorted([d for n, d in graph2.degree()])
         if deg_seq1 != deg_seq2:
             return False
 
         try:
-            gm = GraphMatcher(graph1, graph2)
-            return gm.is_isomorphic()
+            # gm = GraphMatcher(graph1, graph2)
+            # return gm.is_isomorphic()
+            return faster_could_be_isomorphic(graph1, graph2)
         except ValueError as e:
             logger.error(f"Isomorphism check failed: {e}")
             return False  # Treat error as non-isomorphic
@@ -510,7 +338,7 @@ class SymmetryFilter(GenericMoleculeFilter):
                 logger.warning("Layout failed for %s (%s): %s. Disabling plots for this check.", mol_identifier, symmetry_type.name, e)
         return pos_original
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements, too-many-branches
     def _perform_cut(self, graph: nx.Graph, symmetry_type: AvailableSymmetry, obj: Any) -> dict | None:
         """
         Performs the cut operation on a copy of the graph based on symmetry type.
@@ -625,6 +453,7 @@ class SymmetryFilter(GenericMoleculeFilter):
         for rep_idx, num_in_group in analysis_result["valid_iso_details"]:
             all_origins_details_list.append((rep_idx, symmetry_type, cut_obj, num_in_group, total_components))
 
+    # pylint: disable=too-many-branches
     def _plot_symmetry_cut(
         self, graph: nx.Graph, pos_original: dict, symmetry_type: AvailableSymmetry, cut_obj: Any, nodes_cut: set, edges_cut: set, analysis_result: dict, mol_identifier: str, plot_suffix: str
     ) -> None:
@@ -732,6 +561,17 @@ if __name__ == "__main__":
         "Brc1ccc2c(c1)c1cc(Br)ccc1c1nc3cc4nc5c6ccc(-c7cc(-c8ccc9c(c8)c8ccccc8c8nc%10cc%11nc%12c%13ccc(Br)cc%13c%13cc(Br)ccc%13c%12nc%11cc%10nc98)c8ccc9c(-c%10ccc%11c(c%10)c%10ccccc%10c%10nc%12cc%13nc%14c%15ccc(Br)cc%15c%15cc(Br)ccc%15c%14nc%13cc%12nc%11%10)cc(-c%10ccc%11c(c%10)c%10ccccc%10c%10nc%12cc%13nc%14c%15ccc(Br)cc%15c%15cc(Br)ccc%15c%14nc%13cc%12nc%11%10)c%10c9c8c7CC%10)cc6c6ccccc6c5nc4cc3nc21",
         ## should pass - but doesn't
         "Brc1ccc2c(c1)c1cc(-c3ccc(-c4cc(-c5ccc(-c6ccc7c(c6)c6cc(Br)ccc6c6nc8cc9nc%10c%11ccc(Br)cc%11c%11cc(Br)ccc%11c%10nc9cc8nc76)cc5)cc(-c5ccc(-c6ccc7c(c6)c6cc(Br)ccc6c6nc8cc9nc%10c%11ccc(Br)cc%11c%11cc(Br)ccc%11c%10nc9cc8nc76)cc5)n4)cc3)ccc1c1cc3nc4cc5nc6c7ccc(Br)cc7c7cc(Br)ccc7c6nc5cc4nc3cc21",
+        ## very long computation under GraphMatcher - but should pass
+        "O=S1(=O)c2ccc(Br)cc2S(=O)(=O)c2cc(-c3ccc(-c4ccc(C(c5ccc(-c6ccc(-c7ccc8c(c7)S(=O)(=O)C7C=CC(Br)=CC7S8(=O)=O)cc6)cc5)C(c5ccc(-c6ccc(-c7ccc8c(c7)S(=O)(=O)C7C=CC(Br)=CC7S8(=O)=O)cc6)cc5)c5ccc(-c6ccc(-c7ccc8c(c7)S(=O)(=O)C7C=C(Br)C=CC7S8(=O)=O)cc6)cc5)cc4)cc3)ccc21",
+    ]
+
+    molecules = [
+        # "N#C/C=C/c1nc(/C=C/C#N)nc(/C=C/C#N)n1", # won't pass with threshold
+        ## doesn't pass (C1)
+        "CCc1ccc(NCc2cc(O)c(CNc3ccc(CCc4ccc(CNc5ccc(N(c6ccc(NCc7ccc(CCc8ccc(NCc9cc(O)c(CNc%10ccc(CC)cc%10)cc9O)cc8)cc7O)cc6)c6ccc(NCc7ccc(CCc8ccc(NCc9cc(O)c(CNc%10ccc(CC)cc%10)cc9O)cc8)cc7O)cc6)cc5)c(O)c4)cc3)cc2O)cc1",
+        ## will probably pass on node
+        "O=Cc1ccc(/C=N/c2ccc(Oc3ccc(/N=C/c4ccc(C=O)cc4)cc3)cc2)cc1",
+        "O=CC1=C(O)C(C=O)=C(O)C(=CNc2ccc(N(c3ccc(NC=C4C(=O)C(C=O)=C(O)C(C=O)=C4O)cc3)c3ccc(NC=C4C(=O)C(C=O)=C(O)C(C=O)=C4O)cc3)cc2)C1=O",
     ]
 
     symmetrical = symmetry_filter.apply([Chem.MolFromSmiles(mol) for mol in molecules], plot_symmetry_checks=True)
