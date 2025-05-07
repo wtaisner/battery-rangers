@@ -119,7 +119,7 @@ class MoleculeFilter:
         filter_total_times: dict[str, float] = {filter_operator.__class__.__name__: 0.0 for filter_operator in self.filters}  # Store total times per filter
 
         if isinstance(molecules[0], str):
-            mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules]
+            mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules if isinstance(smiles, str)]
             # Filter out None values and keep track of original SMILES
             valid_mol_smiles = []
             molecules_to_filter = []
