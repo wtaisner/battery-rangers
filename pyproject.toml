@@ -9,6 +9,7 @@ dependencies = [
     "cairosvg>=2.7.1",
     "deepchem>=2.8.0",
     "diffusers>=0.32.2",
+    "fastparquet>=2024.11.0",
     "fcd-torch>=1.0.7",
     "jupyter>=1.1.1",
     "lets-plot>=4.6.2",
