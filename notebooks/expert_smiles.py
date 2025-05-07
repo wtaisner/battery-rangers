@@ -1,7 +1,7 @@
 import marimo
 
 __generated_with = "0.13.1"
-app = marimo.App(width="full", auto_download=["html"], sql_output="pandas")
+app = marimo.App(width="full", sql_output="pandas")
 
 
 @app.cell
@@ -58,6 +58,7 @@ def _(Chem, df_1, sf):
     df_1["selfies"].to_csv("data/raw/experts_merged.slf", sep=" ", index=None, header=None)
     df_1["canon_smiles"].to_csv("data/raw/experts_merged.smi", sep=" ", index=None, header=None)
     df_1["molecule"] = df_1["canon_smiles"].apply(Chem.MolFromSmiles)
+    df_1.to_csv("data/raw/experts_merged.csv", index=None)
     df_1.head(2)
     return
 
