@@ -18,23 +18,23 @@ def _():
 
     # Suppress RDKit warnings (optional, can be noisy)
     rdBase.DisableLog("rdApp.warning")
-    return Chem, Draw, IPyImage, List, Optional, Tuple, glob, os, pd, random
+    return Chem, Draw, List, Optional, Tuple, glob, os, pd, random
 
 
 @app.cell
 def _(Tuple):
-    _INPUT_PATH_PATTERN: str = "data/raw/experts_merged.smi"
+    INPUT_PATH_PATTERN: str = "data/sampling/reinvent/filtered.csv"
     PNG_SUB_IMG_SIZE: Tuple[int, int] = (500, 500)
     MOLS_PER_ROW: int = 5
     MAX_DISPLAY_MOLS: int = 25
-    return MAX_DISPLAY_MOLS, MOLS_PER_ROW, PNG_SUB_IMG_SIZE
+    return INPUT_PATH_PATTERN, MAX_DISPLAY_MOLS, MOLS_PER_ROW, PNG_SUB_IMG_SIZE
 
 
 @app.cell
 def _(
     Chem,
     Draw,
-    IPyImage,
+    INPUT_PATH_PATTERN,
     List,
     MAX_DISPLAY_MOLS,
     MOLS_PER_ROW,
@@ -128,20 +128,10 @@ def _(
         generated_object = None
         try:
             generated_object = Draw.MolsToGridImage(mols, molsPerRow=mols_per_row, subImgSize=sub_img_size, legends=effective_legends, useSVG=False)
-            if isinstance(generated_object, IPyImage) and hasattr(generated_object, "data"):
-                png_data = generated_object.data
-                if isinstance(png_data, bytes):
-                    with open(output_filepath, "wb") as f:
-                        f.write(png_data)
-                    print(f"  ✅ PNG Image saved to: {output_filepath} (SubImgSize: {sub_img_size})")
-                    return output_filepath
-                else:
-                    print(f"  ❌ Error: IPython Image object's .data attribute is not bytes (Type: {type(png_data)}). Cannot save.")
-                    return None
-            else:
-                print("  ❌ Error: RDKit MolsToGridImage (PNG) did not return a recognized Image object with data attribute.")
-                print(f"     Object type received: {type(generated_object)}")
-                return None
+            generated_object.save(output_filepath, format="png")
+
+            print(f"  ✅ PNG Image saved to: {output_filepath} (SubImgSize: {sub_img_size})")
+
         except Exception as e:
             print(f"  ❌ Error during PNG generation/saving for {output_filepath}: {type(e).__name__} - {e}")
             return None
@@ -209,13 +199,10 @@ def _(
         finally:
             print("-" * 30)
 
-    if "INPUT_PATH_PATTERN" not in globals():
-        print("❌ Configuration Error: INPUT_PATH_PATTERN is not defined.")
-        _INPUT_PATH_PATTERN = "*.csv"
-    print(f"Searching for files matching pattern: '{_INPUT_PATH_PATTERN}'")
-    file_list: List[str] = glob.glob(_INPUT_PATH_PATTERN, recursive=True)
+    print(f"Searching for files matching pattern: '{INPUT_PATH_PATTERN}'")
+    file_list: List[str] = glob.glob(INPUT_PATH_PATTERN, recursive=True)
     if not file_list:
-        print(f"❌ No files found matching pattern: '{_INPUT_PATH_PATTERN}'")
+        print(f"❌ No files found matching pattern: '{INPUT_PATH_PATTERN}'")
         print("   Please check the INPUT_PATH_PATTERN variable in section 2.")
     else:
         print(f"✅ Found {len(file_list)} file(s):")
