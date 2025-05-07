@@ -15,7 +15,7 @@ from modules.core.filters.generic_filter import GenericMoleculeFilter
 from modules.core.graph_visualization import plot_nx_graphs
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SymmetryFilter(GenericMoleculeFilter):
@@ -74,13 +74,8 @@ class SymmetryFilter(GenericMoleculeFilter):
         plot_checks: bool = kwargs.get("plot_symmetry_checks", False)
         return_branch_counts: bool = kwargs.get("return_branch_counts", False)
 
-        logger.info("--- Starting Symmetry Analysis ---")
-        log_types_names = sorted([t.name for t in self.types_to_check])
-        logger.info("Checking symmetry types: %s", log_types_names)
-
         for i, (mol_graph, original_mol) in enumerate(mol_graphs):
             mol_identifier = f"Mol {i + 1}"
-            logger.info("Analyzing %s...", mol_identifier)
 
             # Stores ONE representative subgraph for each distinct isomorphic shape
             distinct_isomorphic_representatives: list[nx.Graph] = []
@@ -93,7 +88,6 @@ class SymmetryFilter(GenericMoleculeFilter):
                 continue
 
             for symmetry_type_enum in self.types_to_check:
-                logger.debug("Checking %s for %s...", symmetry_type_enum.name, mol_identifier)
                 try:
                     symmetrical = self._check_symmetry(
                         mol_graph,
@@ -111,7 +105,7 @@ class SymmetryFilter(GenericMoleculeFilter):
             # --- Summarize and Store results for the current molecule ---
             molecule_summary = {}  # Summary dict for *this* molecule
             if not all_valid_symmetric_origins:
-                logger.info("Result for %s: No valid symmetric cuts found (above threshold).", mol_identifier)
+                logger.debug("Result for %s: No valid symmetric cuts found (above threshold).", mol_identifier)
             else:
                 _, sym_type_enum, cut_obj, num_in_group, total_comps = all_valid_symmetric_origins[0]
 
@@ -202,8 +196,6 @@ class SymmetryFilter(GenericMoleculeFilter):
         else:
             cycles_of_len = [cycle for cycle in cycles if len(cycle) == length]
 
-        logger.debug(f"All cycles of length {length}: {cycles_of_len}")
-
         return cycles_of_len
 
     def _generate_candidate_set(
@@ -287,6 +279,10 @@ class SymmetryFilter(GenericMoleculeFilter):
             graph_copy = cut_info["graph_copy"]
             nodes_cut = cut_info["nodes_cut"]
             edges_cut = cut_info["edges_cut"]
+
+            # check if the graph is null
+            if graph_copy.number_of_nodes() == 0:
+                return False
 
             if not nx.is_connected(graph_copy):
                 analysis_result = self._analyze_components(graph, graph_copy, distinct_rep_list)
