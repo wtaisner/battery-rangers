@@ -15,6 +15,7 @@ dependencies = [
     "lets-plot>=4.6.2",
     "marimo[lsp]>=0.13.1",
     "mlxtend>=0.23.4",
+    "molscore>=1.9.3",
     "networkx>=3.4.2",
     "numpy>=2.2.2",
     "openpyxl>=3.1.5",
