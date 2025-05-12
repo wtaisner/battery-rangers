@@ -17,6 +17,7 @@ from rdkit.rdBase import DisableLog
 from tqdm.auto import tqdm
 
 import wandb
+from modules.core.molecule_filter import MoleculeFilter
 
 DisableLog("rdApp.*")
 
@@ -63,6 +64,7 @@ class MoleculeGenerationEvaluator:
         self.batch_size: int = batch_size
 
         self._fcd_calculator: FCD | None = None
+        self.molecule_filter = MoleculeFilter()
 
         # --- Preprocess SMILES ---
         # This step validates and canonicalizes SMILES, preparing them for metric calculation.
@@ -102,10 +104,10 @@ class MoleculeGenerationEvaluator:
 
         for smiles in tqdm(smiles_list, desc=f"Processing {list_name} SMILES", leave=False):
             try:
-                mol = Chem.MolFromSmiles(smiles)
-                canon_smiles = Chem.MolToSmiles(mol, canonical=True)
-                valid_mol_count += 1
-                if canon_smiles not in processed_keys_set:
+                mol = Chem.MolFromSmiles(smiles) if isinstance(smiles, str) else None
+                canon_smiles = Chem.MolToSmiles(mol, canonical=True) if mol else None
+                valid_mol_count += 1 if canon_smiles else 0
+                if canon_smiles and canon_smiles not in processed_keys_set:
                     valid_mols_dict[canon_smiles] = mol
                     processed_keys_set.add(canon_smiles)
 
@@ -141,6 +143,8 @@ class MoleculeGenerationEvaluator:
             "novelty_wrt_reference_set": self.calculate_novelty(set(self.valid_reference_smiles_canon)),
             "internal_diversity": self.calculate_internal_diversity(),
             "fcd": self.calculate_fcd() if self.reference_smiles else np.nan,
+            "percent_passing_filters": self.calculate_percent_passing_filters(),
+            "num_valid_molecules": self.get_num_valid_molecules(),
         }
 
         if log_wandb:
@@ -229,7 +233,7 @@ class MoleculeGenerationEvaluator:
         # Standard definition: normalize by the number of unique valid generated mols
         return num_novel / num_unique_valid
 
-    def calculate_internal_diversity(self, p: int = 1, fp_radius: int = 2, fp_bits: int = 2048) -> float:
+    def calculate_internal_diversity(self, p: int = 1, fp_radius: int = 2, fp_bits: int = 1024) -> float:
         """
         Calculates internal diversity using Tanimoto similarity of Morgan fingerprints.
         This metric detects a common failure case of generative models—mode collapse. With mode collapse,
@@ -242,7 +246,7 @@ class MoleculeGenerationEvaluator:
         Args:
             p: The power parameter for the internal diversity calculation. Defaults to 1.
             fp_radius: Morgan fingerprint radius. Defaults to 2.
-            fp_bits: Morgan fingerprint number of bits. Defaults to 2048.
+            fp_bits: Morgan fingerprint number of bits. Defaults to 1024.
 
         Returns:
             Internal diversity score [0.0, 1.0]. Returns 0.0 if fewer than 2
@@ -333,6 +337,27 @@ class MoleculeGenerationEvaluator:
             logger.error(f"Error calculating FCD: {e}")
             return 0.0
 
+    def calculate_percent_passing_filters(self) -> float:
+        """
+        Calculates the percent of generated molecules that pass all filters.
+
+        Returns:
+            The percent of generated molecules that pass all filters.
+        """
+        if self.valid_generated_smiles_canon:
+            passed_filters = self.molecule_filter.apply(self.valid_generated_smiles_canon)
+            return len(passed_filters) / len(self.valid_generated_smiles_canon)
+        return 0.0
+
+    def get_num_valid_molecules(self) -> int:
+        """
+        Returns the number of valid generated molecules.
+
+        Returns:
+            The number of valid generated molecules.
+        """
+        return self.n_generated_valid
+
 
 if __name__ == "__main__":
     generated_smiles_example = [
@@ -370,4 +395,5 @@ if __name__ == "__main__":
 
     # --- Evaluate All Metrics ---
 
-    all_results = evaluator.evaluate(log_wandb=True, log_examples=True)
+    all_results = evaluator.evaluate(log_wandb=True, log_examples=True, run_name="test_run")
+    print(all_results)
