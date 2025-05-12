@@ -38,6 +38,7 @@ dependencies = [
     "torch>=2.5.1",
     "torchvision>=0.20.1",
     "transformers>=4.49.0",
+    "ty>=0.0.0a8",
     "vtk>=9.4.1",
     "wandb>=0.19.8",
     "watchdog>=6.0.0",
@@ -48,3 +49,7 @@ dependencies = [
 name = "pytorch-cu124"
 url = "https://download.pytorch.org/whl/cu124"
 explicit = true
+
+[tool.ty.rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
