@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.13.1"
+__generated_with = "0.14.0"
 app = marimo.App(width="full", sql_output="pandas")
 
 
@@ -12,9 +12,78 @@ def _():
     import numpy as np
     import pandas as pd
     import selfies as sf
-    from rdkit import Chem
+    from rdkit import Chem, RDLogger
 
-    return Chem, lp, mo, np, pd, plt, sf
+    logger = RDLogger.logger()
+    logger.setLevel(RDLogger.CRITICAL)
+    return Chem, mo, np, pd, plt, sf
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""# 10.06.2025 - data analysis""")
+    return
+
+
+@app.cell
+def _(Chem, pd):
+    df = pd.read_excel("data/raw/data_battery_materials_PRISTINE_CORRECTED_10.06.25.xlsx", sheet_name="Sheet1")
+    print(df.shape)
+    # edit column names: to lower, replace spaces with underscores, remove special characters
+    df.columns = df.columns.str.lower().str.replace(" ", "_").str.replace("-", "_").str.replace("(", "").str.replace(")", "").str.replace("/", "_")
+
+    def canonicalize_smiles_with_location(smiles_string, row_index, col_name):
+        """
+        Attempts to canonicalize a SMILES string.
+        Prints an error with location if it fails.
+        Returns canonical SMILES or None on failure.
+        """
+        if pd.isna(smiles_string) or not isinstance(smiles_string, str) or smiles_string.strip() == "":
+            return None  # Or pd.NA, or "" depending on how you want to represent it
+
+        try:
+            mol = Chem.MolFromSmiles(smiles_string)
+            if mol is None:  # RDKit can return None for invalid SMILES without raising an exception
+                print(f"Niepoprawny SMILES w wierszu {row_index+2}, kolumna '{col_name}': '{smiles_string}'")
+                return None
+            return Chem.MolToSmiles(mol)
+        except Exception as e:
+            print(f"ERROR: Exception processing SMILES at row {row_index+2}, column '{col_name}': '{smiles_string}'. Details: {e}")
+            return None
+
+    # Identify SMILES columns
+    smiles_columns = [col for col in df.columns if "smiles" in col]
+
+    for col_name in smiles_columns:
+        for index, smiles_value in df[col_name].items():
+            canonical_form = canonicalize_smiles_with_location(smiles_value, index, col_name)
+            df.at[index, col_name] = canonical_form
+    return df, smiles_columns
+
+
+@app.cell
+def _(df, smiles_columns):
+    df[smiles_columns].isna().sum()
+    # print all rows in which at least one is na
+    na_rows = df[df[smiles_columns].isna().any(axis=1)]
+    na_rows
+    return
+
+
+@app.cell
+def _(df, smiles_columns):
+    # look for duplicates in all smiles columns
+    def find_duplicates(df, smiles_columns):
+        duplicates = {}
+        for col in smiles_columns:
+            dupes = df[df.duplicated(subset=[col], keep=False)]
+            if not dupes.empty:
+                duplicates[col] = dupes
+        return duplicates
+
+    duplicates = find_duplicates(df, smiles_columns)
+    duplicates
+    return
 
 
 @app.cell(hide_code=True)
@@ -24,48 +93,34 @@ def _(mo):
 
 
 @app.cell
-def _(pd):
-    df = pd.read_excel("data/raw/experts_merged.xlsx", sheet_name="Sheet1")
-    return (df,)
-
-
-@app.cell
 def _(df):
-    # check for duplicates
-    duplicates = df[df.duplicated(subset=["canon_smiles"], keep=False)]
-    duplicates = duplicates.sort_values(by=["canon_smiles"])
-    duplicates
-    return
-
-
-@app.cell
-def _(Chem, df):
-    print(df.shape)
-    df_1 = df[df["SMILES to be used"].apply(lambda x: Chem.MolFromSmiles(x) is not None)]
-    df_1.drop(columns=["smiles", "canon_smiles", "molecule", "Komentarz"], inplace=True)
-    df_1.columns = ["dataset", "capacity_max", "smiles"]
-    df_1["canon_smiles"] = df_1["smiles"].apply(lambda x: Chem.MolToSmiles(Chem.MolFromSmiles(x)))
-    df_1 = df_1.drop_duplicates(subset=["canon_smiles"], keep="first")
-    df_1 = df_1[df_1["dataset"].apply(lambda x: "expert" in x)]
-    print(df_1.shape)
-    df_1.head()
+    df_1 = df["smiles_to_be_used_molecules_with_a_node"]
+    df_1.rename("canon_smiles", inplace=True)
+    df_1.dropna(inplace=True)
+    df_1 = df_1.to_frame()
+    df_1.head(), df_1.shape
     return (df_1,)
 
 
 @app.cell
 def _(Chem, df_1, sf):
     df_1["selfies"] = df_1["canon_smiles"].apply(sf.encoder)
-    df_1["selfies"].to_csv("data/raw/experts_merged.slf", sep=" ", index=None, header=None)
-    df_1["canon_smiles"].to_csv("data/raw/experts_merged.smi", sep=" ", index=None, header=None)
+    df_1["selfies"].to_csv("data/raw/new_experts_merged.slf", sep=" ", index=None, header=None)
+    df_1["canon_smiles"].to_csv("data/raw/new_experts_merged.smi", sep=" ", index=None, header=None)
     df_1["molecule"] = df_1["canon_smiles"].apply(Chem.MolFromSmiles)
-    df_1.to_csv("data/raw/experts_merged.csv", index=None)
-    df_1.head(2)
+    df_1.to_csv("data/raw/new_experts_merged.csv", index=None)
+    df_1.head(2), df_1.shape
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Flatness""")
+    mo.md(
+        r"""
+    # Filters/criteria
+    ## Flatness
+    """
+    )
     return
 
 
@@ -103,130 +158,120 @@ def _(filtered, np, plt):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Symmetry""")
+    mo.md(r"""## Symmetry""")
     return
 
 
 @app.cell
-def _(Chem, pd):
-    smiles_1 = pd.read_csv("data/raw/experts_merged.smi", sep=" ", header=None)
-    smiles_1.columns = ["smiles"]
-    smiles_1["smiles"].apply(lambda x: Chem.MolToSmiles(Chem.MolFromSmiles(x)))
-    smiles_1.shape
-    return (smiles_1,)
-
-
-@app.cell
-def _(smiles_1):
-    smiles_2 = smiles_1.drop_duplicates(subset=["smiles"], keep="first")
-    smiles_2.shape
-    return (smiles_2,)
-
-
-@app.cell
-def _(Chem, lp, np, pd, smiles_2):
-    from pymatgen.symmetry.analyzer import PointGroupAnalyzer
-    from rdkit.Chem import Draw
-    from tqdm import tqdm
-
-    from modules.core.features.utils import get_pymatgen_molecule_from_smiles
-    from modules.core.filters import SymmetryFilter
+def _():
+    from modules.core.filters.symmetry_filter import SymmetryFilter
 
     symmetry_filter = SymmetryFilter()
-
-    def molecule_to_dataframe(molecule):
-        """Extracts X, Y coordinates and symbols into a pandas DataFrame."""
-        data = []
-        for site in molecule:
-            data.append({"x": site.coords[0], "y": site.coords[1], "symbol": site.specie.symbol, "z": site.coords[2]})
-        return pd.DataFrame(data)
-
-    def create_molecule_plot(df, title, color_map):
-        """Creates a lets_plot scatter plot for a molecule DataFrame."""
-        unique_symbols = df["symbol"].unique()
-        current_plot_color_map = {sym: color_map.get(sym, color_map.get("DEFAULT", "gray")) for sym in unique_symbols}
-        plot = (
-            lp.ggplot(df, lp.aes(x="x", y="y", z="z"))
-            + lp.geom_point(lp.aes(color="symbol"), size=3, alpha=0.8)
-            + lp.scale_color_manual(name="Element", values=current_plot_color_map)
-            + lp.coord_fixed(ratio=1)
-            + lp.ggtitle(title)
-            + lp.xlab("X Coordinate (Å)")
-            + lp.ylab("Y Coordinate (Å)")
-            + lp.ggsize(width=4, height=4)
-            + lp.theme_minimal()
-        )
-        return plot
-
-    def create_image_plot(pil_image, title=""):
-        """Creates a lets_plot ggplot object displaying a PIL image."""
-        img_array = np.array(pil_image)
-        plot = lp.ggplot() + lp.geom_imshow(image_data=img_array) + lp.ggtitle(title) + lp.ggsize(width=2, height=2) + lp.theme_void()
-        return plot
-
-    element_colors = {
-        "H": "lightgray",
-        "C": "black",
-        "N": "blue",
-        "O": "red",
-        "F": "lightgreen",
-        "Cl": "green",
-        "Br": "darkblue",
-        "I": "purple",
-        "S": "yellow",
-        "P": "orange",
-        "Si": "darkcyan",
-        "B": "pink",
-        "DEFAULT": "gray",
-    }
-    plots_to_show = []
-    og_point_groups = []
-    for index, row_1 in tqdm(smiles_2.iterrows(), total=smiles_2.shape[0], desc="Processing SMILES"):
-        smiles_str = row_1["smiles"]
-        try:
-            molecule_original = get_pymatgen_molecule_from_smiles(smiles_str)
-            rdkit_mol = Chem.MolFromSmiles(smiles_str)
-            symmetrical = symmetry_filter.apply([rdkit_mol])
-            if len(symmetrical) == 0:
-                passed_symmetry = "no"
-            else:
-                passed_symmetry = "yes"
-            df_original = molecule_to_dataframe(molecule_original)
-            pga = PointGroupAnalyzer(molecule_original)
-            og_point_group = pga.get_pointgroup()
-            og_point_groups.append(str(og_point_group))
-            title_orig = f"Graph: {passed_symmetry} Point: {og_point_group}"
-            plot_original = create_molecule_plot(df_original, title_orig, element_colors)
-            img_rdkit_2d = Draw.MolToImage(rdkit_mol)
-            plot_rdkit_2d = create_image_plot(img_rdkit_2d)
-            grid_plot = lp.gggrid([plot_rdkit_2d, plot_original], ncol=2, fit=True)
-            plots_to_show.append((smiles_str, grid_plot))
-        except ValueError as ve:
-            print(f"Error processing SMILES '{smiles_str}': {ve}")
-            continue
-        except IndexError as ie:
-            print(f"Index error processing SMILES '{smiles_str}': {ie}")
-            continue
-        except Exception as e:
-            print(f"An unexpected error occurred processing SMILES '{smiles_str}': {e}")
-            continue
-    return og_point_groups, plots_to_show
+    return (symmetry_filter,)
 
 
 @app.cell
-def _(plots_to_show):
-    plots_to_show
+def _(df_1, symmetry_filter):
+    all_mol_objects_from_df = [mol for mol in df_1["molecule"].tolist() if mol is not None]
 
-    # optional for more compact view / plots in the loop, as plot.show() won't work
-    # mo.vstack([plot for sml, plot in plots_to_show])
+    symmetrical_mol_objects_list = symmetry_filter.apply(all_mol_objects_from_df)
+
+    symmetrical_set = set(symmetrical_mol_objects_list)
+
+    def is_molecule_symmetrical(mol_object):
+        if mol_object is None:
+            return False
+        return mol_object in symmetrical_set
+
+    df_1["symmetrical"] = df_1["molecule"].apply(is_molecule_symmetrical)
+    return all_mol_objects_from_df, symmetrical_mol_objects_list
+
+
+@app.cell
+def _(symmetrical_mol_objects_list):
+    len(symmetrical_mol_objects_list)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""## Conjugation""")
     return
 
 
 @app.cell
-def _(og_point_groups):
-    from collections import Counter
+def _():
+    from modules.core.filters.conjugation_filter import ConjugationFilter
 
-    Counter(og_point_groups).most_common(10)
+    conjugation_filter = ConjugationFilter()
+    return (conjugation_filter,)
+
+
+@app.cell
+def _(all_mol_objects_from_df, conjugation_filter, df_1):
+    conjugated_mol_objects_list = conjugation_filter.apply(all_mol_objects_from_df)
+
+    conjugated_set = set(conjugated_mol_objects_list)
+
+    def is_molecule_conjugated(mol_object):
+        if mol_object is None:
+            return False
+        return mol_object in conjugated_set
+
+    df_1["conjugated"] = df_1["molecule"].apply(is_molecule_conjugated)
+    return (conjugated_mol_objects_list,)
+
+
+@app.cell
+def _(conjugated_mol_objects_list):
+    len(conjugated_mol_objects_list)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""## Steric hindrance""")
+    return
+
+
+@app.cell
+def _():
+    from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
+
+    steric_hindrance_filter = StericHindranceFilter()
+    return (steric_hindrance_filter,)
+
+
+@app.cell
+def _(all_mol_objects_from_df, df_1, steric_hindrance_filter):
+    steric_mol_objects_list = steric_hindrance_filter.apply(all_mol_objects_from_df)
+
+    steric_set = set(steric_mol_objects_list)
+
+    def is_molecule_steric(mol_object):
+        if mol_object is None:
+            return False
+        return mol_object in steric_set
+
+    df_1["steric"] = df_1["molecule"].apply(is_molecule_steric)
+    return (steric_mol_objects_list,)
+
+
+@app.cell
+def _(steric_mol_objects_list):
+    len(steric_mol_objects_list)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""## Summary""")
+    return
+
+
+@app.cell
+def _(df_1):
+    df_1
     return
 
 
