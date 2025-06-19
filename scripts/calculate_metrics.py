@@ -3,6 +3,7 @@ import argparse
 
 import pandas as pd
 
+# pylint: disable=import-error
 from modules.generation.evaluation import MoleculeGenerationEvaluator
 
 parser = argparse.ArgumentParser(description="Evaluate molecule generation metrics.")
@@ -15,7 +16,7 @@ parser.add_argument(
 parser.add_argument(
     "--training_smiles",
     type=str,
-    required=True,
+    required=False,
     help="Path to the training SMILES file.",
 )
 parser.add_argument(
@@ -25,13 +26,23 @@ parser.add_argument(
     help="Path to the reference SMILES file.",
 )
 
+parser.add_argument(
+    "--run_name",
+    type=str,
+    required=False,
+    help="Name of the run for logging purposes.",
+    default=None,
+)
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
     generated_smiles = pd.read_csv(args.generated_smiles)["SMILES"].tolist()
 
+    if not args.training_smiles:
+        training_smiles = None  # pylint: disable=invalid-name
     # check if file is .smi
-    if args.training_smiles.endswith(".smi"):
+    elif args.training_smiles.endswith(".smi"):
         training_smiles = pd.read_csv(args.training_smiles, header=None)[0].tolist()
     else:
         training_smiles = pd.read_csv(args.training_smiles)["canonical_smiles"].tolist()
@@ -48,4 +59,4 @@ if __name__ == "__main__":
 
     # --- Evaluate All Metrics ---
 
-    all_results = evaluator.evaluate(log_wandb=True, log_examples=True)
+    all_results = evaluator.evaluate(log_wandb=True, log_examples=True, run_name=args.run_name)
