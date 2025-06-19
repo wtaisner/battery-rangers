@@ -75,7 +75,7 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 ### Note that stages must always be a list i.e. double brackets
 [[stage]]
 
-chkpt_file = 'outputs/staged_learning/chembl_fine_tuned_rl_with_inception.chkpt'
+chkpt_file = 'outputs/staged_learning/chembl_finetuned_rl_with_inception.chkpt'
 
 termination = "simple"  # termination criterion fot this stage
 max_score = 1.0  # terminate if this total score is exceeded
