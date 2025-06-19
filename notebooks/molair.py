@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.13.1"
+__generated_with = "0.14.0"
 app = marimo.App(width="medium")
 
 
@@ -20,33 +20,35 @@ def _():
 def _(mo):
     mo.md(
         """
-        # MolAIR training data
+    # MolAIR training data
 
-        **DISCLAIMER** See `notebooks/chembl.py` for information on how to obtain `selfies_config.json`.
-        """
+    **DISCLAIMER** See `notebooks/chembl.py` for information on how to obtain `selfies_config.json`.
+    """
     )
     return
 
 
 @app.cell
 def _(json, pd):
-    with open("notebooks/selfies_config.json", "r") as f_1:
+    with open("outputs/molair/molair_properties_fixed_evaluator_with_cs/vocab.json", "r") as f_1:
         config = json.load(f_1)
-    selfies = pd.read_csv("data/raw/experts_merged.slf", sep=" ", header=None)
+    selfies = pd.read_csv("data/raw/new_experts_merged.slf", sep=" ", header=None)
     selfies.columns = ["selfies"]
-    selfies.shape
+    selfies.shape, config
     return config, selfies
 
 
 @app.cell
 def _(pd, re, selfies):
     lengths = []
+    set_of_tokens = set()
     for selfie in selfies["selfies"]:
         tokens = re.findall(r"\[[^\]]+\]", selfie)
+        set_of_tokens.update(tokens)
         lengths.append(len(tokens))
 
     pd.DataFrame(lengths, columns=["lengths"]).describe()
-    return (lengths,)
+    return lengths, set_of_tokens
 
 
 @app.cell
@@ -54,6 +56,46 @@ def _(lengths, lp):
     plot = lp.ggplot({"lengths": lengths}, lp.aes(x=lengths)) + lp.geom_histogram()
 
     plot
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""# Append custom tokens & update sequence length to current vocab""")
+    return
+
+
+@app.cell
+def _(config, json, set_of_tokens):
+    current_tokens = set(config["vocabulary"])
+    print(len(current_tokens))
+
+    print(len(set_of_tokens))
+
+    set_of_tokens.update(current_tokens)
+    len(set_of_tokens.intersection(current_tokens)) == len(current_tokens)
+
+    config["vocabulary"] = list(set_of_tokens)
+    config["max_str_len"] = 384
+
+    print(config)
+
+    with open("notebooks/new_experts_vocab.json", "w") as f:
+        json.dump(config, f)
+    return
+
+
+@app.cell
+def _(selfies):
+    # print selfies as nicely pastable list into yaml
+    for s in selfies.iterrows():
+        print(f'- "{s[1]["selfies"]}" ')
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""# CHEMBL35 vocab compliance""")
     return
 
 
@@ -95,7 +137,6 @@ def _(chembl_selfies, re):
 @app.cell
 def _(chembl_selfies, lp):
     # plot distribution of num_tokens and lengths
-
     lp.ggplot({"num_tokens": chembl_selfies[chembl_selfies["vocab_compliant"]]["num_tokens"]}, lp.aes(x="num_tokens")) + lp.geom_histogram()
     return
 
