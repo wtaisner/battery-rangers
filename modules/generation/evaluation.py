@@ -75,6 +75,10 @@ class MoleculeGenerationEvaluator:
 
         _, self.valid_training_smiles_canon, _ = self._preprocess_smiles_list(self.training_smiles, "Training")
 
+        # If training set is empty, we set valid_training_smiles_canon to an empty list
+        if not self.training_smiles:
+            self.valid_training_smiles_canon = []
+
         _, self.valid_reference_smiles_canon, _ = self._preprocess_smiles_list(self.reference_smiles, "Reference")
 
     @staticmethod
@@ -345,7 +349,7 @@ class MoleculeGenerationEvaluator:
             The percent of generated molecules that pass all filters.
         """
         if self.valid_generated_smiles_canon:
-            passed_filters = self.molecule_filter.apply(self.valid_generated_smiles_canon)
+            passed_filters, _ = self.molecule_filter.apply(self.valid_generated_smiles_canon)
             return len(passed_filters) / len(self.valid_generated_smiles_canon)
         return 0.0
 
