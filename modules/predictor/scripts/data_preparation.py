@@ -5,6 +5,7 @@ import pandas as pd
 import yaml
 
 from modules.predictor.data.custom_features import data_preprocessing_and_feature_engineering
+from modules.predictor.data.custom_smarts_features import expert_features_dataset
 from modules.predictor.data.dft_features import df_to_features_pyscf
 from modules.predictor.data.fingerprints import fingerprints_dataset
 from modules.predictor.data.group_additivity import AdditiveGroups
@@ -35,6 +36,7 @@ if __name__ == "__main__":
             print(f"{data_type}, dft")
             df = data_preprocessing(os.path.join(data_path, data), data_type)
             df = df_to_features_pyscf(df, "smiles", "capacity_max", functional=config_dft_features["functional"], n_jobs=config_dft_features["n_jobs"])
+            df = df.loc[:, df.nunique() > 1]
             df.to_csv(os.path.join(save_path, data), index=False)
 
     if config["fingerprints"]:
@@ -49,7 +51,19 @@ if __name__ == "__main__":
                     print(f"{data_type}, {fingerprint}")
                     df = data_preprocessing(os.path.join(data_path, data), data_type)
                     df = fingerprints_dataset(df, "smiles", "capacity_max", fingerprint, kwargs=kwargs)
+                    df = df.loc[:, df.nunique() > 1]
                     df.to_csv(os.path.join(save_path, data), index=False)
+
+    if config["expert_substructures"]:
+        config_expert_substructure = config["expert_substructures_params"]
+        save_path = os.path.join(root_dir, config_expert_substructure["dir"])
+        os.makedirs(save_path, exist_ok=True)
+        for data_type, data in data_dict.items():
+            print(f"{data_type}, expert substructures")
+            df = data_preprocessing(os.path.join(data_path, data), data_type)
+            df = expert_features_dataset(df, "smiles", "capacity_max", count=config_expert_substructure["count"])
+            df = df.loc[:, df.nunique() > 1]
+            df.to_csv(os.path.join(save_path, data), index=False)
 
     if config["additive_groups"]:
         config_additive_groups = config["additive_groups_params"]
@@ -71,4 +85,5 @@ if __name__ == "__main__":
             df = data_preprocessing(os.path.join(data_path, data), data_type)
             _, df_groups, _ = ag.generate_groups(df["smiles"].tolist())
             df_groups["capacity_max"] = df["capacity_max"]
+            df_features = df.loc[:, df.nunique() > 1]
             df_groups.to_csv(os.path.join(save_path, data), index=False)

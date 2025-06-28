@@ -6,12 +6,17 @@ data_dict:
 #  saad: 'data_saad.csv'
 #  expert2: 'data_experts2.csv'
 #  expert3: 'data_experts3.csv'
-  expert2: 'data_experts1_corrected_matched.csv'
+  all: 'data_substrates_june2025_no_outliers.csv'
 
-custom_features: False
+custom_features: True
 custom_features_params:
   dir: 'processed_selected_custom_features'
   translation_table: 'symmetries/symmetry_translation.csv'
+
+expert_substructures: True
+expert_substructures_params:
+  dir: 'processed_expert_substructures'
+  count: False
 
 dft_features: False
 dft_features_params:
@@ -27,13 +32,18 @@ fingerprints_types:
   estate: True
   layered: True
   topological: True
+  vsa: True
 fingerprints_params:
   ecfp:
-    dir: 'fingerprints_ecfp_256'
+    dir: 'fingerprints_ecfp_128'
     kwargs:
         radius: 2
-        size: 256
+        size: 128
         count: False
+  vsa:
+    dir: 'fingerprints_vsa'
+    kwargs:
+        variant: 'EState'
   maccs:
       dir: 'fingerprints_maccs'
       kwargs:
@@ -47,14 +57,14 @@ fingerprints_params:
       kwargs:
           variant: 'sum'
   layered:
-      dir: 'fingerprints_layered_256'
+      dir: 'fingerprints_layered_128'
       kwargs:
-          size: 256
+          size: 128
           linear_paths_only: False
   topological:
-      dir: 'fingerprints_topological_256'
+      dir: 'fingerprints_topological_128'
       kwargs:
-          size: 256
+          size: 128
           torsion_atoms: 4
           count: False
 

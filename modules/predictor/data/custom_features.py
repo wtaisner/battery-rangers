@@ -2,12 +2,14 @@
 from typing import Literal
 
 import pandas as pd
+import skfp
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 
 from modules.core.features.descriptors import extract_data_from_mol
 from modules.core.features.flatness import get_flatness_smiles
-from modules.core.features.pore_size import estimate_pore_size
+
+# from modules.core.features.pore_size import estimate_pore_size
 from modules.core.features.symmetries import analyse_symmetry_point_group
 from modules.core.features.utils import get_pymatgen_molecule_from_smiles
 from modules.predictor.data.utils import data_preprocessing
@@ -74,7 +76,29 @@ def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str | Non
     return pointgroup
 
 
-def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.DataFrame:
+def get_descriptors_scifingerprints(smiles: str, name_function: str) -> float | None:
+    """
+    Calculates a specific descriptor for a given molecule using scifingerprints.
+    :param smiles: smiles representation of a molecule
+    :param name_function: name of the descriptor function to calculate (e.g., "graph_distance_index", "radius", "diameter", "balaban_j_index")
+    :return: calculated descriptor value or None if the molecule is invalid
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    # Calculate the desired descriptor using scifingerprints
+    if name_function == "graph_distance_index":
+        return skfp.descriptors.graph_distance_index(mol)
+    if name_function == "radius":
+        return skfp.descriptors.radius(mol)
+    if name_function == "diameter":
+        return skfp.descriptors.diameter(mol)
+    if name_function == "balaban_j_index":
+        return skfp.descriptors.balaban_j_index(mol)
+    return None
+
+
+def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.DataFrame:  # pylint: disable=unused-argument #for now translation_table_path is not used, but it can be used in the future
     """
     Calculates selected features from a given dataframe with smiles (flatness, pore size, symmetry, percentages of selected atoms, and MolLogP descriptor)
     :param translation_table_path: path to translation table (symmetry_translation.csv file)
@@ -85,10 +109,18 @@ def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.Dat
     df["flatness"] = df["smiles"].apply(get_flatness_smiles)
 
     # Pore size
-    df["PS"] = df["smiles"].apply(estimate_pore_size)
+    # df["PS"] = df["smiles"].apply(estimate_pore_size)
 
     # Symmetry
-    df["symmetry"] = df["smiles"].apply(lambda x: check_symmetry_smiles(x, translation_table_path))
+    # df["symmetry"] = df["smiles"].apply(lambda x: check_symmetry_smiles(x, translation_table_path))
+    # molecule graph distance
+    df["molecule_graph_distance"] = df["smiles"].apply(lambda smiles: get_descriptors_scifingerprints(smiles, "molecule_graph_distance"))
+    # radius
+    df["radius"] = df["smiles"].apply(lambda smiles: get_descriptors_scifingerprints(smiles, "radius"))
+    # diameter
+    df["diameter"] = df["smiles"].apply(lambda smiles: get_descriptors_scifingerprints(smiles, "diameter"))
+    # Balaban's J index
+    df["balaban_j_index"] = df["smiles"].apply(lambda smiles: get_descriptors_scifingerprints(smiles, "balaban_j_index"))
 
     df = handcrafted_feature_engineering(df)
 
@@ -133,6 +165,7 @@ def data_preprocessing_and_feature_engineering(
     # df.dropna(inplace=True)
     if remove_unuseful:
         df = remove_unuseful_features(df)
+    df = df.loc[:, df.nunique() > 1]
     if save_path is not None:
         df.to_csv(save_path, index=False)
     return df

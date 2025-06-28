@@ -56,11 +56,11 @@ class CrossValidationPipeline:
         """
         self.categorical_features = categorical_features
         self.numerical_features = numerical_features
-        if oversampling:
-            self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features)
-        else:
-            self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features, cat_features=self.categorical_features)
-        # self.X = X
+        # if oversampling:
+        #     self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features)
+        # else:
+        #     self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features, cat_features=self.categorical_features)
+        self.X = X
         self.oversampling = oversampling
         self.y = y
         self.folds = folds
@@ -148,7 +148,7 @@ class CrossValidationPipeline:
         if self.hyperparam_opt is not None:
             perform_opt, type_opt = self.hyperparam_opt
             if perform_opt and param_grid is not None:
-                best_score, best_params = param_search(model, X_train, y_train, 0.6, param_grid, type_opt)
+                best_score, best_params = param_search(model, X_train, y_train, 0.7, param_grid, type_opt)
                 model.set_params(**best_params)
                 if self.verbose:
                     print(f"Best score: {best_score}\n Best params: {best_params}")
@@ -270,6 +270,7 @@ class CrossValidationPipeline:
             X_train, X_test, selected_features = self.select_features(X_train, y_train, X_test, model)
 
             # model tuning
+            X_train, X_test = self.preprocess_data(X_train, X_test, cat_features=self.categorical_features, num_features=self.numerical_features)
             model = self.tune_model(X_train, y_train, model, param_grid)
 
             if self.oversampling:
@@ -278,9 +279,9 @@ class CrossValidationPipeline:
                 X_test = copy.deepcopy(self.X.loc[test_idx, :]).reset_index(drop=True)  # pylint: disable=invalid-name
                 y_test = copy.deepcopy(self.y.loc[test_idx, :]).reset_index(drop=True)
                 X_train, y_train = self.oversampler(X_train, y_train)
-                X_train, X_test = self.preprocess_data(X_train, X_test, cat_features=self.categorical_features)
-                X_train = X_train.astype(float)
-                X_test = X_test.astype(float)
+            X_train, X_test = self.preprocess_data(X_train, X_test, cat_features=self.categorical_features, num_features=self.numerical_features)
+            X_train = X_train.astype(float)
+            X_test = X_test.astype(float)
 
             # model training
             model.fit(X_train, y_train[y_train.columns[0]])
@@ -325,9 +326,7 @@ class CrossValidationPipeline:
 
             _, model, param_grid = Models().get_model(model_name)
 
-            if self.oversampling:
-                X, _ = self.preprocess_data(X, None, cat_features=self.categorical_features)
-
+            X = self.preprocess_data(X, None, cat_features=self.categorical_features, num_features=self.numerical_features)[0]
             model = self.tune_model(X, y, model, param_grid)
             train_and_save_model(model, X, y, os.path.join(self.save_dir, f"{model_name}_{date}.pkl"), verbose=self.verbose)
             print("=======================================================================")

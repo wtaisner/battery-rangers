@@ -14,6 +14,11 @@ def explain_model(model: object, X_test: pd.DataFrame) -> Iterable:
     :param X_test: test data.
     :return: shap values.
     """
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test)
+    try:
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(X_test)
+    except ValueError:
+        # If the model is not tree-based, use KernelExplainer
+        explainer = shap.KernelExplainer(model.predict, X_test)
+        shap_values = explainer.shap_values(X_test, nsamples="auto")
     return shap_values

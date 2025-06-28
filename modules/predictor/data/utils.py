@@ -3,7 +3,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from modules.core.features.preprocessing import (
@@ -16,7 +16,7 @@ from modules.core.features.preprocessing import (
 # pylint: disable=invalid-name
 
 
-def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"]) -> pd.DataFrame:
+def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3", "all"]) -> pd.DataFrame:
     """
     preprocessing for the datasets
     :param data_path: path to data
@@ -25,6 +25,8 @@ def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad
     """
     df = pd.read_csv(data_path)
 
+    if data_type == "all":
+        return df
     if data_type in ["expert", "expert3"]:
         df = expert_dataset_preprocessing(df)
     elif data_type == "zhu":
@@ -125,7 +127,7 @@ def custom_data_kfold(X: pd.DataFrame, y: pd.DataFrame, num_splits: int, num_bin
     :return: generated splits (indices)
     """
     binned_capacity = custom_discretization(y, num_bins)
-    skf = StratifiedKFold(n_splits=num_splits, shuffle=True, random_state=random_state)
+    skf = RepeatedStratifiedKFold(n_splits=5, n_repeats=num_splits, random_state=random_state)
     kfolds = list(skf.split(X, binned_capacity))
     return kfolds
 

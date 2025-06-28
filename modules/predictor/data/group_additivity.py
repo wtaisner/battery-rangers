@@ -131,8 +131,8 @@ class AdditiveGroups:
 
 
 if __name__ == "__main__":
-    DIR_PATH = "../../../data/processed_selected_custom_features/"
-    SAVE_PATH = "../../../data/additive_groups/"
+    DIR_PATH = "../../../data/old/processed_selected_custom_features/"
+    SAVE_PATH = "../../../data/old/additive_groups/"
     os.makedirs(SAVE_PATH, exist_ok=True)
     data_names = ["data_experts1.csv", "data_experts2.csv", "data_saad.csv", "data_zhu.csv"]
     TARGET = "capacity_max"

@@ -120,6 +120,14 @@ def pattern_fingerprint(size: int = 1024, tautomers: bool = False) -> skfp.bases
     return PatternFingerprint(fp_size=size, tautomers=tautomers)
 
 
+@Fingerprints.register("vsa")
+def vsa_fingerprint(variant: str = "EState") -> skfp.bases.BaseFingerprintTransformer:
+    """Generate VSA fingerprints.
+    :param variant: type of VSA fingerprint
+    :return: VSA fingerprint."""
+    return skfp.fingerprints.VSAFingerprint(variant=variant)
+
+
 @Fingerprints.register("topological")
 def topological_fingerprint(size: int = 1024, torsion_atoms: int = 4, count: bool = False) -> skfp.bases.BaseFingerprintTransformer:
     """
@@ -147,17 +155,35 @@ def fingerprints_dataset(
     smiles_list = df[smiles_col].tolist()
     target_list = df[target_col].tolist()
     feature_list, features_names = Fingerprints().apply(fingerprint_type, smiles_list, **kwargs["kwargs"])
-    print(features_names)
-    df_features = pd.DataFrame(feature_list, columns=features_names)
+    df_features = pd.DataFrame(feature_list, columns=[f"feature_{i}" for i in range(len(features_names))])
     df_features[target_col] = target_list
     df_features[smiles_col] = smiles_list
     return df_features
 
 
+def smiles_to_fingerprint(smiles: str, fingerprint_type: str, **kwargs) -> tuple:
+    """
+    Convert SMILES to fingerprint.
+    :param smiles: SMILES string.
+    :param fingerprint_type: type of fingerprint to generate.
+    :param kwargs: additional arguments for the fingerprint generation.
+    :return: tuple with fingerprint and feature names.
+    """
+    fp, feature_names = Fingerprints().apply(fingerprint_type, [smiles], **kwargs)
+    return fp, feature_names
+
+
 if __name__ == "__main__":
-    df = pd.read_csv("../../../data/processed_selected_custom_features/data_experts1.csv")
-    df_fingerprints = fingerprints_dataset(df, "smiles", "capacity_max", "maccs", kwargs={"count": True})
-    print(df_fingerprints.head())
-    maccs = MACCSFingerprint(count=False)
-    print(maccs.get_feature_names_out())
+    df = pd.read_csv("../notebooks/maccs_merged.csv")
+    smiles = df["smiles"].tolist()[0]
+    fp, f_names = smiles_to_fingerprint(smiles, "maccs", count=False)
+    common_columns = df.columns.intersection(f_names)
+    common_indices = [i for i, name in enumerate(f_names) if name in common_columns]
+    filtered_fp = [fp[0][i] for i in common_indices]
+    print(filtered_fp, f_names[common_indices])
+
+    # df_fingerprints = fingerprints_dataset(df, "smiles", "capacity_max", "maccs", kwargs={"count": True})
+    # print(df_fingerprints.head())
+    # maccs = MACCSFingerprint(count=False)
+    # print(maccs.get_feature_names_out())
     # df_fingerprints.to_csv("../../../data/fingerprints_maccs/data_experts1.csv", index=False)

@@ -2,9 +2,11 @@
 import pickle
 from typing import Callable
 
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import AdaBoostRegressor, RandomForestRegressor
 from sklearn.linear_model import Lasso
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
 
 
@@ -57,7 +59,7 @@ def _get_knn() -> tuple:
     :return: knn model, its parameter grid and name
     """
     knn = KNeighborsRegressor(n_jobs=-1)
-    knn_params = {"n_neighbors": [3, 5]}
+    knn_params = {"n_neighbors": [3, 5, 7]}
     return knn, knn_params, "KNN Regressor"
 
 
@@ -68,12 +70,12 @@ def _get_xgboost() -> tuple:
     """
     xgb = XGBRegressor(random_state=42, n_jobs=-1)
     xgb_params = {
-        "n_estimators": [10, 15, 25, 40, 50, 75, 100],
-        "learning_rate": [0.05, 0.10, 0.15],
-        "max_depth": [3, 5, 8, 10, None],
-        "min_child_weight": [1, 3, 5, 7],
+        "n_estimators": [5, 15, 25, 50],
+        "learning_rate": [0.01, 0.05, 0.15, 0.2],
+        "max_depth": [3, 5, 8, None],
+        "min_child_weight": [1, 3, 5],
         "gamma": [0.0, 0.1, 0.2],
-        "colsample_bytree": [0.1, 0.2, 0.3, 0.4],
+        "colsample_bytree": [0.1, 0.2, 0.3],
     }
     return xgb, xgb_params, "XGBoost Regressor"
 
@@ -84,7 +86,7 @@ def _get_rf() -> tuple:
     :return: random forest model, its parameter grid and name
     """
     rf = RandomForestRegressor(random_state=42, n_jobs=-1)
-    rf_params = {"n_estimators": [10, 15, 25, 40, 50, 75, 100], "max_depth": [None, 3, 5, 8, 10], "min_samples_split": [2, 3, 4, 5], "min_samples_leaf": [1, 2, 4], "bootstrap": [True, False]}
+    rf_params = {"n_estimators": [5, 15, 25, 50], "max_depth": [None, 3, 5, 8], "min_samples_split": [2, 3, 4, 5], "min_samples_leaf": [1, 2, 4], "bootstrap": [True, False]}
     return rf, rf_params, "Random Forest Regressor"
 
 
@@ -96,6 +98,36 @@ def _get_lasso() -> tuple:
     lasso = Lasso(random_state=42)
     lasso_params = {"alpha": [0.1, 0.5, 1, 2, 5, 10, 20]}
     return lasso, lasso_params, "Lasso Regressor"
+
+
+@Models.register("adaboost")
+def _get_adaboost() -> tuple:
+    """
+    :return: AdaBoost model, its parameter grid and name
+    """
+
+    adaboost = AdaBoostRegressor(random_state=42)
+    adaboost_params = {
+        "n_estimators": [5, 15, 25, 50],
+        "learning_rate": [0.01, 0.05, 0.15, 0.2],
+        "estimator": [
+            DecisionTreeRegressor(max_depth=3, random_state=42),
+            DecisionTreeRegressor(max_depth=5, random_state=42),
+            DecisionTreeRegressor(max_depth=8, random_state=42),
+            DecisionTreeRegressor(max_depth=None, random_state=42),
+        ],
+    }
+    return adaboost, adaboost_params, "AdaBoost Regressor"
+
+
+@Models.register("svm")
+def _get_svm() -> tuple:
+    """
+    :return: SVM model, its parameter grid and name
+    """
+    svm = SVR(kernel="rbf")
+    svm_params = {"C": [0.1, 1, 10, 100], "epsilon": [0.01, 0.1, 0.5, 1], "gamma": ["scale", "auto"]}
+    return svm, svm_params, "Support Vector Regressor"
 
 
 def get_trained_model(model_path: str) -> object:
