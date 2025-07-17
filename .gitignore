@@ -178,3 +178,10 @@ wandb/
 
 # disable all marimo related files
 __marimo__
+
+# exclude all files that are regenerated constantly as data change
+*.smi
+*.slf
+*.csv
+*.prior
+*.json
