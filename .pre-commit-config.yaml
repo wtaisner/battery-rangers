@@ -21,7 +21,8 @@ repos:
   - id: check-json
   - id: check-yaml
 # Use pylint to check code quality.
-- repo: local
+- repo: https://github.com/pycqa/pylint
+  rev: v2.17.4 # Use an appropriate tag/version
   hooks:
     - id: pylint
       name: pylint

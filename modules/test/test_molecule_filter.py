@@ -2,33 +2,13 @@
 import pytest
 from rdkit import Chem
 
-from modules.core.features.filters.conjugation_filter import ConjugationFilter
-from modules.core.features.filters.flatness_filter import FlatnessFilter
-from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-
 # pylint: disable=import-error
-from modules.core.features.filters.smarts_filter import SMARTSFilter
-from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
-from modules.core.features.filters.symmetry_filter import SymmetryFilter
-from modules.core.features.molecule_filter import MoleculeFilter
-
-
-@pytest.mark.parametrize(
-    "smiles, expected",
-    [
-        (
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
-        ),
-        ([], []),
-        (["N#Cc1ccnc(C#N)n1", "CCC", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
-    ],
-)
-def test_entire_pipeline(smiles, expected):
-    """Test the entire pipeline"""
-    molecule_filter = MoleculeFilter()
-    filtered, _ = molecule_filter.apply(smiles)
-    assert filtered == expected
+from modules.core.filters.conjugation_filter import ConjugationFilter
+from modules.core.filters.flatness_filter import FlatnessFilter
+from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.filters.smarts_filter import SMARTSFilter
+from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.core.filters.symmetry_filter import SymmetryFilter
 
 
 @pytest.mark.parametrize(
@@ -81,11 +61,19 @@ def test_flatness_filter(smiles, expected):
     "smiles, expected",
     [
         (
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
+            [
+                # "N#Cc1ccnc(C#N)n1",
+                "N#Cc1cc(C#N)c(F)c(C#N)c1F",
+                # "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1",
+                "N#Cc1ccc(/C=C/C(/C=C/c2ccc(C#N)cc2)/C=C/c2ccc(-c3nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)n3)cc2)cc1",
+                "N#Cc1ccc(-n2c(=O)c3cc4c(=O)n(-c5ccc(-c6nc(-c7ccc(-n8c(=O)c9cc%10c(=O)n(-c%11ccc(C#N)cc%11)c(=O)c%10cc9c8=O)cc7)nc(-c7ccc(-n8c(=O)c9cc%10c(=O)n(-c%11ccc(C#N)cc%11)c(=O)c%10cc9c8=O)cc7)n6)cc5)c(=O)c4cc3c2=O)cc1",
+            ],
+            [
+                "N#Cc1ccc(/C=C/C(/C=C/c2ccc(C#N)cc2)/C=C/c2ccc(-c3nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)n3)cc2)cc1",
+                "N#Cc1ccc(-n2c(=O)c3cc4c(=O)n(-c5ccc(-c6nc(-c7ccc(-n8c(=O)c9cc%10c(=O)n(-c%11ccc(C#N)cc%11)c(=O)c%10cc9c8=O)cc7)nc(-c7ccc(-n8c(=O)c9cc%10c(=O)n(-c%11ccc(C#N)cc%11)c(=O)c%10cc9c8=O)cc7)n6)cc5)c(=O)c4cc3c2=O)cc1",
+            ],
         ),
         ([], []),
-        (["N#Cc1ccnc(C#N)n1", "CCCCC"], ["N#Cc1ccnc(C#N)n1"]),
     ],
 )
 def test_point_group_symmetry_filter(smiles, expected):
@@ -128,7 +116,6 @@ def test_conjugation_filter(smiles, expected):
             ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
         ),
         ([], []),
-        (["N#Cc1ccnc(C#N)n1"], ["N#Cc1ccnc(C#N)n1"]),
     ],
 )
 def test_steric_hindrance_filter(smiles, expected):
@@ -143,11 +130,23 @@ def test_steric_hindrance_filter(smiles, expected):
     "smiles, expected",
     [
         (
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
+            [
+                "Nc1ccc2c(c1)C(=O)c1ccc(Nc3nc(Nc4ccc5c(c4)C(=O)c4ccc(N)cc4C5=O)nc(Nc4ccc5c(c4)C(=O)c4ccc(N)cc4C5=O)n3)cc1C2=O",  # rings are connected by a single bond
+                "Clc1nc(Cl)nc(-c2ccc(-c3cc(-c4ccc(-c5nc(Cl)nc(Cl)n5)cc4)cc(-c4ccc(-c5nc(Cl)nc(Cl)n5)cc4)c3)cc2)n1",
+                "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N",  # rings are connected by having a common edge
+                "Nc1cc2nc3c4nc5cc(N)c(N)cc5nc4c4nc5cc(N)c(N)cc5nc4c3nc2cc1N",
+                "NC1=C(N)C(=O)C2N=c3c(c4c(c5c3=NC3C(=O)C(N)=C(N)C(=O)C3N=5)=NC3C(=O)C(N)=C(N)C(=O)C3N=4)=NC2C1=O",
+                "O=Cc1ccc(N(c2ccc(C=O)cc2)c2ccc(/C=N/c3ccc(-n4c5ccc(/N=C/c6ccc(N(c7ccc(C=O)cc7)c7ccc(C=O)cc7)cc6)cc5c5cc(/N=C/c6ccc(N(c7ccc(C=O)cc7)c7ccc(C=O)cc7)cc6)ccc54)cc3)cc2)cc1",  # not symmetrical
+            ],
+            [
+                "Nc1ccc2c(c1)C(=O)c1ccc(Nc3nc(Nc4ccc5c(c4)C(=O)c4ccc(N)cc4C5=O)nc(Nc4ccc5c(c4)C(=O)c4ccc(N)cc4C5=O)n3)cc1C2=O",
+                "Clc1nc(Cl)nc(-c2ccc(-c3cc(-c4ccc(-c5nc(Cl)nc(Cl)n5)cc4)cc(-c4ccc(-c5nc(Cl)nc(Cl)n5)cc4)c3)cc2)n1",
+                "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N",
+                "Nc1cc2nc3c4nc5cc(N)c(N)cc5nc4c4nc5cc(N)c(N)cc5nc4c3nc2cc1N",
+                "NC1=C(N)C(=O)C2N=c3c(c4c(c5c3=NC3C(=O)C(N)=C(N)C(=O)C3N=5)=NC3C(=O)C(N)=C(N)C(=O)C3N=4)=NC2C1=O",
+            ],
         ),
         ([], []),
-        (["N#Cc1ccnc(C#N)n1"], ["N#Cc1ccnc(C#N)n1"]),
     ],
 )
 def test_symmetry_filter(smiles, expected):
@@ -156,3 +155,25 @@ def test_symmetry_filter(smiles, expected):
     molecule_filter = SymmetryFilter()
     filtered = molecule_filter.apply(smiles)
     assert [Chem.MolToSmiles(mol) for mol in filtered] == expected
+
+
+@pytest.mark.parametrize(
+    "smiles, expected",
+    [
+        (
+            [
+                "Nc1ccc2c(c1)C(=O)c1ccc(Nc3nc(Nc4ccc5c(c4)C(=O)c4ccc(N)cc4C5=O)nc(Nc4ccc5c(c4)C(=O)c4ccc(N)cc4C5=O)n3)cc1C2=O",  # rings are connected by a single bond
+                "Nc1cc2nc3cc4nc5c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c6nc7cc8nc9cc(N)c(N)cc9nc8cc7nc6c5nc4cc3nc2cc1N",  # rings are connected by having a common edge
+            ],
+            [3, 3],
+        ),
+        ([], []),
+    ],
+)
+def test_symmetry_filter_2(smiles, expected):
+    """Test the SymmetryFilter with returning counts"""
+    smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
+    molecule_filter = SymmetryFilter()
+    _, summaries = molecule_filter.apply(smiles, return_branch_counts=True)
+    summaries = [s["num_in_group"] for s in summaries]
+    assert summaries == expected

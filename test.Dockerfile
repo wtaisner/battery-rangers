@@ -17,5 +17,5 @@ SHELL ["conda", "run", "-n", "battery", "/bin/bash", "-c"]
 COPY . .
 ENV PYTHONPATH=/app
 # Run the tests
-CMD ["conda", "run", "-n", "battery", "pytest"]
+CMD ["conda", "run", "-n", "battery", "pytest", "modules", "test"]
 CMD ["conda", "run", "-n", "battery", "pylint", "modules"]

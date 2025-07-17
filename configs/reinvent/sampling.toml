@@ -1,43 +1,39 @@
 # REINVENT4 TOML input example for sampling
-#
-
-
 run_type = "sampling"
-device = "cuda:0"  # set torch device e.g. "cpu"
-json_out_config = "_sampling.json"  # write this TOML to JSON
+device = "cuda"
+seed = 23
 
 [parameters]
 
-# Uncomment one of the comment blocks below.  Each generator needs a model
-# file and possibly a SMILES file with seed structures.
+# vanilla + RL
+#model_file = "outputs/staged_learning/vanilla_rl.chkpt"
+#output_file = 'data/sampling/reinvent/vanilla_rl.csv'
 
-## Reinvent: de novo sampling
-model_file = "outputs/transfer_learning/202503110949/tl.model"
+# vanilla
+#model_file = "modules/REINVENT4/priors/reinvent.prior"
+#output_file = "data/sampling/reinvent/vanilla.csv"
 
-## LibInvent: find R-groups for the given scaffolds
-#model_file = "priors/libinvent.prior"
-#smiles_file = "scaffolds.smi"  # 1 scaffold per line with attachment points
+# vanilla + ft
+#model_file = "outputs/transfer_learning/vanilla_finetuned.model"
+#output_file = "data/sampling/reinvent/vanilla_finetuned.csv"
 
-## LinkInvent: find a linker/scaffold to link two fragments
-#model_file = "priors/linkinvent.prior"
-#smiles_file = "warheads.smi"  # 2 warheads per line separated with '|'
+# vanill + ft + RL
+#model_file = "outputs/staged_learning/vanilla_finetuned_rl.chkpt"
+#output_file = "data/sampling/reinvent/vanilla_finetuned_rl.csv"
 
-## Mol2Mol: find molecules similar to the provided molecules
-#model_file = "priors/mol2mol_medium_similarity.prior"
-#smiles_file = "mol2mol.smi"  # 1 compound per line
-#sample_strategy = "beamsearch"  # multinomial or beamsearch (deterministic)
-#temperature = 1.0 # temperature in multinomial sampling
-#tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
+# chembl35 pretrained
+#model_file = "outputs/transfer_learning/200_epochs/pretrained_chembl_35.model"
+#output_file = "data/sampling/reinvent/pretrained_chembl_35.csv"
 
-## Pepinvent
-#model_file = "priors/pepinvent.prior"
-#smiles_file = "pepinvent.smi"
-#sample_strategy = "beamsearch"  # multinomial or beamsearch (deterministic)
-#temperature = 1.0 # temperature in multinomial sampling
-#tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
+# chembl35 pretrained + ft
+#model_file = "outputs/transfer_learning/200_epochs/chembl_35_fine_tuned.model"
+#output_file = "data/sampling/reinvent/finetuned_chembl_35.csv"
 
-output_file = 'sampling.csv'  # sampled SMILES and NLL in CSV format
+# chembl35 pretrained + ft + RL
+model_file = "outputs/staged_learning/chembl_finetuned_rl_with_inception.chkpt"
+output_file = "data/sampling/reinvent/finetuned_chembl_35_rl.csv"
+
 
 num_smiles = 10000  # number of SMILES to be sampled, 1 per input SMILES
-unique_molecules = true  # if true remove all duplicatesd canonicalize smiles
-randomize_smiles = true # if true shuffle atoms in SMILES randomly
+unique_molecules = false  # if true remove all duplicatesd canonicalize smiles
+randomize_smiles = false # if true shuffle atoms in SMILES randomly

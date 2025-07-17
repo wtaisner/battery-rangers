@@ -2,7 +2,7 @@
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class SMARTSFilter(GenericMoleculeFilter):
@@ -13,7 +13,7 @@ class SMARTSFilter(GenericMoleculeFilter):
 
     def __init__(self, smarts: list[str] | None = None):
         if smarts is None:
-            self.smarts = ["C#N", "[NH2]"]
+            self.smarts = ["C#N", "[NH2]", "Cl-c", "O=*", "Br-c", "[HO]-C=O", "[HO]", "[HO]-B-[HO]", "[HS]"]
         else:
             self.smarts = smarts
 
@@ -36,6 +36,9 @@ class SMARTSFilter(GenericMoleculeFilter):
         Returns:
             bool: True if the molecule contains at least one of the SMARTS patterns in cardinality >=2, False otherwise.
         """
+        # handle None mols
+        if mol is None:
+            return False
         for smarts in self.smarts:
             matches = mol.GetSubstructMatches(Chem.MolFromSmarts(smarts))
             if len(matches) >= 2:

@@ -14,11 +14,10 @@ from modules.core.features.utils import get_pymatgen_molecule_from_smiles, visua
 class AvailableSymmetry(Enum):
     """Enum for available symmetry types."""
 
-    NODE = "node"
-    EDGE = "edge"
-    RING_BONDS = "ring_bonds"
-    RING_NODES = "ring_nodes"
-    RING_OUTER_PLANE = "ring_outer_plane"
+    NODE = "Node"  # cut on nodes?
+    EDGE = "Edge"  # cut on edges
+    RING_NODES = "Ring nodes"  # cut on the opposite nodes of the ring
+    WHOLE_RING = "Whole ring"  # cut on the whole ring
 
 
 def translate_point_group_to_symmetry_description(symmetry_code: str, translation_table_path: str) -> str:

@@ -13,7 +13,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class ConjugationFilter(GenericMoleculeFilter):
@@ -43,6 +43,9 @@ class ConjugationFilter(GenericMoleculeFilter):
         Returns:
             bool: True if the molecule is conjugated, False otherwise.
         """
+
+        if mol is None:
+            return False
 
         # Define a generic SMARTS pattern for any three connected atoms
         pattern_single_aromatic = Chem.MolFromSmarts("*-*-*")  # * matches any atom, - matches single bonds

@@ -164,6 +164,24 @@ cython_debug/
 /modules/bionemo/data/
 sh_tmp/
 tmp/
-.env
 /.reinvent_venv/
 /outputs/
+/results/
+
+# exclude all chembl related files
+/chembl_35/
+chembl_*
+
+*.out
+
+wandb/
+
+# disable all marimo related files
+__marimo__
+
+# exclude all files that are regenerated constantly as data change
+*.smi
+*.slf
+*.csv
+*.prior
+*.json

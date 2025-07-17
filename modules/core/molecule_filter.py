@@ -6,12 +6,11 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.conjugation_filter import ConjugationFilter
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
-from modules.core.features.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
-from modules.core.features.filters.smarts_filter import SMARTSFilter
-from modules.core.features.filters.steric_hindrance_filter import StericHindranceFilter
-from modules.core.features.filters.symmetry_filter import SymmetryFilter
+from modules.core.filters.conjugation_filter import ConjugationFilter
+from modules.core.filters.generic_filter import GenericMoleculeFilter
+from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
+from modules.core.filters.smarts_filter import SMARTSFilter
+from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
 
 # Set up the logger for the module
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
@@ -31,7 +30,7 @@ class MoleculeFilter:
         """
         if filters is None:
             self.filters = [
-                SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
+                # SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
                 SMARTSFilter(),  # Filter that leaves molecules with triple bonds.
                 PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
                 # FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
@@ -120,7 +119,7 @@ class MoleculeFilter:
         filter_total_times: dict[str, float] = {filter_operator.__class__.__name__: 0.0 for filter_operator in self.filters}  # Store total times per filter
 
         if isinstance(molecules[0], str):
-            mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules]
+            mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules if isinstance(smiles, str)]
             # Filter out None values and keep track of original SMILES
             valid_mol_smiles = []
             molecules_to_filter = []

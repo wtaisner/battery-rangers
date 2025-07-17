@@ -1,5 +1,6 @@
 """Utility functions for the features."""
 import os
+import uuid
 
 import networkx as nx
 import pymatgen.core
@@ -29,18 +30,9 @@ def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = ".
         rdkit_mol = molecule
     rdkit_mol = Chem.AddHs(rdkit_mol)
     rdDepictor.Compute2DCoords(rdkit_mol, sampleSeed=42)
-    # a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500)
-    # if a < 0:
-    #     a = rdDistGeom.EmbedMolecule(rdkit_mol, randomSeed=42, maxAttempts=500, useRandomCoords=True)
-    #     if a < 0:
-    #         return None
-    #     a = 3
-    # if a == 3:
-    #     rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123, useRandomCoords=True)
-    # else:
-    #     rdDistGeom.EmbedMultipleConfs(rdkit_mol, 10, randomSeed=123)
 
-    save_dir = f"{directory}/rdkit_mol.xyz"
+    uid = uuid.uuid4()
+    save_dir = f"{directory}/rdkit_mol_{uid}.xyz"
 
     if save_file:
         if not os.path.exists(directory):
@@ -50,7 +42,7 @@ def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = ".
     return save_dir
 
 
-def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = False, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
+def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = True, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
     """
     Convert a SMILES string to a pymatgen Molecule object.
 
@@ -66,6 +58,11 @@ def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = False, dire
     if path is None:
         return None
     mol = Molecule.from_file(path)
+
+    try:
+        os.remove(path)
+    except OSError as e:
+        print(f"Error removing file {path}: {e}")
 
     return mol
 

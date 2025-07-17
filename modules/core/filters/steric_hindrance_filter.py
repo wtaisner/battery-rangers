@@ -1,12 +1,13 @@
 """Filter that leaves molecules without steric hindrance."""
+import os
 from itertools import combinations
 
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.filters.generic_filter import GenericMoleculeFilter
 from modules.core.features.utils import mol_to_xyz
+from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class StericHindranceFilter(GenericMoleculeFilter):
@@ -23,10 +24,19 @@ class StericHindranceFilter(GenericMoleculeFilter):
         """
         no_steric_hindrance_molecules = []
         for mol in molecules:
-            path = mol_to_xyz(mol, save_file=True, directory="sh_tmp")
-            # TODO: 1. check if the file exists 2. Make it possible to skip file saving
+            path = mol_to_xyz(mol, save_file=True, directory="tmp")
             coordinates = np.loadtxt(path, skiprows=1, usecols=(1, 2, 3))
+
+            # remove the file after loading
+            try:
+                os.remove(path)
+            except OSError as e:
+                print(f"Error removing file {path}: {e}")
+
             nitrogen_indices = self.get_indices_of_n(mol)
+            if len(nitrogen_indices) < 2:
+                continue
+
             distances = self.get_distances_between_n(nitrogen_indices, coordinates)
             if np.any(distances < 4.1):
                 continue
