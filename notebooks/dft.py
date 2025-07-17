@@ -122,7 +122,7 @@ def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP") 
         "homo": homo,
         "lumo": lumo,
         "dipole_x": dipole_x,
-        "diploe_y": dipole_y,
+        "dipole_y": dipole_y,
         "dipole_z": dipole_z,
         "vibrational_frequencies_mean": freq_mean,  # Average frequency
         "vibrational_frequencies_min": freq_min,
