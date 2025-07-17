@@ -131,7 +131,7 @@ def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP") 
         "internal_energy_298K": internal_energy_298,
         **rot_const_dict,
         "zpe": zpe,
-        "free_enegry": free_energy,
+        "free_energy": free_energy,
         "enthalpy_energy": enthalpy_energy,
     }
 
