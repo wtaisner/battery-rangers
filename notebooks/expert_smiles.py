@@ -19,15 +19,15 @@ def _():
     return Chem, mo, np, pd, plt, sf
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
-    mo.md(r"""# 10.06.2025 - data analysis""")
+    mo.md(r"""# 20.06.2025 - data analysis""")
     return
 
 
 @app.cell
 def _(Chem, pd):
-    df = pd.read_excel("data/raw/data_battery_materials_PRISTINE_CORRECTED_10.06.25.xlsx", sheet_name="Sheet1")
+    df = pd.read_excel("data/raw/data_battery_materials_PRISTINE_CORRECTED_20_06_25.xlsx", sheet_name="Sheet1")
     print(df.shape)
     # edit column names: to lower, replace spaces with underscores, remove special characters
     df.columns = df.columns.str.lower().str.replace(" ", "_").str.replace("-", "_").str.replace("(", "").str.replace(")", "").str.replace("/", "_")
@@ -53,6 +53,8 @@ def _(Chem, pd):
 
     # Identify SMILES columns
     smiles_columns = [col for col in df.columns if "smiles" in col]
+
+    smiles_columns.remove("smiles_pore_side")
 
     for col_name in smiles_columns:
         for index, smiles_value in df[col_name].items():
@@ -94,20 +96,25 @@ def _(mo):
 
 @app.cell
 def _(df):
-    df_1 = df["smiles_to_be_used_molecules_with_a_node"]
-    df_1.rename("canon_smiles", inplace=True)
-    df_1.dropna(inplace=True)
-    df_1 = df_1.to_frame()
+    df_1 = df[["smiles_substrate", "smiles_to_be_used_molecules_with_a_node", "capacitance_max"]].dropna()
     df_1.head(), df_1.shape
     return (df_1,)
 
 
 @app.cell
 def _(Chem, df_1, sf):
-    df_1["selfies"] = df_1["canon_smiles"].apply(sf.encoder)
-    df_1["selfies"].to_csv("data/raw/new_experts_merged.slf", sep=" ", index=None, header=None)
-    df_1["canon_smiles"].to_csv("data/raw/new_experts_merged.smi", sep=" ", index=None, header=None)
-    df_1["molecule"] = df_1["canon_smiles"].apply(Chem.MolFromSmiles)
+    df_1["selfies_substrate"] = df_1["smiles_substrate"].apply(sf.encoder)
+    df_1["selfies_node"] = df_1["smiles_to_be_used_molecules_with_a_node"].apply(sf.encoder)
+
+    df_1["selfies_substrate"].to_csv("data/raw/experts_substrate.slf", sep=" ", index=None, header=None)
+    df_1["selfies_node"].to_csv("data/raw/experts_node.slf", sep=" ", index=None, header=None)
+
+    df_1["smiles_substrate"].to_csv("data/raw/experts_substrate.smi", sep=" ", index=None, header=None)
+    df_1["smiles_to_be_used_molecules_with_a_node"].to_csv("data/raw/experts_node.smi", sep=" ", index=None, header=None)
+
+    df_1["molecule_substrate"] = df_1["smiles_substrate"].apply(Chem.MolFromSmiles)
+    df_1["molecule_node"] = df_1["smiles_to_be_used_molecules_with_a_node"].apply(Chem.MolFromSmiles)
+
     df_1.to_csv("data/raw/new_experts_merged.csv", index=None)
     df_1.head(2), df_1.shape
     return
@@ -129,137 +136,92 @@ def _(df_1):
     from modules.core.filters.flatness_filter import FlatnessFilter
 
     flatness_filter = FlatnessFilter()
-    filtered = flatness_filter.apply(df_1["molecule"].tolist(), return_flatness=True)
-    return (filtered,)
+    flatness_node = flatness_filter.apply(df_1["molecule_node"].tolist(), return_flatness=True)
+    return flatness_filter, flatness_node
 
 
 @app.cell
-def _(filtered, np, plt):
-    flatness = [f[0] for f in filtered]
+def _(df_1, flatness_filter):
+    flatness_substrate = flatness_filter.apply(df_1["molecule_substrate"].tolist(), return_flatness=True)
+    return (flatness_substrate,)
 
-    # boxplot of flatness
-    plt.figure(figsize=(5, 5))
-    plt.boxplot(flatness, vert=True)
-    # add median, mean, min, max, quantiles
-    # and add values to the plot
-    plt.plot([1], [np.mean(flatness)], "ro", label=f"Mean: {np.mean(flatness):.2f}")
-    plt.plot([1], [np.median(flatness)], "bo", label=f"Median: {np.median(flatness):.2f}")
-    plt.plot([1], [np.min(flatness)], "go", label=f"Min: {np.min(flatness):.2f}")
-    plt.plot([1], [np.max(flatness)], "yo", label=f"Max: {np.max(flatness):.2f}")
-    plt.plot([1], [np.quantile(flatness, 0.25)], "co", label=f"1Q: {np.quantile(flatness, 0.25):.2f}")
-    plt.plot([1], [np.quantile(flatness, 0.75)], "mo", label=f"3Q: {np.quantile(flatness, 0.75):.2f}")
-    plt.legend()
-    plt.xticks([1], ["Flatness"])
-    plt.ylabel("Flatness")
-    plt.title("Flatness of molecules")
-    plt.show()
+
+@app.cell
+def _(np, plt):
+    import math
+
+    def plot_flatness(flatness_list, name):
+        flatness = [f[0] for f in flatness_list if not math.isnan(f[0])]
+
+        # boxplot of flatness
+        plt.figure(figsize=(5, 5))
+        plt.boxplot(flatness, vert=True)
+        # add median, mean, min, max, quantiles
+        # and add values to the plot
+        plt.plot([1], [np.mean(flatness)], "ro", label=f"Mean: {np.mean(flatness):.2f}")
+        plt.plot([1], [np.median(flatness)], "bo", label=f"Median: {np.median(flatness):.2f}")
+        plt.plot([1], [np.min(flatness)], "go", label=f"Min: {np.min(flatness):.2f}")
+        plt.plot([1], [np.max(flatness)], "yo", label=f"Max: {np.max(flatness):.2f}")
+        plt.plot([1], [np.quantile(flatness, 0.25)], "co", label=f"1Q: {np.quantile(flatness, 0.25):.2f}")
+        plt.plot([1], [np.quantile(flatness, 0.75)], "mo", label=f"3Q: {np.quantile(flatness, 0.75):.2f}")
+        plt.legend()
+        plt.xticks([1], ["Flatness"])
+        plt.ylabel("Flatness")
+        plt.title(f"Flatness of molecules {name}")
+        plt.show()
+
+    return (plot_flatness,)
+
+
+@app.cell
+def _(flatness_node, plot_flatness):
+    plot_flatness(flatness_node, "node")
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""## Symmetry""")
-    return
-
-
 @app.cell
-def _():
-    from modules.core.filters.symmetry_filter import SymmetryFilter
-
-    symmetry_filter = SymmetryFilter()
-    return (symmetry_filter,)
-
-
-@app.cell
-def _(df_1, symmetry_filter):
-    all_mol_objects_from_df = [mol for mol in df_1["molecule"].tolist() if mol is not None]
-
-    symmetrical_mol_objects_list = symmetry_filter.apply(all_mol_objects_from_df)
-
-    symmetrical_set = set(symmetrical_mol_objects_list)
-
-    def is_molecule_symmetrical(mol_object):
-        if mol_object is None:
-            return False
-        return mol_object in symmetrical_set
-
-    df_1["symmetrical"] = df_1["molecule"].apply(is_molecule_symmetrical)
-    return all_mol_objects_from_df, symmetrical_mol_objects_list
-
-
-@app.cell
-def _(symmetrical_mol_objects_list):
-    len(symmetrical_mol_objects_list)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""## Conjugation""")
+def _(flatness_substrate, plot_flatness):
+    plot_flatness(flatness_substrate, "substrate")
     return
 
 
 @app.cell
 def _():
     from modules.core.filters.conjugation_filter import ConjugationFilter
-
-    conjugation_filter = ConjugationFilter()
-    return (conjugation_filter,)
-
-
-@app.cell
-def _(all_mol_objects_from_df, conjugation_filter, df_1):
-    conjugated_mol_objects_list = conjugation_filter.apply(all_mol_objects_from_df)
-
-    conjugated_set = set(conjugated_mol_objects_list)
-
-    def is_molecule_conjugated(mol_object):
-        if mol_object is None:
-            return False
-        return mol_object in conjugated_set
-
-    df_1["conjugated"] = df_1["molecule"].apply(is_molecule_conjugated)
-    return (conjugated_mol_objects_list,)
-
-
-@app.cell
-def _(conjugated_mol_objects_list):
-    len(conjugated_mol_objects_list)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""## Steric hindrance""")
-    return
-
-
-@app.cell
-def _():
     from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
+    from modules.core.filters.symmetry_filter import SymmetryFilter
 
+    symmetry_filter = SymmetryFilter()
+    conjugation_filter = ConjugationFilter()
     steric_hindrance_filter = StericHindranceFilter()
-    return (steric_hindrance_filter,)
+    return conjugation_filter, steric_hindrance_filter, symmetry_filter
 
 
 @app.cell
-def _(all_mol_objects_from_df, df_1, steric_hindrance_filter):
-    steric_mol_objects_list = steric_hindrance_filter.apply(all_mol_objects_from_df)
-
-    steric_set = set(steric_mol_objects_list)
-
-    def is_molecule_steric(mol_object):
+def _(conjugation_filter, df_1, steric_hindrance_filter, symmetry_filter):
+    def is_molecule_xyz(mol_object, xyz_set):
         if mol_object is None:
             return False
-        return mol_object in steric_set
+        return mol_object in xyz_set
 
-    df_1["steric"] = df_1["molecule"].apply(is_molecule_steric)
-    return (steric_mol_objects_list,)
+    for col in ["substrate", "node"]:
+        all_mol_objects_from_df = [mol for mol in df_1[f"molecule_{col}"].tolist() if mol is not None]
 
+        symmetrical_mol_objects_list = symmetry_filter.apply(all_mol_objects_from_df)
+        conjugated_mol_objects_list = conjugation_filter.apply(all_mol_objects_from_df)
+        steric_mol_objects_list = steric_hindrance_filter.apply(all_mol_objects_from_df)
 
-@app.cell
-def _(steric_mol_objects_list):
-    len(steric_mol_objects_list)
+        print(f"# symmetrical molecules {col}: {len(symmetrical_mol_objects_list)}")
+        print(f"# conjugated molecules {col}: {len(conjugated_mol_objects_list)}")
+        print(f"# steric molecules {col}: {len(steric_mol_objects_list)}")
+
+        symmetrical_set = set(symmetrical_mol_objects_list)
+        conjugated_set = set(conjugated_mol_objects_list)
+        steric_set = set(steric_mol_objects_list)
+
+        df_1[f"symmetrical_{col}"] = df_1[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, symmetrical_set))
+        df_1[f"conjugated_{col}"] = df_1[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, conjugated_set))
+        df_1[f"steric_{col}"] = df_1[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, steric_set))
     return
 
 
@@ -272,6 +234,34 @@ def _(mo):
 @app.cell
 def _(df_1):
     df_1
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## Property evaluator""")
+    return
+
+
+@app.cell
+def _():
+    from modules.generation.property_evaluator import PropertyEvaluator
+
+    evaluator = PropertyEvaluator()
+    return (evaluator,)
+
+
+@app.cell
+def _(df_1, evaluator):
+    for sml in df_1["smiles_substrate"]:
+        evaluator.evaluate(sml)
+    return
+
+
+@app.cell
+def _(df_1, evaluator):
+    for smls in df_1["smiles_to_be_used_molecules_with_a_node"]:
+        evaluator.evaluate(smls)
     return
 
 
