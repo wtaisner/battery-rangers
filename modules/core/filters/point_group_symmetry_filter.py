@@ -128,15 +128,3 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         if return_point_group_symmetry:
             return symmetry_groups, pointgroup_symmetrical
         return pointgroup_symmetrical
-
-
-if __name__ == "__main__":
-    # Example usage
-    pgsf = PointGroupSymmetryFilter()
-    molecules = [
-        Chem.MolFromSmiles(
-            "N#Cc1ccc(/C=C/C(/C=C/c2ccc(C#N)cc2)/C=C/c2ccc(-c3nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)n3)cc2)cc1"
-        )
-    ]
-    filtered_molecules = pgsf.apply(molecules)
-    print(filtered_molecules)
