@@ -6,7 +6,22 @@ from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class FlatnessFilter(GenericMoleculeFilter):
-    """Filter that leaves molecules with flatness."""
+    """Filter that leaves molecules with flatness.
+
+    Args:
+        max_attempts (int): Maximum number of attempts to generate conformers.
+        num_conformers (int): Number of conformers to generate for flatness calculation.
+        max_flatness (float): Maximum allowed flatness value for the molecules to be kept.
+    """
+
+    def __init__(self, max_attempts: int = 1, num_conformers: int = 20, max_flatness: float = 0.5):
+        """
+        Initialize the filter.
+        """
+        super().__init__()
+        self.max_attempts = max_attempts
+        self.num_conformers = num_conformers
+        self.max_flatness = max_flatness
 
     # pylint: disable=arguments-differ
     def apply(self, molecules: list[Mol], return_flatness: bool = False) -> list[Mol] | list[tuple[float, Mol]]:
@@ -24,8 +39,10 @@ class FlatnessFilter(GenericMoleculeFilter):
         """
         flatness = []
         for mol in molecules:
-            f = get_flatness_mol(mol, plot_visualization=False, sample_size=20)
-            flatness.append((f, mol))
+            f = get_flatness_mol(mol, False, num_conformers=self.num_conformers, max_attempts=self.max_attempts)
+            # TODO: consider filtering flatness / flatness being None
+            if f:
+                flatness.append((f, mol))
         flatness = sorted(flatness, key=lambda x: x[0])
         if return_flatness:
             return flatness

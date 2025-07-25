@@ -8,6 +8,7 @@ from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryF
 @pytest.mark.parametrize(
     "smiles, expected",
     [
+        ([], []),
         (
             [
                 # "N#Cc1ccnc(C#N)n1",
@@ -21,7 +22,6 @@ from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryF
                 "N#Cc1ccc(-n2c(=O)c3cc4c(=O)n(-c5ccc(-c6nc(-c7ccc(-n8c(=O)c9cc%10c(=O)n(-c%11ccc(C#N)cc%11)c(=O)c%10cc9c8=O)cc7)nc(-c7ccc(-n8c(=O)c9cc%10c(=O)n(-c%11ccc(C#N)cc%11)c(=O)c%10cc9c8=O)cc7)n6)cc5)c(=O)c4cc3c2=O)cc1",
             ],
         ),
-        ([], []),
     ],
 )
 def test_point_group_symmetry_filter(smiles, expected):
@@ -29,4 +29,5 @@ def test_point_group_symmetry_filter(smiles, expected):
     smiles = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = PointGroupSymmetryFilter()
     filtered = molecule_filter.apply(smiles)
+    filtered = [Chem.RemoveAllHs(mol) for mol in filtered]
     assert sorted([Chem.MolToSmiles(mol) for mol in filtered]) == sorted(expected)

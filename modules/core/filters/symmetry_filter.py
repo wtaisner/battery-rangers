@@ -10,7 +10,7 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 
 from modules.core.features.symmetries import AvailableSymmetry
-from modules.core.features.utils import get_graph_from_molecule
+from modules.core.features.utils import mol2graph
 from modules.core.filters.generic_filter import GenericMoleculeFilter
 from modules.core.graph_visualization import plot_nx_graphs
 
@@ -59,7 +59,7 @@ class SymmetryFilter(GenericMoleculeFilter):
         # Basic conversion and filtering of empty graphs
         for i, mol in enumerate(molecules):
             try:
-                graph = get_graph_from_molecule(mol)
+                graph = mol2graph(mol)
                 if graph.number_of_nodes() > 0:
                     mol_graphs.append((graph, mol))
                 else:
