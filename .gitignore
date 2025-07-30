@@ -185,3 +185,4 @@ __marimo__
 *.csv
 *.prior
 *.json
+csm_data/

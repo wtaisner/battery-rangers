@@ -1,4 +1,5 @@
 """Utility functions for the features."""
+import logging
 
 import networkx as nx
 import pymatgen.core
@@ -7,8 +8,12 @@ from pymatgen.vis.structure_vtk import StructureVis
 from rdkit import Chem
 from rdkit.Chem import Mol, rdDistGeom
 
+# debug logger
+logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
+logger.setLevel(logging.INFO)
 
-def compute_conformer(molecule: str | Mol, num_conformers: int = 10, max_attempts: int = 1) -> Mol | None:
+
+def compute_conformer(molecule: str | Mol, num_conformers: int = 30, max_attempts: int = 10, save_file: bool = False, filename: str = "") -> Mol | None:
     """
     Compute a 3D conformation for a molecule and return a new RDKit molecule with the conformation.
 
@@ -16,6 +21,8 @@ def compute_conformer(molecule: str | Mol, num_conformers: int = 10, max_attempt
         molecule: A SMILES string or RDKit molecule.
         num_conformers: The number of conformers to generate (default is 10).
         max_attempts: The maximum number of attempts to generate a conformation (default is 1).
+        save_file: Whether to save the generated conformers to an SDF file (default is False).
+        filename: The name of the file to save the conformers to. If not provided, a default name will be generated based on the molecule's name.
     Returns:
         The RDKit molecule with a 3D conformation or None if it failed.
     """
@@ -25,16 +32,41 @@ def compute_conformer(molecule: str | Mol, num_conformers: int = 10, max_attempt
     else:
         rdkit_mol = molecule
 
-    random_coords = rdkit_mol.GetNumAtoms() > 90 or rdkit_mol.GetNumBonds() > 100  # rule of thumb, obtained from data
-    rdkit_mol = Chem.AddHs(rdkit_mol)
+    # Only proceed if the molecule is valid and has no conformers.
+    if rdkit_mol.GetNumConformers() < 1:
+        random_coords = rdkit_mol.GetNumAtoms() > 90 or rdkit_mol.GetNumBonds() > 100  # rule of thumb, obtained from data
+        rdkit_mol = Chem.AddHs(rdkit_mol)
 
-    rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=-1, useRandomCoords=random_coords)
+        # Assign a name to the molecule if it doesn't have one, for default filename generation.
+        if not rdkit_mol.HasProp("_Name"):
+            smi = Chem.MolToSmiles(rdkit_mol)
+            rdkit_mol.SetProp("_Name", smi)
+
+        rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=-1, useRandomCoords=random_coords)
+
+    if save_file:
+        if not filename:
+            # Generate a default filename from the molecule's name, sanitizing it for file systems.
+            mol_name = rdkit_mol.GetProp("_Name").replace("/", "_").replace("\\", "_")
+            output_filename = f"{mol_name}_conformers.sdf"
+        else:
+            # Ensure the provided filename ends with .sdf
+            if not filename.lower().endswith(".sdf"):
+                output_filename = f"{filename}.sdf"
+            else:
+                output_filename = filename
+
+        # Use SDWriter, which correctly handles writing a molecule with multiple conformers to SDF.
+        writer = Chem.SDWriter(output_filename)
+        writer.write(rdkit_mol)
+        writer.close()
+        logger.debug(f"Molecule with conformer(s) saved to {output_filename}")
 
     # check if conformer was generated
     if rdkit_mol.GetNumConformers() > 0:
         return rdkit_mol
 
-    print(f"Failed to generate conformation for molecule: {molecule if isinstance(molecule, str) else Chem.MolToSmiles(molecule)}")
+    logger.debug(f"Failed to generate conformation for molecule: {molecule if isinstance(molecule, str) else Chem.MolToSmiles(molecule)}")
 
     return None
 
