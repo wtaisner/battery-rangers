@@ -28,8 +28,8 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         self,
         translation_table_path: str = "data/symmetries/symmetry_translation.csv",
         allowed_symmetries: set[str] | None = None,
-        num_conformers: int = 10,
-        max_attempts: int = 1,
+        num_conformers: int = 100,
+        max_attempts: int = 10,
     ):
         super().__init__()
         self.translation_table_path = translation_table_path

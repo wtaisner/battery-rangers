@@ -7,6 +7,8 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
+from modules.core.enums import MoleculeType
+from modules.core.features.csm_runner import CSMRunner
 from modules.core.features.flatness import get_flatness_mol
 from modules.core.features.pore_size import estimate_pore_size
 from modules.core.filters.conjugation_filter import ConjugationFilter
@@ -14,6 +16,7 @@ from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryF
 from modules.core.filters.smarts_filter import SMARTSFilter
 from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
 from modules.core.filters.symmetry_filter import SymmetryFilter
+from modules.generation.utils import score_value_exponential
 
 logger = logging.getLogger(__name__)
 console_handler = logging.StreamHandler()
@@ -26,49 +29,30 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-def score_value_exponential(value: float, min_val: float = 2.0, max_val: float = 50.0, decay_rate: float = 0.1) -> float:
-    """
-    Scores a value based on its proximity to the range [min_val, max_val].
-
-    - Score is 1.0 if value is within the range [min_val, max_val].
-    - Score decreases exponentially based on distance outside the range.
-
-    Args:
-      value: The numerical value to score.
-      min_val: The lower bound of the optimal range.
-      max_val: The upper bound of the optimal range.
-      decay_rate: Controls how quickly the score drops off with distance.
-                  A higher value means a faster drop.
-
-    Returns:
-      The calculated score (between 0 and 1.0).
-    """
-    if min_val <= value <= max_val:
-        return 1.0
-    if value < min_val:
-        distance = min_val - value
-        # Exponential decay: score = exp(-k * distance)
-        return math.exp(-decay_rate * distance)
-    # value > max_val
-    distance = value - max_val
-    # Exponential decay: score = exp(-k * distance)
-    return math.exp(-decay_rate * distance)
-
-
 class PropertyEvaluator:
     """Property evaluator class, used to evaluate a set of defined properties for a given molecule(s).
 
     Args:
+        molecule_type (MoleculeType): Type of the molecule to evaluate, e.g., MoleculeType.SUBSTRATE or MoleculeType.NODE. Defaults to MoleculeType.SUBSTRATE for compatibility with previous versions.
+        num_criteria (int, optional): Number of criteria to evaluate (e.g. computed scores will be divided by num_criteria so that the final range is 0-1). Defaults to 5.
         reference_smiles (str, optional): Path to a .smi file containing known SMILES strings that will be used to evaluate similarity between the generated molecules and reference ones. Defaults to None.
         **kwargs: Additional keyword arguments for filters.
     """
 
-    def __init__(self, reference_smiles: str | None = None, **kwargs):
+    def __init__(self, molecule_type: MoleculeType = MoleculeType.SUBSTRATE, num_criteria: int = 5, reference_smiles: str | None = None, **kwargs):
+        if molecule_type not in [MoleculeType.SUBSTRATE, MoleculeType.NODE]:
+            raise ValueError(f"Invalid molecule type: {molecule_type}. Must be either MoleculeType.SUBSTRATE or MoleculeType.NODE.")
+        self.molecule_type = molecule_type
+        self.num_criteria = num_criteria
+
         self.conjugation_filter = ConjugationFilter()
         self.smarts_filter = SMARTSFilter(kwargs.get("smarts", None))
-        self.point_group_symmetry_filter = PointGroupSymmetryFilter(kwargs.get("translation_table_path", "data/symmetries/symmetry_translation.csv"))
         self.steric_hindrance_filter = StericHindranceFilter()
-        self.symmetry_filter = SymmetryFilter(kwargs.get("min_isomorphic_nodes", 8), kwargs.get("types_to_check", None))
+
+        # self.point_group_symmetry_filter = PointGroupSymmetryFilter(kwargs.get("translation_table_path", "data/symmetries/symmetry_translation.csv"))
+        # self.symmetry_filter = SymmetryFilter(kwargs.get("min_isomorphic_nodes", 8), kwargs.get("types_to_check", None))
+
+        self.csm_runner = CSMRunner()
 
         self.fingerprint_generator = GetMorganGenerator(radius=2)
 
@@ -95,11 +79,7 @@ class PropertyEvaluator:
         if molecule is None:
             return 1e-10
 
-        # Evaluate the properties
-        pore_size_score = self._calculate_pore_size(molecule)
-        smarts_score = self._check_smarts(molecule)
         conjugation_score = self._check_conjugation(molecule)
-        symmetry_score = self._check_symmetry(molecule)
         flatness_score = self._calculate_flatness(molecule)
         steric_hindrance_score = self._calculate_steric_hindrance(molecule)
 
@@ -108,18 +88,30 @@ class PropertyEvaluator:
         else:
             similarity_score = 1e-10
 
-        # Combine the scores
-        total_score = pore_size_score + smarts_score + conjugation_score + symmetry_score + flatness_score + similarity_score + steric_hindrance_score
+        if self.molecule_type == MoleculeType.SUBSTRATE:
+            smarts_score = self._check_smarts(molecule)
 
-        logger.debug(
-            f" {smiles} \n"
-            f"Properties: Total score: {total_score}, Pore size: {pore_size_score}, SMARTS: {smarts_score}, Conjugation: {conjugation_score}, Symmetry: {symmetry_score}, Flatness: {flatness_score}, Mean Similarity: {similarity_score}, Steric Hindrance: {steric_hindrance_score}"
-        )
+            total_score = smarts_score + conjugation_score + flatness_score + similarity_score + steric_hindrance_score
+
+            logger.debug(
+                f" {smiles} | {self.molecule_type} \n"
+                f"Properties: Total score: {total_score}, SMARTS: {smarts_score}, Conjugation: {conjugation_score}, Flatness: {flatness_score}, Mean Similarity: {similarity_score}, Steric Hindrance: {steric_hindrance_score}"
+            )
+
+        else:
+            symmetry_score = self._check_symmetry(molecule)
+
+            total_score = conjugation_score + symmetry_score + flatness_score + similarity_score + steric_hindrance_score
+
+            logger.debug(
+                f" {smiles} | {self.molecule_type} \n"
+                f"Properties: Total score: {total_score}, Conjugation: {conjugation_score}, Symmetry: {symmetry_score}, Flatness: {flatness_score}, Mean Similarity: {similarity_score}, Steric Hindrance: {steric_hindrance_score}"
+            )
 
         if total_score < 0 or math.isnan(total_score):
             logger.debug("Total score set to 1e-10.")
-            total_score = 1e-10  # Set to a small positive value to avoid negative scores
-        return total_score / 7  # for REINVENT
+            return 1e-10  # Set to a small positive value to avoid negative scores
+        return total_score / self.num_criteria
 
     @staticmethod
     def _calculate_pore_size(molecule: Mol) -> float:
@@ -134,7 +126,7 @@ class PropertyEvaluator:
     def _calculate_flatness(molecule: Mol) -> float:
         try:
             flatness_error = get_flatness_mol(molecule)
-            if not math.isnan(flatness_error):
+            if flatness_error and not math.isnan(flatness_error):
                 return score_value_exponential(flatness_error, min_val=1e-10, max_val=1.60, decay_rate=0.2)
             return 1e-10
         except AttributeError as e:
@@ -159,14 +151,35 @@ class PropertyEvaluator:
         """
         Evaluate the symmetry of the molecule.
         """
-        # symmetry_group, symmetrical_point = self.point_group_symmetry_filter.apply([molecule], return_point_group_symmetry=True)
+        result = self.csm_runner.analyze_molecule(molecule, point_groups=["c2", "c3", "c4"], exact=False)
+        return score_value_exponential(result.lowest_csm[1], min_val=1e-10, max_val=5.0, decay_rate=0.1)
 
-        symmetrical_graph = self.symmetry_filter.apply([molecule])
-
-        # if symmetry_group[0] == "Cs":
-        #     return 0.0
-        # return float(len(symmetrical))
-        return float(len(symmetrical_graph))
+    # def _check_symmetry(self, molecule: Mol) -> float:
+    #     """
+    #     Evaluate the symmetry of the molecule.
+    #     """
+    #     symmetry_group, symmetrical_point = self.point_group_symmetry_filter.apply([molecule], return_point_group_symmetry=True)
+    #
+    #     # Check if the molecule is symmetrical according to pymatgen
+    #     if len(symmetry_group) == 0:
+    #         symmetry_group = ["C1"]
+    #
+    #     symmetrical_graph = self.symmetry_filter.apply([molecule])
+    #
+    #     if len(symmetrical_graph) == 1:
+    #         if symmetry_group[0] == "Cs":
+    #             return 0.75  # Cs symmetry with graph
+    #         elif symmetry_group[0] == "C1":
+    #             return 0.25  # no-symmetry with graph
+    #         else:
+    #             return 1  # desired allowed symmetries with graph
+    #     else:
+    #         if symmetry_group[0] == "Cs":
+    #             return 0.5  # Cs symmetry with graph
+    #         elif symmetry_group[0] == "C1":
+    #             return 0.0  # C1 no-symmetry without graph
+    #         else:
+    #             return 1  # desired allowed symmetries without graph
 
     def _calculate_mean_similarity(self, molecule: Mol) -> float:
         """
