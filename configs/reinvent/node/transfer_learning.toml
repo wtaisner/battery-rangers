@@ -1,0 +1,26 @@
+# REINVENT4 TOML input example for transfer learning
+#
+# Focus a given model towards a set of input SMILES.  This can also be used to
+# start from scratch from and an untrained prior.
+
+
+run_type = "transfer_learning"
+device = "cuda:0"  # set torch device e.g. "cpu"
+tb_logdir = "outputs/tensorboard"  # name of the TensorBoard logging directory
+seed =  23
+# number_of_cpus = 16 # optional parameter to control number of cpus for pair generation. If not provided, only one CPU will be used.
+[parameters]
+num_epochs = 50  # number of steps to run
+save_every_n_epochs = 50  # save checkpoint model file very N steps
+batch_size = 8
+num_refs = 4  # number of reference molecules randomly chosen for similarity
+                # set this to zero for large datasets (>200 molecules)!
+sample_batch_size = 100  # number of sampled molecules to compute sample loss
+
+randomize_smiles = false
+standardize_smiles = false
+
+## Reinvent
+input_model_file = "outputs/transfer_learning/200_epochs/pretrained_chembl_35.model"
+smiles_file = "data/raw/node/experts_node.smi"
+output_model_file = "outputs/transfer_learning/200_epochs/chembl_35_node_fine_tuned.model"

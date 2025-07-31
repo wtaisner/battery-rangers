@@ -22,5 +22,5 @@ standardize_smiles = false
 
 ## Reinvent
 input_model_file = "outputs/transfer_learning/200_epochs/pretrained_chembl_35.model"
-smiles_file = "data/raw/experts_merged.smi"
-output_model_file = "outputs/transfer_learning/200_epochs/chembl_35_fine_tuned.model"
+smiles_file = "data/raw/substrate/experts_substrate.smi"
+output_model_file = "outputs/transfer_learning/200_epochs/chembl_35_substrate_fine_tuned.model"
