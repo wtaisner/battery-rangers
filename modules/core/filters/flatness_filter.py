@@ -6,7 +6,7 @@ from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class FlatnessFilter(GenericMoleculeFilter):
-    """Filter that leaves molecules with flatness.
+    """Filter that leaves molecules with flatness score below specified threshold.
 
     Args:
         max_attempts (int): Maximum number of attempts to generate conformers.
@@ -14,17 +14,14 @@ class FlatnessFilter(GenericMoleculeFilter):
         max_flatness (float): Maximum allowed flatness value for the molecules to be kept.
     """
 
-    def __init__(self, max_attempts: int = 1, num_conformers: int = 20, max_flatness: float = 0.5):
-        """
-        Initialize the filter.
-        """
+    def __init__(self, max_attempts: int = 1, num_conformers: int = 20, max_flatness: float = 6.0):
         super().__init__()
         self.max_attempts = max_attempts
         self.num_conformers = num_conformers
         self.max_flatness = max_flatness
 
     # pylint: disable=arguments-differ
-    def apply(self, molecules: list[Mol], return_flatness: bool = False) -> list[Mol] | list[tuple[float, Mol]]:
+    def apply(self, molecules: list[Mol], return_flatness: bool = False) -> list[Mol] | tuple[list[Mol], list[tuple[float, Mol]]]:
         """
         Apply the filter to a list of RDKit molecules.
 
@@ -33,17 +30,18 @@ class FlatnessFilter(GenericMoleculeFilter):
             return_flatness (bool): If True, return the flatness values of the molecules.
         Returns:
             if return_flatness is True:
-                list[tuple[float, Mol]]: A list of tuples containing the flatness value and the corresponding RDKit molecule.
+                a tuple of two lists: filtered_molecules and list of tuples with flatness scores and molecules.
             else:
                 list[Mol]: The list of RDKit molecules that passed the filter.
         """
-        flatness = []
+        filtered_molecules = []
+        flatness_scores: list[tuple[float, Mol]] = []
         for mol in molecules:
             f = get_flatness_mol(mol, False, num_conformers=self.num_conformers, max_attempts=self.max_attempts)
-            # TODO: consider filtering flatness / flatness being None
-            if f:
-                flatness.append((f, mol))
-        flatness = sorted(flatness, key=lambda x: x[0])
+
+            flatness_scores.append((f, mol))
+            if f and f <= self.max_flatness:
+                filtered_molecules.append(mol)
         if return_flatness:
-            return flatness
-        return [x[1] for x in flatness]
+            return filtered_molecules, flatness_scores
+        return filtered_molecules
