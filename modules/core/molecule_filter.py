@@ -6,9 +6,11 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Mol
 
+from modules.core.enums import MoleculeType
 from modules.core.filters.conjugation_filter import ConjugationFilter
+from modules.core.filters.csm_symmetry_filter import CSMSymmetryFilter
+from modules.core.filters.flatness_filter import FlatnessFilter
 from modules.core.filters.generic_filter import GenericMoleculeFilter
-from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
 from modules.core.filters.smarts_filter import SMARTSFilter
 from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
 
@@ -21,21 +23,29 @@ logger.setLevel(logging.DEBUG)
 class MoleculeFilter:
     """Class responsible for filtering molecules."""
 
-    def __init__(self, filters: list[GenericMoleculeFilter] | None = None):
+    def __init__(self, filters: list[GenericMoleculeFilter] | None = None, molecule_type: MoleculeType = MoleculeType.SUBSTRATE):
         """
         Initialize the MoleculeFilter object.
 
         Args:
             filters (list[GenericMoleculeFilter]): The list of filters to apply. If None, the default filters are used.
         """
-        if filters is None:
+        if filters is None and molecule_type == MoleculeType.SUBSTRATE:
+            self.filters = [
+                SMARTSFilter(),  # Filter that leaves molecules with triple bonds.
+                ConjugationFilter(),  # Filter that leaves molecules with a conjugation
+                FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
+                StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
+                CSMSymmetryFilter(),
+            ]
+        elif filters is None and molecule_type == MoleculeType.NODE:
             self.filters = [
                 # SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
-                SMARTSFilter(),  # Filter that leaves molecules with triple bonds.
-                PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
-                # FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
-                StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
+                # PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
                 ConjugationFilter(),  # Filter that leaves molecules with a conjugation
+                CSMSymmetryFilter(),  # Filter that leaves molecules with CSM symmetry below threshold.
+                FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
+                StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
             ]
         else:
             self.filters = filters

@@ -46,13 +46,7 @@ class MoleculeGenerationEvaluator:
     """
 
     def __init__(
-        self,
-        generated_smiles: list[str],
-        training_smiles: list[str] | None = None,
-        reference_smiles: list[str] | None = None,
-        n_jobs: int = 1,
-        device: str = "cpu",
-        batch_size: int = 512,
+        self, generated_smiles: list[str], training_smiles: list[str] | None = None, reference_smiles: list[str] | None = None, n_jobs: int = 1, device: str = "cpu", batch_size: int = 512, **kwargs
     ):
         self.generated_smiles: list[str] = generated_smiles
         self.training_smiles: list[str] = training_smiles or []
@@ -64,7 +58,7 @@ class MoleculeGenerationEvaluator:
         self.batch_size: int = batch_size
 
         self._fcd_calculator: FCD | None = None
-        self.molecule_filter = MoleculeFilter()
+        self.molecule_filter = MoleculeFilter(kwargs.get("molecule_type"))
 
         # --- Preprocess SMILES ---
         # This step validates and canonicalizes SMILES, preparing them for metric calculation.
