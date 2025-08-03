@@ -12,10 +12,8 @@ from modules.core.features.csm_runner import CSMRunner
 from modules.core.features.flatness import get_flatness_mol
 from modules.core.features.pore_size import estimate_pore_size
 from modules.core.filters.conjugation_filter import ConjugationFilter
-from modules.core.filters.point_group_symmetry_filter import PointGroupSymmetryFilter
 from modules.core.filters.smarts_filter import SMARTSFilter
 from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
-from modules.core.filters.symmetry_filter import SymmetryFilter
 from modules.generation.utils import score_value_exponential
 
 logger = logging.getLogger(__name__)
@@ -117,7 +115,7 @@ class PropertyEvaluator:
     def _calculate_pore_size(molecule: Mol) -> float:
         try:
             pore_size = estimate_pore_size(molecule)
-            return score_value_exponential(pore_size, min_val=2, max_val=50, decay_rate=0.1)
+            return score_value_exponential(pore_size, min_val=2, max_val=50)
         except AttributeError as e:
             logger.error(f"Error calculating pore size: {e}")
             return 1e-10
@@ -127,7 +125,7 @@ class PropertyEvaluator:
         try:
             flatness_error = get_flatness_mol(molecule)
             if flatness_error and not math.isnan(flatness_error):
-                return score_value_exponential(flatness_error, min_val=1e-10, max_val=1.60, decay_rate=0.2)
+                return score_value_exponential(flatness_error, min_val=1e-10, max_val=6)
             return 1e-10
         except AttributeError as e:
             logger.error(f"Error calculating flatness: {e}")
