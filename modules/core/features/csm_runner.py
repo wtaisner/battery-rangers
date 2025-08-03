@@ -159,7 +159,7 @@ class CSMRunner:
         point_groups: list[str],
         pull_image: bool = False,
         exact: bool = True,
-    ) -> MoleculeCSMResult:
+    ) -> MoleculeCSMResult | None:
         """
         Performs a full CSM analysis for a molecule against multiple point groups.
 

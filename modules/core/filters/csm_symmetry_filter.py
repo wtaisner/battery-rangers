@@ -54,7 +54,7 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
 
             csm_result = self.csm_runner.analyze_molecule(mol, point_groups=self.evaluated_symmetry_groups, exact=False)
 
-            if csm_result.lowest_csm and csm_result.lowest_csm[1] < self.symmetry_measure_threshold:
+            if csm_result and csm_result.lowest_csm and csm_result.lowest_csm[1] < self.symmetry_measure_threshold:
                 filtered_molecules.append(mol)
 
         return filtered_molecules
