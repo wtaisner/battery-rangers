@@ -183,6 +183,7 @@ __marimo__
 *.smi
 *.slf
 *.csv
+*.png
 *.prior
 *.json
 csm_data/
