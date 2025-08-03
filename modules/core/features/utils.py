@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 logger.setLevel(logging.INFO)
 
 
-def compute_conformer(molecule: str | Mol, num_conformers: int = 30, max_attempts: int = 10, save_file: bool = False, filename: str = "") -> Mol | None:
+def compute_conformer(molecule: str | Mol, num_conformers: int = 20, max_attempts: int = 5, save_file: bool = False, filename: str = "") -> Mol | None:
     """
     Compute a 3D conformation for a molecule and return a new RDKit molecule with the conformation.
 
@@ -42,7 +42,7 @@ def compute_conformer(molecule: str | Mol, num_conformers: int = 30, max_attempt
             smi = Chem.MolToSmiles(rdkit_mol)
             rdkit_mol.SetProp("_Name", smi)
 
-        rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=-1, useRandomCoords=random_coords)
+        rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=0, useRandomCoords=random_coords)
 
     if save_file:
         if not filename:
@@ -64,7 +64,7 @@ def compute_conformer(molecule: str | Mol, num_conformers: int = 30, max_attempt
 
     # check if conformer was generated
     if rdkit_mol.GetNumConformers() > 0:
-        return rdkit_mol
+        return Chem.RemoveAllHs(rdkit_mol)
 
     logger.debug(f"Failed to generate conformation for molecule: {molecule if isinstance(molecule, str) else Chem.MolToSmiles(molecule)}")
 
