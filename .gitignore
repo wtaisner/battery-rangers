@@ -187,3 +187,4 @@ __marimo__
 *.prior
 *.json
 csm_data/
+*.model # exclude all model files

@@ -7,7 +7,8 @@ for sets of generated SMILES strings.
 """
 
 import logging
-from itertools import product
+import multiprocessing as mp
+from itertools import combinations
 
 import numpy as np
 from fcd_torch import FCD
@@ -17,12 +18,37 @@ from rdkit.rdBase import DisableLog
 from tqdm.auto import tqdm
 
 import wandb
+from modules.core.enums import MoleculeType
 from modules.core.molecule_filter import MoleculeFilter
 
 DisableLog("rdApp.*")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(module)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def _worker_preprocess_smiles(smiles: str) -> tuple[str | None, Chem.Mol | None]:
+    """
+    Worker function for multiprocessing pool.
+    Converts a single SMILES to a canonical SMILES and RDKit Mol object.
+
+    Args:
+        smiles: The SMILES string to process.
+
+    Returns:
+        A tuple of (canonical_smiles, mol_object) or (None, None) on failure.
+    """
+    if not isinstance(smiles, str):
+        return None, None
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol:
+            # Return both the canonical form and the molecule object
+            return Chem.MolToSmiles(mol, canonical=True), mol
+    except Exception:
+        # Catches any errors during parsing
+        return None, None
+    return None, None
 
 
 # pylint: disable=too-many-instance-attributes
@@ -46,7 +72,7 @@ class MoleculeGenerationEvaluator:
     """
 
     def __init__(
-        self, generated_smiles: list[str], training_smiles: list[str] | None = None, reference_smiles: list[str] | None = None, n_jobs: int = 1, device: str = "cpu", batch_size: int = 512, **kwargs
+        self, generated_smiles: list[str], training_smiles: list[str] | None = None, reference_smiles: list[str] | None = None, n_jobs: int = 8, device: str = "cpu", batch_size: int = 512, **kwargs
     ):
         self.generated_smiles: list[str] = generated_smiles
         self.training_smiles: list[str] = training_smiles or []
@@ -58,7 +84,7 @@ class MoleculeGenerationEvaluator:
         self.batch_size: int = batch_size
 
         self._fcd_calculator: FCD | None = None
-        self.molecule_filter = MoleculeFilter(kwargs.get("molecule_type"))
+        self.molecule_filter = MoleculeFilter(filters=None, molecule_type=kwargs.get("molecule_type", MoleculeType.SUBSTRATE))
 
         # --- Preprocess SMILES ---
         # This step validates and canonicalizes SMILES, preparing them for metric calculation.
@@ -76,43 +102,42 @@ class MoleculeGenerationEvaluator:
         _, self.valid_reference_smiles_canon, _ = self._preprocess_smiles_list(self.reference_smiles, "Reference")
 
     @staticmethod
-    def _preprocess_smiles_list(smiles_list: list[str], list_name: str) -> tuple[list[Chem.Mol], list[str], int]:
+    def _preprocess_smiles_list(smiles_list: list[str], list_name: str, n_jobs: int = 10) -> tuple[list[Chem.Mol], list[str], int]:
         """
-        Validates and canonicalizes a list of SMILES strings.
-
-        Filters out invalid SMILES and identifies unique valid representations.
+        Validates and canonicalizes a list of SMILES strings using multiprocessing.
 
         Args:
             smiles_list: The list of SMILES strings to process.
             list_name: A descriptive name for the list (e.g., "Generated").
+            n_jobs: The number of processes to use.
 
         Returns:
             A tuple containing:
-            - list[Mol]: List of valid RDKit Mol objects corresponding to unique valid SMILES.
-            - list[str]: List of unique valid (and potentially canonicalized) SMILES strings.
+            - list[Mol]: List of unique valid RDKit Mol objects.
+            - list[str]: List of unique valid canonical SMILES strings.
             - int:       Count of valid molecules found *before* deduplication.
         """
-        valid_mols_dict: dict[str, Chem.Mol] = {}  # Tracks unique valid SMILES -> Mol
-        processed_keys_set: set[str] = set()  # Tracks unique keys (canonical or original valid)
-        valid_mol_count = 0  # Count valid mols before deduplication
-
         if not smiles_list:
             logger.info("%s list is empty, skipping preprocessing.", list_name)
             return [], [], 0
 
-        for smiles in tqdm(smiles_list, desc=f"Processing {list_name} SMILES", leave=False):
-            try:
-                mol = Chem.MolFromSmiles(smiles) if isinstance(smiles, str) else None
-                canon_smiles = Chem.MolToSmiles(mol, canonical=True) if mol else None
-                valid_mol_count += 1 if canon_smiles else 0
-                if canon_smiles and canon_smiles not in processed_keys_set:
+        valid_mols_dict: dict[str, Chem.Mol] = {}  # Tracks unique valid SMILES -> Mol
+        valid_mol_count = 0
+
+        # Use multiprocessing Pool to parallelize the SMILES processing
+        # The 'with' statement ensures the pool is properly closed.
+        with mp.Pool(processes=n_jobs) as pool:
+            # The 'desc' provides a nice progress bar with tqdm
+            results = list(tqdm(pool.imap(_worker_preprocess_smiles, smiles_list), total=len(smiles_list), desc=f"Processing {list_name} SMILES"))
+
+        # Process the results gathered from the pool
+        for canon_smiles, mol in results:
+            if canon_smiles and mol:
+                valid_mol_count += 1
+                # Add to dict to ensure uniqueness based on canonical SMILES
+                if canon_smiles not in valid_mols_dict:
                     valid_mols_dict[canon_smiles] = mol
-                    processed_keys_set.add(canon_smiles)
 
-            except RuntimeError as e:
-                logger.error(f"Error processing SMILES '{smiles}': {e}")
-
-        # Extract lists from the dictionary holding unique entries
         unique_valid_smiles = list(valid_mols_dict.keys())
         unique_valid_mols = list(valid_mols_dict.values())
 
@@ -199,6 +224,9 @@ class MoleculeGenerationEvaluator:
         # The number of unique valid molecules is the length of the deduplicated list.
         num_unique_valid = len(self.valid_generated_smiles_canon)
 
+        if self.n_generated_valid == 0:
+            # logger.warning("Cannot calculate uniqueness: No valid generated molecules.")
+            return 0.0
         return num_unique_valid / self.n_generated_valid
 
     def calculate_novelty(self, reference_set: set[str]) -> float:
@@ -241,6 +269,8 @@ class MoleculeGenerationEvaluator:
         IntDiv_p = 1 - [ (1/|G|^2) * Sum_{m1,m2 in G}( T(m1,m2)^p ) ]^(1/p)
         Calculated over the set of *unique valid* generated molecules.
 
+        This implementation is optimized to avoid redundant similarity calculations.
+
         Args:
             p: The power parameter for the internal diversity calculation. Defaults to 1.
             fp_radius: Morgan fingerprint radius. Defaults to 2.
@@ -250,38 +280,47 @@ class MoleculeGenerationEvaluator:
             Internal diversity score [0.0, 1.0]. Returns 0.0 if fewer than 2
             unique valid molecules exist.
         """
-        # Operate on the unique valid molecules obtained from preprocessing
         unique_valid_mols = self.valid_generated_mols
+        if len(unique_valid_mols) < 2:
+            logger.warning("Cannot calculate internal diversity: requires at least 2 unique valid molecules, but found %d.", len(unique_valid_mols))
+            return 0.0
 
         fingerprints = []
         for mol in unique_valid_mols:
             try:
                 fp = GetMorganFingerprintAsBitVect(mol, fp_radius, nBits=fp_bits)
                 fingerprints.append(fp)
-            except RuntimeError as e:
-                logger.error(f"Error calculating fingerprint: {e}")
+            except (RuntimeError, ValueError) as e:
+                logger.error(f"Error calculating fingerprint, skipping molecule: {e}")
 
         num_fingerprints = len(fingerprints)
         if num_fingerprints < 2:
-            logger.warning(f"Could not generate enough valid fingerprints {num_fingerprints} for diversity calculation.")
+            logger.warning("Could not generate enough valid fingerprints (%d) for diversity calculation.", num_fingerprints)
             return 0.0
 
-        sum_sim_p = 0.0
+        # --- OPTIMIZED CALCULATION ---
+        # Calculate the sum of similarities for the upper triangle of the similarity matrix.
+        off_diagonal_sum_sim_p = 0.0
 
-        # Iterate over all n_fps * n_fps pairs (m1, m2), including (m, m)
-        for i, j in product(range(num_fingerprints), repeat=2):
+        # Use itertools.combinations to get all unique pairs of indices (i, j) where i < j
+        for i, j in tqdm(combinations(range(num_fingerprints), 2), desc="Calculating internal diversity"):
             try:
                 sim = DataStructs.TanimotoSimilarity(fingerprints[i], fingerprints[j])
-                # Handle potential 0^p case carefully if p isn't integer, although p is int here
-                sum_sim_p += np.power(sim, p)
+                off_diagonal_sum_sim_p += np.power(sim, p)
             except RuntimeError as e:
                 logger.error(f"Error calculating Tanimoto similarity: {e}")
 
-        average_similarity = sum_sim_p / (num_fingerprints**2)
+        # The full sum includes the symmetric pairs and the diagonal.
+        # Total Sum = (2 * Off-Diagonal Sum) + (Diagonal Sum)
+        # The sum of diagonal elements (T(m,m)=1) is simply num_fingerprints.
+        total_sum_sim_p = (2 * off_diagonal_sum_sim_p) + num_fingerprints
+
+        average_similarity = total_sum_sim_p / (num_fingerprints**2)
+
+        # Calculate the p-th root of the average similarity
         if p == 1:
             root_mean_sim_p = average_similarity
         else:
-            # Ensure argument for root is non-negative
             root_mean_sim_p = np.power(max(0.0, average_similarity), 1.0 / p)
 
         int_div = 1.0 - root_mean_sim_p
@@ -313,27 +352,24 @@ class MoleculeGenerationEvaluator:
         ref_smiles_list = list(self.valid_reference_smiles_canon)  # Unique list
 
         if not gen_smiles_list:
-            raise ValueError("Cannot calculate FCD: No unique valid generated molecules found.")
+            return np.nan  # No valid generated molecules to compare
 
         if not ref_smiles_list:
-            raise ValueError("Cannot calculate FCD: No unique valid reference molecules found.")
+            return np.nan  # No valid reference molecules to compare
 
         try:
             # Lazy initialization of FCD calculator
             if self._fcd_calculator is None:
-                # Initialize FCD with user-provided device string
                 self._fcd_calculator = FCD(device=self.device, n_jobs=self.n_jobs, batch_size=self.batch_size)
 
             logger.debug(f"Calculating FCD between {len(gen_smiles_list)} unique generated and {len(ref_smiles_list)} unique reference molecules...")
 
-            # --- Use the callable FCD object API as requested ---
             fcd_score = self._fcd_calculator(ref_smiles_list, gen_smiles_list)
-
             return float(fcd_score)  # Ensure result is float
 
         except RuntimeError as e:
             logger.error(f"Error calculating FCD: {e}")
-            return 0.0
+            return np.nan
 
     def calculate_percent_passing_filters(self) -> float:
         """
@@ -343,8 +379,8 @@ class MoleculeGenerationEvaluator:
             The percent of generated molecules that pass all filters.
         """
         if self.valid_generated_smiles_canon:
-            passed_filters, _ = self.molecule_filter.apply(self.valid_generated_smiles_canon)
-            return len(passed_filters) / len(self.valid_generated_smiles_canon)
+            passed_filters, _ = self.molecule_filter.apply(self.valid_generated_mols)
+            return len(passed_filters) / len(self.valid_generated_mols)
         return 0.0
 
     def get_num_valid_molecules(self) -> int:
@@ -393,5 +429,5 @@ if __name__ == "__main__":
 
     # --- Evaluate All Metrics ---
 
-    all_results = evaluator.evaluate(log_wandb=True, log_examples=True, run_name="test_run")
+    all_results = evaluator.evaluate(log_wandb=False, log_examples=True, run_name="test_run")
     print(all_results)

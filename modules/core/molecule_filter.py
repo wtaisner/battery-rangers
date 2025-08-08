@@ -1,10 +1,12 @@
 """Class responsible for filtering molecules."""
 import logging
+import multiprocessing as mp
 import time
 
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Mol
+from tqdm import tqdm
 
 from modules.core.enums import MoleculeType
 from modules.core.filters.conjugation_filter import ConjugationFilter
@@ -20,6 +22,23 @@ logging.basicConfig(format="%(levelname)s:%(name)s:%(message)s")
 logger.setLevel(logging.DEBUG)
 
 
+def smiles_to_mol_worker(smiles):
+    """
+    Worker function for the multiprocessing pool.
+    Safely converts a single SMILES string to an RDKit Mol object.
+    Returns the Mol object on success or None on failure.
+    """
+    if isinstance(smiles, str):
+        try:
+            # Core RDKit conversion
+            return Chem.MolFromSmiles(smiles)
+        except Exception:
+            # Catch any rdkit-related errors during parsing
+            return None
+    # Return None if the input was not a string (e.g., None, float)
+    return None
+
+
 class MoleculeFilter:
     """Class responsible for filtering molecules."""
 
@@ -32,20 +51,17 @@ class MoleculeFilter:
         """
         if filters is None and molecule_type == MoleculeType.SUBSTRATE:
             self.filters = [
-                SMARTSFilter(),  # Filter that leaves molecules with triple bonds.
-                ConjugationFilter(),  # Filter that leaves molecules with a conjugation
-                FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
-                StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
-                CSMSymmetryFilter(),
+                SMARTSFilter(),
+                ConjugationFilter(),
+                FlatnessFilter(),
+                StericHindranceFilter(),
             ]
         elif filters is None and molecule_type == MoleculeType.NODE:
             self.filters = [
-                # SymmetryFilter(),  # Filter that leaves molecules with a specific symmetry.
-                # PointGroupSymmetryFilter(),  # Filter that leaves molecules with a specific point group symmetry.
-                ConjugationFilter(),  # Filter that leaves molecules with a conjugation
-                CSMSymmetryFilter(),  # Filter that leaves molecules with CSM symmetry below threshold.
-                FlatnessFilter(),  # Filter that sorts the molecules according to their flatness.
-                StericHindranceFilter(),  # Filter that leaves molecules without steric hindrance.
+                ConjugationFilter(),
+                CSMSymmetryFilter(),
+                FlatnessFilter(),
+                StericHindranceFilter(),
             ]
         else:
             self.filters = filters
@@ -128,26 +144,56 @@ class MoleculeFilter:
         filter_failure_reasons: dict[str, list[str]] = {}  # Store failure reasons per molecule
         filter_total_times: dict[str, float] = {filter_operator.__class__.__name__: 0.0 for filter_operator in self.filters}  # Store total times per filter
 
+        # if isinstance(molecules[0], str):
+        #     mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules if isinstance(smiles, str)]
+        #     # Filter out None values and keep track of original SMILES
+        #     valid_mol_smiles = []
+        #     molecules_to_filter = []
+        #     for i, mol in enumerate(mol_objects):
+        #         if mol is not None:
+        #             molecules_to_filter.append(mol)
+        #             valid_mol_smiles.append(molecules[i])  # Keep original smiles for later reference
+        #         else:
+        #             filter_failure_reasons[molecules[i]] = ["Invalid SMILES"]  # Record invalid SMILES as failure
+        #     molecules = molecules_to_filter  # Continue filtering with valid molecules
+        #     original_smiles_map = {id(mol): smiles for mol, smiles in zip(molecules_to_filter, valid_mol_smiles)}  # Map Mol object ID to original SMILES
+        #     logger.info(f"Number of molecules that could be converted to RDKit Mol objects: {len(molecules)}")
+        # else:
+        #     original_smiles_map = {id(mol): Chem.MolToSmiles(mol) for mol in molecules}  # Create smiles map for Mol objects directly
+        #     molecules_to_filter = list(molecules)  # Create a copy to avoid modifying original input
+
+        molecules_to_filter = []  # Initialize the target list
+
         if isinstance(molecules[0], str):
-            mol_objects = [Chem.MolFromSmiles(smiles) for smiles in molecules if isinstance(smiles, str)]
-            # Filter out None values and keep track of original SMILES
+            # Use multiprocessing to convert SMILES to Mol objects
+            with mp.Pool(mp.cpu_count() // 2) as pool:
+                mol_objects = pool.map(smiles_to_mol_worker, molecules)
+
             valid_mol_smiles = []
-            molecules_to_filter = []
-            for i, mol in enumerate(mol_objects):
+            # The loop now populates 'molecules_to_filter' directly
+            for original_smiles, mol in zip(molecules, mol_objects):
                 if mol is not None:
                     molecules_to_filter.append(mol)
-                    valid_mol_smiles.append(molecules[i])  # Keep original smiles for later reference
+                    valid_mol_smiles.append(original_smiles)
                 else:
-                    filter_failure_reasons[molecules[i]] = ["Invalid SMILES"]  # Record invalid SMILES as failure
-            molecules = molecules_to_filter  # Continue filtering with valid molecules
-            original_smiles_map = {id(mol): smiles for mol, smiles in zip(molecules_to_filter, valid_mol_smiles)}  # Map Mol object ID to original SMILES
-            logger.info(f"Number of molecules that could be converted to RDKit Mol objects: {len(molecules)}")
-        else:
-            original_smiles_map = {id(mol): Chem.MolToSmiles(mol) for mol in molecules}  # Create smiles map for Mol objects directly
-            molecules_to_filter = list(molecules)  # Create a copy to avoid modifying original input
+                    if isinstance(original_smiles, str):
+                        filter_failure_reasons[original_smiles] = ["Invalid SMILES"]
+
+            # The map is built from the newly populated 'molecules_to_filter'
+            original_smiles_map = {id(mol): smiles for mol, smiles in zip(molecules_to_filter, valid_mol_smiles)}
+
+            # The log message correctly refers to the filtered list
+            logger.info(f"Number of molecules that could be converted to RDKit Mol objects: {len(molecules_to_filter)}")
+
+        else:  # Input is already a list of Mol objects
+            # Create the SMILES map from the original Mol objects
+            original_smiles_map = {id(mol): Chem.MolToSmiles(mol) for mol in molecules}
+
+            # Create a shallow copy for filtering. The original 'molecules' list is preserved.
+            molecules_to_filter = list(molecules)
 
         molecules_passed_all_filters = []
-        for mol in molecules_to_filter:
+        for mol in tqdm(molecules_to_filter, desc="Filtering molecules", total=len(molecules_to_filter)):
             passed_filters_for_mol = True
             failed_filters_names = []
 

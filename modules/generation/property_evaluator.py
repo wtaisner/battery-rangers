@@ -150,6 +150,9 @@ class PropertyEvaluator:
         Evaluate the symmetry of the molecule.
         """
         result = self.csm_runner.analyze_molecule(molecule, point_groups=["c2", "c3", "c4"], exact=False)
+        if result is None or result.lowest_csm is None:
+            # logger.warning("No symmetry/conformation found for the molecule.")
+            return 1e-10  # Return a small positive value to avoid negative scores
         return score_value_exponential(result.lowest_csm[1], min_val=1e-10, max_val=5.0, decay_rate=0.1)
 
     # def _check_symmetry(self, molecule: Mol) -> float:

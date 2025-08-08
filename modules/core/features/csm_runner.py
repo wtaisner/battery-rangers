@@ -182,7 +182,8 @@ class CSMRunner:
         input_filename = f"{uuid.uuid4().hex}.sdf"
         host_input_path = os.path.join(self.host_data_dir, input_filename)
 
-        molecule = compute_conformer(molecule=molecule, save_file=True, filename=host_input_path)
+        # add increased values for CSM (thus node molecules)
+        molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=100, num_conformers=1000, filename=host_input_path)
 
         if molecule is None:
             # raise ValueError("Failed to generate conformer from SMILES string.")
