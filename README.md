@@ -1,6 +1,4 @@
-# Battery Rangers
-
-![Battery rangers](static/battery_rangers.jpeg)
+# Benchmarking knowledge transfer methods in de novo materials discovery
 
 ## Setup
 
