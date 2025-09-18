@@ -9,11 +9,11 @@
 
 # Path to the input CSV or SMILES file (.smi).
 # REQUIRED.
-input_csv_file = "data/raw/experts_merged.csv"
+input_csv_file = "data/raw/node/train_node.csv"
 
 # Path where the processed/filtered SMILES will be written.
 # REQUIRED.
-output_smiles_file = "data/raw/experts_merged.smi"
+output_smiles_file = "data/raw/node/train_node.smi"
 
 # --- File Reading Parameters ---
 
@@ -65,8 +65,8 @@ chunk_size = 10000
 
 # Minimum number of heavy atoms (non-hydrogen). Requires "MinHeavyAtoms" in properties.
 # Default: 1
-min_heavy_atoms = 3
+min_heavy_atoms = 1
 
 # Maximum number of heavy atoms (non-hydrogen). Requires "MaxHeavyAtoms" in properties.
 # Default: 100
-max_heavy_atoms = 200
+max_heavy_atoms = 500
