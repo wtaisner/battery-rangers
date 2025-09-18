@@ -1,11 +1,12 @@
 import marimo
 
-__generated_with = "0.13.1"
+__generated_with = "0.14.16"
 app = marimo.App(width="full")
 
 
 @app.cell
 def _():
+    import json
     import multiprocessing as mp
     import re
     import sqlite3
@@ -16,12 +17,12 @@ def _():
     from sklearn.model_selection import train_test_split
     from tqdm import tqdm
 
-    return mo, mp, pd, re, sf, sqlite3, tqdm, train_test_split
+    return json, mo, mp, pd, re, sf, sqlite3, tqdm, train_test_split
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Chembl""")
+    mo.md(r"""# ChEMBL35""")
     return
 
 
