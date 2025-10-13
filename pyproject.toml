@@ -35,18 +35,23 @@ dependencies = [
     "tbparse>=0.0.9",
     "tensorboard>=2.19.0",
     "toml>=0.10.2",
-    "torch>=2.5.1",
-    "torchvision>=0.20.1",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
     "transformers>=4.49.0",
+    "upsetplot>=0.9.0",
     "vtk>=9.4.1",
     "wandb>=0.19.8",
     "xgboost>=2.1.3",
+    "reinvent"
 ]
 
 [[tool.uv.index]]
 name = "pytorch-cu124"
 url = "https://download.pytorch.org/whl/cu124"
 explicit = true
+
+[tool.uv.sources]
+reinvent = { path = "modules/REINVENT4", editable = true }
 
 [tool.ty.rules]
 unresolved-import = "ignore"
