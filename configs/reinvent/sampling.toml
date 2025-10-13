@@ -5,6 +5,9 @@ device = "cuda"
 
 [parameters]
 
+# fixing mode collapse
+model_file = "models/reinvent/node/chembl_35_pretrained_ft_rl_no_inception_fixed.model"
+output_file = "data/sampling/reinvent/node/chembl35_pretrained_ft_rl_no_inception_fixed/chembl35_pretrained_ft_rl_no_inception_fixed_1.csv"
 # vanilla
 #model_file = "models/reinvent/reinvent.prior"
 #output_file = "data/sampling/reinvent/substrate/vanilla/vanilla_10.csv"
@@ -30,8 +33,8 @@ device = "cuda"
 # output_file = "data/sampling/reinvent/node/chembl35_pretrained_rl_inception/chembl35_pretrained_rl_inception_9.csv"
 
 # chembl35 pretrained + ft
-model_file = "models/reinvent/node/chembl_35_fine_tuned.model"
-output_file = "data/sampling/reinvent/node/chembl35_pretrained_finetuned/chembl35_pretrained_finetuned_8.csv"
+# model_file = "models/reinvent/node/chembl_35_fine_tuned.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_finetuned/chembl35_pretrained_finetuned_8.csv"
 
 # chembl35 pretrained + ft + RL
 # model_file = "models/reinvent/node/chembl35_pretrained_finetuned_rl_inception.model"

@@ -1,0 +1,7 @@
+name = "node_vanilla_rl"
+molecule_type = "node"
+prior_type = "vanilla"   # <-- CHOOSE THE STARTING POINT
+recipe = "rl"            # <-- CHOOSE THE PROCESS
+
+[rl]
+known_smiles_path = "data/raw/node/train.smi"

@@ -6,8 +6,11 @@ Logs an aggregated report to Weights & Biases for multiple files.
 import argparse
 import glob
 import os
+import time
 
+import matplotlib.pyplot as plt
 import pandas as pd
+from upsetplot import plot
 
 import wandb
 from modules.core.enums import MoleculeType
@@ -73,9 +76,22 @@ if __name__ == "__main__":
     print(f"Found {len(generated_files)} file(s) to evaluate.")
 
     all_results_list = []
+    all_upset_results = {}
     for f_path in generated_files:
         print(f"\n---> Evaluating file: {os.path.basename(f_path)}")
-        generated_smiles = pd.read_csv(f_path)["SMILES"].tolist()
+        start_time = time.time()
+        allowed_smiles_columns = ["SMILES", "canonical_smiles", "smiles", "canon_smiles"]
+        # Check if the file has any of the allowed columns
+        df = pd.read_csv(f_path)  # [:1000] # TODO: remove later
+        found_column = None
+        for col in allowed_smiles_columns:
+            if col in df.columns:
+                found_column = col
+                break
+        if found_column is None:
+            raise ValueError(f"None of the expected columns {allowed_smiles_columns} found in the file: {f_path}")
+
+        generated_smiles = df[found_column].tolist()
 
         evaluator = MoleculeGenerationEvaluator(
             generated_smiles=generated_smiles,
@@ -88,7 +104,11 @@ if __name__ == "__main__":
 
         # --- Evaluate metrics for the current file ---
         # Wandb logging is disabled for singular reports
-        results = evaluator.evaluate(log_wandb=False, log_examples=False)
+        results, upset_results = evaluator.evaluate(log_wandb=False, log_examples=False)
+
+        print(f"Evaluation completed in {time.time() - start_time:.2f} seconds.")
+
+        all_upset_results.update(upset_results)
         all_results_list.append(results)
 
     # --- Display results ---
@@ -102,6 +122,15 @@ if __name__ == "__main__":
         print("          RUN METRICS")
         print("=" * 50)
         print(results_df.round(3).to_string())
+
+        records = []
+        for smiles, filter_outcomes in all_upset_results.items():
+            # Invert the boolean: True if the molecule failed (result is False)
+            record = {filter_name: not passed for filter_name, passed in filter_outcomes.items()}
+            records.append(record)
+
+            # Create the DataFrame
+        df_for_upset = pd.DataFrame.from_records(records).dropna()
 
         # --- Conditional Aggregation and Logging for multiple files ---
         if len(generated_files) > 1:
@@ -130,6 +159,15 @@ if __name__ == "__main__":
                 summary_table_df = summary_df.reset_index().rename(columns={"index": "metric"})
                 wandb_table = wandb.Table(dataframe=summary_table_df)
                 wandb.log({"aggregated_metrics_summary": wandb_table})
+
+                wandb_upset_table = wandb.Table(dataframe=df_for_upset)
+                wandb.log({"upset_plot_data": wandb_upset_table})
+
+                # log upset plot to wandb
+                fig = plt.figure(figsize=(10, 6))
+                print(df_for_upset.head())
+                plot_dict = plot(df_for_upset.groupby(list(df_for_upset.columns)).size(), fig=fig)
+                wandb.log({"upset_plot": fig})
 
                 wandb.finish()
                 print("---> Logging complete.")

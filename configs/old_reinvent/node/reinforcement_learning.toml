@@ -7,8 +7,7 @@
 # of a run also when the run is forcefully terminated with Ctrl-C.
 
 
-# SUBSTRATE
-
+# NODE
 run_type = "staged_learning"
 device = "cuda:0"  # set torch device e.g. "cpu"
 tb_logdir = "outputs/tensorboard"  # name of the TensorBoard logging directory
@@ -16,25 +15,25 @@ seed = 23
 
 [parameters]
 
-summary_csv_prefix = "staged_learning_substrate_vanilla_rl_inception"  # prefix for the CSV file
+summary_csv_prefix = "staged_learning_node_chembl35_ft_rl_no_inception"  # prefix for the CSV file
 use_checkpoint = false  # if true read diversity filter from agent_file
 purge_memories = true  # if true purge all diversity filter memories after each stage
 
 # vanilla + rl
-prior_file = "models/reinvent/reinvent.prior"
-agent_file = "models/reinvent/reinvent.prior"
+#prior_file = "models/reinvent/reinvent.prior"
+#agent_file = "models/reinvent/reinvent.prior"
 
 # vanilla + fine-tuned + rl
-# prior_file = "models/reinvent/substrate/vanilla_ft.model"
-# agent_file = "models/reinvent/substrate/vanilla_ft.model"
+# prior_file = "models/reinvent/node/vanilla_ft.model"
+# agent_file = "models/reinvent/node/vanilla_ft.model"
 
 # chembl_35 + rl
 # prior_file = "models/reinvent/pretrained_chembl_35.model"
 # agent_file = "models/reinvent/pretrained_chembl_35.model"
 
-# chembl_35 + fine-tuning + rl
-# prior_file = "models/reinvent/substrate/chembl_35_fine_tuned.model"
-# agent_file = "models/reinvent/substrate/chembl_35_fine_tuned.model"
+# chembl_35 + fine-tuned + rl
+ prior_file = "models/reinvent/node/chembl_35_fine_tuned.model"
+ agent_file = "models/reinvent/node/chembl_35_fine_tuned.model"
 
 batch_size = 256 # network
 
@@ -46,14 +45,14 @@ randomize_smiles = true  # if true shuffle atoms in SMILES randomly
 [learning_strategy]
 
 type = "dap"      # dap: only one supported
-sigma = 128       # sigma of the RL reward function
-rate = 0.0001     # for torch.optim
+sigma = 256       # sigma of the RL reward function
+rate = 0.00005    # for torch.optim
 
 
 [diversity_filter]  # optional, comment section out or remove if unneeded
 # NOTE: also memorizes all seen SMILES
 
-type = "IdenticalMurckoScaffold" # IdenticalTopologicalScaffold,
+type = "PenalizeSameSmiles" # IdenticalTopologicalScaffold,
 # ScaffoldSimilarity, PenalizeSameSmiles
 bucket_size = 25                 # memory size in number of compounds
 minscore = 0.4                   # only memorize if this threshold is exceeded
@@ -62,17 +61,17 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 
 
 # Reinvent only: guide RL in the initial phase
-[inception]  # optional, comment sectionout or remove if unneeded
-smiles_file = "data/raw/substrate/train_substrate.smi"  # "good" SMILES for guidance
-memory_size = 100  # number of total SMILES held in memory
-sample_size = 10  # number of SMILES randomly chosen each epoch
+#[inception]  # optional, comment sectionout or remove if unneeded
+#smiles_file = "data/raw/node/train_node.smi"  # "good" SMILES for guidance
+#memory_size = 100  # number of total SMILES held in memory
+#sample_size = 10  # number of SMILES randomly chosen each epoch
 
 
 ### Stage 1
 ### Note that stages must always be a list i.e. double brackets
 [[stage]]
 
-chkpt_file = 'models/reinvent/substrate/vanilla_rl_inception.model'
+chkpt_file = 'models/reinvent/node/chembl_35_pretrained_ft_rl_no_inception_fixed.model'
 
 termination = "simple"  # termination criterion fot this stage
 max_score = 1.0  # terminate if this total score is exceeded
@@ -83,7 +82,7 @@ max_steps = 200  # terminate entire run when exceeded
 type = "geometric_mean"  # aggregation function
 
 [[stage.scoring.component]]
-[stage.scoring.component.BatteryPropertiesSubstrate]
+[stage.scoring.component.BatteryPropertiesNode]
 
-[[stage.scoring.component.BatteryPropertiesSubstrate.endpoint]]
-known_smiles_path = "data/raw/substrate/train_substrate.smi"  # path to known SMILES file
+[[stage.scoring.component.BatteryPropertiesNode.endpoint]]
+known_smiles_path = "data/raw/node/train_node.smi"  # path to known SMILES file

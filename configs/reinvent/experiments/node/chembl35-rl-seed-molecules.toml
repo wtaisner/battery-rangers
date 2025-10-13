@@ -1,0 +1,14 @@
+name = "node_chembl35_rl_inception"
+molecule_type = "node"
+prior_type = "chembl35"
+recipe = "rl_inception"
+
+[rl]
+# Path to known SMILES for the scoring function
+known_smiles_path = "data/raw/node/train.smi"
+
+[rl.inception]
+# Path to seed molecules
+smiles_file = "data/raw/node/train.smi"
+memory_size = 100
+sample_size = 10
