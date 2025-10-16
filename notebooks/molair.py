@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.0"
+__generated_with = "0.14.16"
 app = marimo.App(width="medium")
 
 
@@ -30,9 +30,9 @@ def _(mo):
 
 @app.cell
 def _(json, pd):
-    with open("outputs/molair/molair_properties_fixed_evaluator_with_cs/vocab.json", "r") as f_1:
+    with open("models/mol_air/vanilla/vocab.json", "r") as f_1:
         config = json.load(f_1)
-    selfies = pd.read_csv("data/raw/new_experts_merged.slf", sep=" ", header=None)
+    selfies = pd.read_csv("data/raw/substrate/train_selfies.slf", sep=" ", header=None)
     selfies.columns = ["selfies"]
     selfies.shape, config
     return config, selfies
@@ -42,13 +42,16 @@ def _(json, pd):
 def _(pd, re, selfies):
     lengths = []
     set_of_tokens = set()
+    vanilla_vocab_compliant = []
     for selfie in selfies["selfies"]:
         tokens = re.findall(r"\[[^\]]+\]", selfie)
         set_of_tokens.update(tokens)
         lengths.append(len(tokens))
+        if len(tokens) <= 75:
+            vanilla_vocab_compliant.append(selfie)
 
     pd.DataFrame(lengths, columns=["lengths"]).describe()
-    return lengths, set_of_tokens
+    return lengths, vanilla_vocab_compliant
 
 
 @app.cell
@@ -59,37 +62,9 @@ def _(lengths, lp):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""# Append custom tokens & update sequence length to current vocab""")
-    return
-
-
 @app.cell
-def _(config, json, set_of_tokens):
-    current_tokens = set(config["vocabulary"])
-    print(len(current_tokens))
-
-    print(len(set_of_tokens))
-
-    set_of_tokens.update(current_tokens)
-    len(set_of_tokens.intersection(current_tokens)) == len(current_tokens)
-
-    config["vocabulary"] = list(set_of_tokens)
-    config["max_str_len"] = 384
-
-    print(config)
-
-    with open("notebooks/new_experts_vocab.json", "w") as f:
-        json.dump(config, f)
-    return
-
-
-@app.cell
-def _(selfies):
-    # print selfies as nicely pastable list into yaml
-    for s in selfies.iterrows():
-        print(f'- "{s[1]["selfies"]}" ')
+def _(pd, vanilla_vocab_compliant):
+    pd.DataFrame(vanilla_vocab_compliant).to_csv("data/raw/substrate/train_substrate_vanilla_vocab_compliant.slf", sep=" ", index=None, header=None)
     return
 
 

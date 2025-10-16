@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.16.0"
 app = marimo.App(width="full")
 
 
@@ -48,6 +48,14 @@ def _(pd, sqlite3):
     df = pd.read_sql_query("SELECT * FROM main.compound_structures", cnx)
     df.shape
     return cnx, df
+
+
+@app.cell
+def _():
+    # see what tables are in main
+    # tables_df = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table';", cnx)
+    # tables_df
+    return
 
 
 @app.cell
@@ -106,6 +114,12 @@ def _(df, feature_df, pd):
     merged_df = pd.merge(df, feature_df, on="molregno", how="inner")
     merged_df.to_parquet("data/chembl_35_sqlite/chembl_35.parquet")
     merged_df.to_csv("data/chembl_35_sqlite/chembl_35.csv", index=None)
+    return (merged_df,)
+
+
+@app.cell
+def _(merged_df):
+    merged_df.head()
     return
 
 
