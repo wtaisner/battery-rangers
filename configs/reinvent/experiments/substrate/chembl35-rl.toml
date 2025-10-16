@@ -1,0 +1,7 @@
+name = "substrate_chembl35_rl"
+molecule_type = "substrate"
+prior_type = "chembl35"
+recipe = "rl"
+
+[rl]
+known_smiles_path = "data/raw/substrate/train_substrate.smi"

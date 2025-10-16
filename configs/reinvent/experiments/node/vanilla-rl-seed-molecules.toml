@@ -4,9 +4,9 @@ prior_type = "vanilla"
 recipe = "rl_inception"
 
 [rl]
-known_smiles_path = "data/raw/node/train.smi"
+known_smiles_path = "data/raw/node/train_node.smi"
 
 [rl.inception]
-smiles_file = "data/raw/node/train.smi"
+smiles_file = "data/raw/node/train_node.smi"
 memory_size = 100
 sample_size = 10

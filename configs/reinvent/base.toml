@@ -28,7 +28,7 @@ num_epochs = 100
 save_every_n_epochs = 50
 batch_size = 16
 sample_batch_size = 100
-# USE FOR CHEMBL35 pre-trained dataset
+# USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
 randomize_smiles = false
 standardize_smiles = false
 

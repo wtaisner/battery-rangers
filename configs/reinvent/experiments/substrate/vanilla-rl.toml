@@ -1,0 +1,7 @@
+name = "substrate_vanilla_rl"
+molecule_type = "substrate"
+prior_type = "vanilla"
+recipe = "rl"
+
+[rl]
+known_smiles_path = "data/raw/substrate/train_substrate.smi"

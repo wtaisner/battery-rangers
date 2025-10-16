@@ -3,6 +3,6 @@ molecule_type = "substrate"
 prior_type = "vanilla"
 recipe = "sampling"
 
-[sampling]
-num_files = 2
-num_smiles = 10
+#[sampling]
+#num_files = 2
+#num_smiles = 10

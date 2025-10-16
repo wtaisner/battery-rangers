@@ -10,6 +10,6 @@ validation_smiles_file = "data/raw/substrate/test_substrate.smi"
 randomize_smiles = true
 standardize_smiles = true
 
-[sampling]
-num_files = 2
-num_smiles = 10
+#[sampling]
+#num_files = 2
+#num_smiles = 10

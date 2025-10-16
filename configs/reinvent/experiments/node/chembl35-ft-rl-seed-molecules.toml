@@ -1,0 +1,16 @@
+name = "node_chembl35_ft_rl_seed_molecules"
+molecule_type = "node"
+prior_type = "chembl35"
+recipe = "ft_rl_inception"
+
+[tl]
+smiles_file = "data/raw/node/train_node.smi"
+validation_smiles_file = "data/raw/node/test_node.smi"
+
+[rl]
+known_smiles_path = "data/raw/node/train.smi"
+
+[rl.inception]
+smiles_file = "data/raw/node/train.smi"
+memory_size = 100
+sample_size = 10
