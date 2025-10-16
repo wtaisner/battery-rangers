@@ -1,0 +1,40 @@
+molair_chembl35_pretrained_new_data_FAST_196:
+  Pretrain:
+    dataset_path: data/chembl_35_sqlite/chembl_35.slf
+    train_dataset_path: data/chembl_35_sqlite/chembl_35_train.slf
+    val_dataset_path: data/chembl_35_sqlite/chembl_35_val.slf
+    epoch: 10
+    batch_size: 1024
+    lr: 1.0e-3
+    device: cuda
+    seed: 23
+    save_agent: True
+  Env:
+    custom_property_coef: 1.0
+    max_str_len: 196
+  Agent:
+    type: RND
+    n_steps: 256
+    epoch: 6
+    seq_mini_batch_size: 128
+    seq_len: 196
+    gamma: 1.0
+    nonepi_adv_coef: 1.0
+  CountIntReward:
+    crwd_coef: 0.05
+  Train:
+    num_envs: 64
+    num_inference_envs: 64
+    seed: 2137
+    total_time_steps: 250000
+    summary_freq: 12800
+    agent_save_freq: 102400
+    n_inference_episodes: 250
+    lr: 1.0e-4
+    device: cuda
+  Inference:
+    num_envs: 64
+    n_episodes: 10000
+    seed: 23
+    device: cuda
+    ckpt: best
