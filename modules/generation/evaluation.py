@@ -93,11 +93,11 @@ class MoleculeGenerationEvaluator:
         self.valid_generated_mols, self.valid_generated_smiles_canon, self.n_generated_valid = self._preprocess_smiles_list(self.generated_smiles, "Generated")
         self.n_generated_total: int = len(self.generated_smiles)
 
-        _, self.valid_training_smiles_canon, _ = self._preprocess_smiles_list(self.training_smiles, "Training")
-
         # If training set is empty, we set valid_training_smiles_canon to an empty list
         if not self.training_smiles:
             self.valid_training_smiles_canon = []
+        else:
+            _, self.valid_training_smiles_canon, _ = self._preprocess_smiles_list(self.training_smiles, "Training")
 
         _, self.valid_reference_smiles_canon, _ = self._preprocess_smiles_list(self.reference_smiles, "Reference")
 
@@ -143,7 +143,9 @@ class MoleculeGenerationEvaluator:
 
         return unique_valid_mols, unique_valid_smiles, valid_mol_count
 
-    def evaluate(self, log_wandb: bool = False, log_examples: bool = False, project: str = "molecule-generation", run_name: str | None = None, num_examples: int = 5) -> dict[str, float]:
+    def evaluate(
+        self, log_wandb: bool = False, log_examples: bool = False, project: str = "molecule-generation", run_name: str | None = None, num_examples: int = 5
+    ) -> tuple[dict[str, float], dict[str, dict[str, bool]]]:
         """
         Runs the calculation of defined metrics.
 
@@ -155,10 +157,14 @@ class MoleculeGenerationEvaluator:
             num_examples (int): The number of examples to log. Defaults to 5.
 
         Returns:
-            A dictionary containing the results. Keys are metric names (str),
+            1. A dictionary containing the results. Keys are metric names (str),
             values are the calculated scores (float or np.nan if calculation
             failed or requirements were not met).
+            2. dict[str, dict[str, bool]] with detailed filter results for each molecule, key is molecule, value is a dictionary with key as filter name and value as bool indicating pass/fail
         """
+
+        percent_passing_filters, upset_results = self.calculate_percent_passing_filters()
+
         results = {
             "validity": self.calculate_validity(),
             "uniqueness": self.calculate_uniqueness(),
@@ -166,7 +172,7 @@ class MoleculeGenerationEvaluator:
             "novelty_wrt_reference_set": self.calculate_novelty(set(self.valid_reference_smiles_canon)),
             "internal_diversity": self.calculate_internal_diversity(),
             "fcd": self.calculate_fcd() if self.reference_smiles else np.nan,
-            "percent_passing_filters": self.calculate_percent_passing_filters(),
+            "percent_passing_filters": percent_passing_filters,
             "num_valid_molecules": self.get_num_valid_molecules(),
         }
 
@@ -197,7 +203,7 @@ class MoleculeGenerationEvaluator:
                         mols.append(mol)
                     wandb.log({"unique novel examples": mols})
 
-        return results
+        return results, upset_results
 
     # --- Core Metrics ---
 
@@ -244,6 +250,9 @@ class MoleculeGenerationEvaluator:
             Novelty score [0.0, 1.0]. Returns np.nan if training set was not
             provided. Returns 0.0 if no unique valid molecules were generated.
         """
+        if reference_set is None or len(reference_set) == 0:
+            logger.warning("Cannot calculate novelty: Reference set is None.")
+            return np.nan  # Cannot calculate novelty without a reference set
 
         unique_valid_generated_set = set(self.valid_generated_smiles_canon)
         num_unique_valid = len(unique_valid_generated_set)
@@ -371,7 +380,7 @@ class MoleculeGenerationEvaluator:
             logger.error(f"Error calculating FCD: {e}")
             return np.nan
 
-    def calculate_percent_passing_filters(self) -> float:
+    def calculate_percent_passing_filters(self) -> tuple[float, dict]:
         """
         Calculates the percent of generated molecules that pass all filters.
 
@@ -379,9 +388,12 @@ class MoleculeGenerationEvaluator:
             The percent of generated molecules that pass all filters.
         """
         if self.valid_generated_smiles_canon:
-            passed_filters, _ = self.molecule_filter.apply(self.valid_generated_mols)
-            return len(passed_filters) / len(self.valid_generated_mols)
-        return 0.0
+            results = self.molecule_filter.apply_against_all_filters(self.valid_generated_mols)
+
+            percent_passing_filters = len([smiles for smiles, outcomes in results.items() if all(outcomes.values())]) / len(self.valid_generated_mols)
+            return percent_passing_filters, results
+
+        return 0.0, {}
 
     def get_num_valid_molecules(self) -> int:
         """
@@ -398,9 +410,10 @@ if __name__ == "__main__":
         "CCO",  # duplicate of training / generated
         "CCC",  # novel, valid
         "c1ccccc1",  # duplicate of training
-        "invalid-smiles-string",  # invalid
+        # "invalid-smiles-string",  # invalid
         "CC(=O)O",  # duplicate of training
         "CCO",  # duplicate of training / generated
+        "N#CC1=CC=C(C#N)C=C1",
     ]
 
     training_smiles_example = [
