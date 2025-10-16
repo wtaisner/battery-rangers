@@ -87,12 +87,14 @@ class CSMRunner:
     container_name: str
     host_data_dir: str
     container_data_dir: str
+    current_user_id: int = os.getuid()
+    current_group_id: int = os.getgid()
 
     def __init__(
         self,
         image_name: str = "teamcsm/csm:latest",
         container_name: str = "csm_runner_container",
-        data_dir: str = "csm_data",
+        data_dir: str = "/tmp/csm_data",
     ) -> None:
         """
         Initializes the CSMRunner and sets up configuration.
@@ -149,6 +151,7 @@ class CSMRunner:
                 self.image_name,
                 name=self.container_name,
                 detach=True,
+                user=f"{self.current_user_id}:{self.current_group_id}",
                 tty=True,  # Keeps the container running in the background
                 volumes={self.host_data_dir: {"bind": self.container_data_dir, "mode": "rw"}},
             )
@@ -186,7 +189,6 @@ class CSMRunner:
         molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=100, num_conformers=1000, filename=host_input_path)
 
         if molecule is None:
-            # raise ValueError("Failed to generate conformer from SMILES string.")
             return None
 
         analysis = MoleculeCSMResult(smiles=Chem.MolToSmiles(molecule))
