@@ -16,8 +16,8 @@ BIONEMO_IMAGE_PATH=nvcr.io/nvidia/clara/bionemo-framework:${LATEST_TAG}
 # --name bionemo: Name of the container
 # ipc, ulimit are recommended settings for running the container
 #
-docker run --gpus all --name bionemo --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -d -p 8888:8888 \
+docker run --gpus all --name bionemo --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -d -p 8899:8899 \
   -v ./data:/workspace/bionemo/data "$BIONEMO_IMAGE_PATH" \
-  "jupyter lab --allow-root --ip=* --port=8888 --no-browser \
+  "jupyter lab --allow-root --ip=* --port=8899 --no-browser \
   --NotebookApp.token='' --NotebookApp.allow_origin='*' \
   --ContentsManager.allow_hidden=True --notebook-dir=/workspace/bionemo"
