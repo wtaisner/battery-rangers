@@ -55,6 +55,7 @@ class MoleculeFilter:
                 ConjugationFilter(),
                 StericHindranceFilter(),
                 FlatnessFilter(),
+                CSMSymmetryFilter(),
             ]
         elif filters is None and molecule_type == MoleculeType.NODE:
             self.filters = [

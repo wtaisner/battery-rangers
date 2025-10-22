@@ -32,16 +32,15 @@ class PropertyEvaluator:
 
     Args:
         molecule_type (MoleculeType): Type of the molecule to evaluate, e.g., MoleculeType.SUBSTRATE or MoleculeType.NODE. Defaults to MoleculeType.SUBSTRATE for compatibility with previous versions.
-        num_criteria (int, optional): Number of criteria to evaluate (e.g. computed scores will be divided by num_criteria so that the final range is 0-1). Defaults to 5.
         reference_smiles (str, optional): Path to a .smi file containing known SMILES strings that will be used to evaluate similarity between the generated molecules and reference ones. Defaults to None.
         **kwargs: Additional keyword arguments for filters.
     """
 
-    def __init__(self, molecule_type: MoleculeType = MoleculeType.SUBSTRATE, num_criteria: int = 5, reference_smiles: str | None = None, **kwargs):
+    def __init__(self, molecule_type: MoleculeType = MoleculeType.SUBSTRATE, reference_smiles: str | None = None, **kwargs):
         if molecule_type not in [MoleculeType.SUBSTRATE, MoleculeType.NODE]:
             raise ValueError(f"Invalid molecule type: {molecule_type}. Must be either MoleculeType.SUBSTRATE or MoleculeType.NODE.")
         self.molecule_type = molecule_type
-        self.num_criteria = num_criteria
+        self.num_criteria = 5 if molecule_type == MoleculeType.NODE else 6
 
         self.conjugation_filter = ConjugationFilter()
         self.smarts_filter = SMARTSFilter(kwargs.get("smarts", None))
@@ -80,6 +79,7 @@ class PropertyEvaluator:
         conjugation_score = self._check_conjugation(molecule)
         flatness_score = self._calculate_flatness(molecule)
         steric_hindrance_score = self._calculate_steric_hindrance(molecule)
+        symmetry_score = self._check_symmetry(molecule)
 
         if self.reference_smiles is not None:
             similarity_score = self._calculate_mean_similarity(molecule)
@@ -89,7 +89,7 @@ class PropertyEvaluator:
         if self.molecule_type == MoleculeType.SUBSTRATE:
             smarts_score = self._check_smarts(molecule)
 
-            total_score = smarts_score + conjugation_score + flatness_score + similarity_score + steric_hindrance_score
+            total_score = smarts_score + conjugation_score + flatness_score + similarity_score + steric_hindrance_score + symmetry_score
 
             logger.debug(
                 f" {smiles} | {self.molecule_type} \n"
@@ -97,8 +97,6 @@ class PropertyEvaluator:
             )
 
         else:
-            symmetry_score = self._check_symmetry(molecule)
-
             total_score = conjugation_score + symmetry_score + flatness_score + similarity_score + steric_hindrance_score
 
             logger.debug(

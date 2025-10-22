@@ -36,15 +36,15 @@ class SMARTSFilter(GenericMoleculeFilter):
         if rules is None:
             self.rules = [
                 Rule(["C#N"], 2),
-                Rule(["[NH2]", "Br"], 1),
-                Rule(["[NH2]", "Cl"], 1),
-                Rule(["Cl"], 2),  # TODO: should be depended on the number of symmetry axes - i.e. 2 for 1 and 3 for 3
-                Rule(["Br"], 2),  # TODO: as above
-                Rule(["[CH]=O", "[NH2]"], 1),
-                Rule(["[NH2]", "c1nccc1"], 2),
-                Rule(["[NH2]", "[#6](-c)-[#7r6]-[#6](-c)"], 2),
-                Rule(["[OH]", "O1-B-O-c:c1"], 1),
-                Rule(["[#6]=[#8]", "[#7]1~[#6]~[#6]~[#7]~[#6]~[#6]~1"], 1),
+                # Rule(["[NH2]", "Br"], 1),
+                # Rule(["[NH2]", "Cl"], 1),
+                # Rule(["Cl"], 2),  # TODO: should be depended on the number of symmetry axes - i.e. 2 for 1 and 3 for 3
+                # Rule(["Br"], 2),  # TODO: as above
+                # Rule(["[CH]=O", "[NH2]"], 1),
+                # Rule(["[NH2]", "c1nccc1"], 2),
+                # Rule(["[NH2]", "[#6](-c)-[#7r6]-[#6](-c)"], 2),
+                # Rule(["[OH]", "O1-B-O-c:c1"], 1),
+                # Rule(["[#6]=[#8]", "[#7]1~[#6]~[#6]~[#7]~[#6]~[#6]~1"], 1),
             ]
 
         else:
