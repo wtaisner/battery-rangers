@@ -157,6 +157,59 @@ def _(df, train_test_split):
 
 @app.cell(hide_code=True)
 def _(mo):
+    mo.md(r"""## SMARTS - CTF filtering""")
+    return
+
+
+@app.cell
+def _():
+    from modules.core.filters.smarts_filter import Rule, SMARTSFilter
+
+    smarts_filter = SMARTSFilter(rules=[Rule(["C#N"], 2)])
+    return (smarts_filter,)
+
+
+@app.cell
+def _(df, smarts_filter):
+    print(f"Total molecules: {len(df)}")
+    filtered = smarts_filter.apply(df["molecule_substrate"])
+    print(f"CTF only: {len(filtered)}")
+
+    for idx, mol in enumerate(df["molecule_substrate"]):
+        filtered = smarts_filter.apply([mol])
+        if not filtered:
+            df.at[idx, "CTF"] = False
+        else:
+            df.at[idx, "CTF"] = True
+
+    ctfs = df[df["CTF"] == True]
+    ctfs.head()
+    return (ctfs,)
+
+
+@app.cell
+def _(ctfs, train_test_split):
+    X_ctf_train, X_ctf_test, _, _ = train_test_split(ctfs, ctfs["capacitance_max"], test_size=0.2, random_state=42)
+
+    # save train-test sets
+    X_ctf_train["selfies_substrate"].to_csv("data/raw/substrate/ctf_train_selfies.slf", sep=" ", index=None, header=None)
+    X_ctf_test["selfies_substrate"].to_csv("data/raw/substrate/ctf_test_selfies.slf", sep=" ", index=None, header=None)
+    X_ctf_train["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/ctf_train.csv", index=None)
+    X_ctf_test["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/ctf_test.csv", index=None)
+
+    # save for nodes
+    X_ctf_train["selfies_node"].to_csv("data/raw/node/ctf_train_selfies.slf", sep=" ", index=None, header=None)
+    X_ctf_test["selfies_node"].to_csv("data/raw/node/ctf_test_selfies.slf", sep=" ", index=None, header=None)
+    X_ctf_train["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/ctf_train.csv", index=None)
+    X_ctf_test["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/ctf_test.csv", index=None)
+
+    # save full ctf dataset
+    ctfs.to_csv("data/raw/experts_15_09_25_ctf_filtered.csv", index=None)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     mo.md(r"""# Filters""")
     return
 
@@ -210,35 +263,6 @@ def _(math, np, plt):
 @app.cell
 def _(flatness_node, flatness_substrate, plot_flatness):
     plot_flatness(flatness_substrate, "substrate"), plot_flatness(flatness_node, "node")
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""## SMARTS""")
-    return
-
-
-@app.cell
-def _():
-    from modules.core.filters.smarts_filter import Rule, SMARTSFilter
-
-    smarts_filter = SMARTSFilter(rules=[Rule(["C#N"], 2)])
-    return (smarts_filter,)
-
-
-@app.cell
-def _(df, smarts_filter):
-    print(f"Total molecules: {len(df)}")
-    filtered = smarts_filter.apply(df["molecule_substrate"])
-    print(f"CTF only: {len(filtered)}")
-
-    for idx, mol in enumerate(df["molecule_substrate"]):
-        filtered = smarts_filter.apply([mol])
-        if not filtered:
-            df.at[idx, "CTF"] = False
-        else:
-            df.at[idx, "CTF"] = True
     return
 
 
@@ -307,7 +331,7 @@ def _(df):
 
     for sml in tqdm(df["smiles_substrate"]):
         results = runner.analyze_molecule(sml, ["c2", "c3", "c4"], exact=False)
-        print(results)
+        # print(results if results.lowest_csm[1] > 5 else "")
         if results is None:
             continue
         else:
