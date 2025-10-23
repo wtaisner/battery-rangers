@@ -1,0 +1,32 @@
+services:
+  # The BioNeMo container service
+  bionemo:
+    image: nvcr.io/nvidia/clara/bionemo-framework:1.10.1
+    container_name: bionemo_compose_container
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ports:
+      - "8899:8899" # Expose the JupyterLab port
+    volumes:
+      - ./modules/bionemo/data:/workspace/bionemo/data
+      - ./modules/core:/workspace/bionemo/modules/core
+      - ./modules/generation:/workspace/bionemo/modules/generation
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+
+      # Mount our custom script to make it available inside the container
+      - ./bionemo_init.sh:/bionemo_init.sh
+      # Mount your host .env file to a temporary location, read-only
+      - ./.env:/tmp/.env_host:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+
+
+    entrypoint: [ "/bin/bash", "/bionemo_init.sh" ]
