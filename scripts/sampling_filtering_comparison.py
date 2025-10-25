@@ -7,7 +7,7 @@ from multiprocessing import Pool
 
 import pandas as pd
 
-from modules.core.features.molecule_filter import MoleculeFilter  # pylint: disable=import-error
+from modules.core.molecule_filter import MoleculeFilter  # pylint: disable=import-error
 
 # Set up the logger for this specific module
 logger = logging.getLogger(__name__)  # Logger specific to this module

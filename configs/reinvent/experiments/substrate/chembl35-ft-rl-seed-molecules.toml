@@ -1,0 +1,16 @@
+name = "substrate_chembl35_ft_rl_seed_molecules"
+molecule_type = "substrate"
+prior_type = "chembl35"
+recipe = "ft_rl_inception"
+
+[tl]
+smiles_file = "data/raw/substrate/train_substrate.smi"
+validation_smiles_file = "data/raw/substrate/test_substrate.smi"
+
+[rl]
+known_smiles_path = "data/raw/substrate/train_substrate.smi"
+
+[rl.inception]
+smiles_file = "data/raw/substrate/train_substrate.smi"
+memory_size = 100
+sample_size = 10

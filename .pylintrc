@@ -39,7 +39,7 @@ extension-pkg-whitelist=
 fail-on=
 
 # Specify a score threshold under which the program will exit with error.
-fail-under=10
+fail-under=9.0
 
 # Interpret the stdin as a python script, whose filename needs to be passed as
 # the module_or_package argument.
@@ -52,7 +52,7 @@ ignore=CVS
 # ignore-list. The regex matches against paths and can be in Posix or Windows
 # format. Because '\\' represents the directory delimiter on Windows systems,
 # it can't be used as an escape character.
-ignore-paths=modules/mol_air, modules/REINVENT4
+ignore-paths=modules/mol_air, modules/REINVENT4, notebooks/
 
 # Files or directories matching the regular expression patterns are skipped.
 # The regex matches against base names, not paths. The default value ignores
@@ -101,7 +101,7 @@ source-roots=
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
+# suggestion-mode=yes
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.

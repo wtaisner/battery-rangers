@@ -1,0 +1,19 @@
+# Template for Transfer Learning (Fine-Tuning)
+
+run_type = "transfer_learning"
+device = "{device}"
+seed = {seed}
+
+[parameters]
+num_epochs = {tl_num_epochs}
+save_every_n_epochs = {tl_save_every_n_epochs}
+batch_size = {tl_batch_size}
+sample_batch_size = {tl_sample_batch_size}
+randomize_smiles = {tl_randomize_smiles}
+standardize_smiles = {tl_standardize_smiles}
+
+# Dynamic paths
+smiles_file = "{tl_smiles_file}"
+validation_smiles_file = "{tl_validation_smiles_file}"
+input_model_file = "{prior_model_path}"
+output_model_file = "{output_model_path}"

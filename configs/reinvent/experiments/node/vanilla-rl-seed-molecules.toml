@@ -1,0 +1,12 @@
+name = "node_vanilla_rl_inception"
+molecule_type = "node"
+prior_type = "vanilla"
+recipe = "rl_inception"
+
+[rl]
+known_smiles_path = "data/raw/node/train_node.smi"
+
+[rl.inception]
+smiles_file = "data/raw/node/train_node.smi"
+memory_size = 100
+sample_size = 10

@@ -4,52 +4,13 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import Mol, rdDistGeom
+from rdkit.Chem import Mol
 from sklearn.linear_model import LinearRegression
 
-from modules.core.features.preprocessing import canon_smiles
+from modules.core.features.utils import compute_conformer
 
 
-def embed_molecule(mol: Mol, sample_size: int = 20, random_seed: int = 321) -> Chem.Mol | None:
-    """
-    Embed a molecule using RDKit.
-
-    Args:
-        mol: A molecule.
-        sample_size:
-        random_seed:
-
-    Returns:
-        The embedded molecule.
-    """
-    random_coords = mol.GetNumAtoms() > 90 or mol.GetNumBonds() > 100  # rule of thumb, obtained from data
-
-    mol = Chem.AddHs(mol)
-
-    rdDistGeom.EmbedMultipleConfs(mol, sample_size, randomSeed=random_seed, numThreads=-1, useRandomCoords=random_coords)
-    return mol
-
-
-def get_flatness_smiles(smiles: str, plot_visualization: bool = False, **kwargs) -> float | None:
-    """
-    Calculate the flatness of a molecule from a SMILES string.
-
-    Args:
-        smiles: A SMILES string.
-        plot_visualization: Whether to plot the molecule and the fitted plane.
-        **kwargs: Additional arguments for the get_flatness_mol function.
-
-    Returns:
-        The flatness of the molecule.
-    """
-    can_smi = canon_smiles(smiles)
-    if can_smi is None:
-        return None
-    mol = Chem.MolFromSmiles(can_smi, sanitize=True)
-    return get_flatness_mol(mol, plot_visualization, **kwargs)
-
-
-def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) -> float | None:
+def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, **kwargs) -> float | None:
     """
     Calculate the flatness of a molecule.
 
@@ -57,22 +18,29 @@ def get_flatness_mol(mol: Chem.Mol, plot_visualization: bool = False, **kwargs) 
     molecule's atoms from the plane.
 
     Args:
-        mol: A molecule.
+        molecule: An RDKit molecule or a SMILES string.
         plot_visualization: Whether to plot the molecule and the fitted plane.
-        **kwargs: Additional arguments for the embedding function.
+        **kwargs: Additional arguments for the compute_conformer function.
     Returns:
         The flatness of the molecule.
     """
 
-    embedded_mol = embed_molecule(mol, kwargs.get("sample_size", 10))
+    if isinstance(molecule, str):
+        rdkit_mol = compute_conformer(molecule, **kwargs)
+    else:
+        rdkit_mol = molecule
+        # check if rdkit_mol has a conformation
+        if rdkit_mol.GetNumConformers() == 0:
+            rdkit_mol = compute_conformer(rdkit_mol)
 
-    if embedded_mol is None:
+    # check if conformer is present
+    if rdkit_mol is None:
         return None
 
-    conformers = embedded_mol.GetNumConformers()
+    conformers = rdkit_mol.GetNumConformers()
     rmsds = np.zeros(conformers)
     for i in range(conformers):
-        conf = embedded_mol.GetConformer(i)
+        conf = rdkit_mol.GetConformer(i)
         coords = conf.GetPositions()
 
         # Fit a plane to the coordinates
@@ -133,11 +101,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # Example usage
-    # smiles = 'Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1'
-    SMILES = "FC1=C(F)C(C(O[Co]([OH2])([OH2])[N]2(C3)C[N@@](C[N@@]3C4)C[N@@]4C2)=O)=C(F)C(F)=C1C([O])=O"
+    smiles = "Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1"
 
-    f = get_flatness_smiles(SMILES, plot_visualization=True, sample_size=1)
+    f = get_flatness_mol(smiles, True, max_attempts=1, num_conformers=20)
     logging.info(f"Flatness: {f}")
 
-    mol = Chem.MolFromSmiles(SMILES)
-    # Draw.MolToFile(mol, "mol.png")
+    mol = Chem.MolFromSmiles(smiles)

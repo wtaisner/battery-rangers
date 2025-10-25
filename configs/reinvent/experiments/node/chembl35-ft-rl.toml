@@ -1,0 +1,11 @@
+name = "node_chembl35_ft_rl"
+molecule_type = "node"
+prior_type = "chembl35"
+recipe = "ft_rl"
+
+[tl]
+smiles_file = "data/raw/node/chembl35_train.smi"
+validation_smiles_file = "data/raw/node/chembl35_test.smi"
+
+[rl]
+known_smiles_path = "data/raw/node/train.smi"

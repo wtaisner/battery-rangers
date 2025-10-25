@@ -1,0 +1,38 @@
+# REINVENT4 TOML input example for transfer learning
+#
+# Focus a given model towards a set of input SMILES.  This can also be used to
+# start from scratch from and an untrained prior.
+
+# NODE
+run_type = "transfer_learning"
+device = "cuda:0"  # set torch device e.g. "cpu"
+tb_logdir = "outputs/tensorboard"  # name of the TensorBoard logging directory
+seed = 23
+# number_of_cpus = 16 # optional parameter to control number of cpus for pair generation. If not provided, only one CPU will be used.
+[parameters]
+num_epochs = 100  # number of steps to run
+save_every_n_epochs = 50  # save checkpoint model file very N steps
+batch_size = 16
+num_refs = 4  # number of reference molecules randomly chosen for similarity set this to zero for large datasets (>200 molecules)!
+sample_batch_size = 100  # number of sampled molecules to compute sample loss
+
+# USE FOR CHEMBL35 pre-trained dataset
+randomize_smiles = false
+standardize_smiles = false
+
+# vanilla fine-tuning
+#smiles_file = "data/raw/node/train_node.smi"
+#validation_smiles_file = "data/raw/node/test_node.smi"
+
+# chembl35 pre-trained fine-tuning
+smiles_file = "data/raw/node/chembl35_train_node.smi"
+validation_smiles_file = "data/raw/node/chembl35_test_node.smi"
+
+## Reinvent
+# vanilla + fine-tuning
+#input_model_file = "models/reinvent/reinvent.prior"
+#output_model_file = "models/reinvent/node/vanilla_ft.model"
+
+# chembl35 pre-trained + fine-tuning
+input_model_file = "models/reinvent/pretrained_chembl_35.model"
+output_model_file = "models/reinvent/node/chembl_35_fine_tuned.model"

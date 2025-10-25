@@ -1,70 +1,105 @@
 """Utility functions for the features."""
-import os
-import uuid
+import logging
 
 import networkx as nx
 import pymatgen.core
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.vis.structure_vtk import StructureVis
 from rdkit import Chem
-from rdkit.Chem import AllChem, Mol, MolToXYZFile, rdDepictor
+from rdkit.Chem import Mol, rdDistGeom
 
-from modules.core.features.preprocessing import canon_smiles
+# debug logger
+logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
+logger.setLevel(logging.INFO)
 
 
-def mol_to_xyz(molecule: str | Mol, save_file: bool = False, directory: str = "./tmp") -> str | None:
+def compute_conformer(molecule: str | Mol, num_conformers: int = 20, max_attempts: int = 5, save_file: bool = False, filename: str = "") -> Mol | None:
     """
-    Convert a SMILES string or RDKit molecule to a 3D xyz file using RDKit.
+    Compute a 3D conformation for a molecule and return a new RDKit molecule with the conformation.
 
     Args:
         molecule: A SMILES string or RDKit molecule.
-        save_file: Whether to save the xyz file.
-        directory: The directory to save the xyz file.
+        num_conformers: The number of conformers to generate (default is 10).
+        max_attempts: The maximum number of attempts to generate a conformation (default is 1).
+        save_file: Whether to save the generated conformers to an SDF file (default is False).
+        filename: The name of the file to save the conformers to. If not provided, a default name will be generated based on the molecule's name.
     Returns:
-        The path to the saved xyz file.
+        The RDKit molecule with a 3D conformation or None if it failed.
     """
+
     if isinstance(molecule, str):
-        canonic_smiles = canon_smiles(molecule)
-        rdkit_mol = Chem.MolFromSmiles(canonic_smiles, sanitize=True)
+        rdkit_mol = Chem.MolFromSmiles(molecule)
     else:
         rdkit_mol = molecule
-    rdkit_mol = Chem.AddHs(rdkit_mol)
-    rdDepictor.Compute2DCoords(rdkit_mol, sampleSeed=42)
 
-    uid = uuid.uuid4()
-    save_dir = f"{directory}/rdkit_mol_{uid}.xyz"
+    # Only proceed if the molecule is valid and has no conformers.
+    if rdkit_mol.GetNumConformers() < 1:
+        random_coords = rdkit_mol.GetNumAtoms() > 90 or rdkit_mol.GetNumBonds() > 100  # rule of thumb, obtained from data
+        rdkit_mol = Chem.AddHs(rdkit_mol)
+
+        # Assign a name to the molecule if it doesn't have one, for default filename generation.
+        if not rdkit_mol.HasProp("_Name"):
+            smi = Chem.MolToSmiles(rdkit_mol)
+            rdkit_mol.SetProp("_Name", smi)
+
+        rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=0, useRandomCoords=random_coords)
 
     if save_file:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        MolToXYZFile(rdkit_mol, save_dir)
+        if not filename:
+            # Generate a default filename from the molecule's name, sanitizing it for file systems.
+            mol_name = rdkit_mol.GetProp("_Name").replace("/", "_").replace("\\", "_")
+            output_filename = f"{mol_name}_conformers.sdf"
+        else:
+            # Ensure the provided filename ends with .sdf
+            if not filename.lower().endswith(".sdf"):
+                output_filename = f"{filename}.sdf"
+            else:
+                output_filename = filename
 
-    return save_dir
+        # Use SDWriter, which correctly handles writing a molecule with multiple conformers to SDF.
+        writer = Chem.SDWriter(output_filename)
+        writer.write(rdkit_mol)
+        writer.close()
+        logger.debug(f"Molecule with conformer(s) saved to {output_filename}")
+
+    # check if conformer was generated
+    if rdkit_mol.GetNumConformers() > 0:
+        return Chem.RemoveAllHs(rdkit_mol)
+
+    logger.debug(f"Failed to generate conformation for molecule: {molecule if isinstance(molecule, str) else Chem.MolToSmiles(molecule)}")
+
+    return None
 
 
-def get_pymatgen_molecule_from_smiles(smiles: str, save_file: bool = True, directory: str = "./tmp") -> pymatgen.core.Molecule | None:
+def mol2pymatgen(molecule: str | Mol, **kwargs) -> pymatgen.core.Molecule | None:
     """
-    Convert a SMILES string to a pymatgen Molecule object.
-
+    Convert a molecule from SMILES or RDKit Mol to a pymatgen Molecule object.
     Args:
-        smiles: A SMILES string.
-        save_file: Whether to save the xyz file.
-        directory: The directory to save the xyz file.
+        molecule: A SMILES string or RDKit molecule.
+    kwargs: Additional keyword arguments for the compute_conformer function.
     Returns:
         The pymatgen Molecule object or None if the conversion failed.
 
     """
-    path = mol_to_xyz(smiles, save_file, directory)
-    if path is None:
+    if isinstance(molecule, str):
+        rdkit_mol = compute_conformer(molecule, **kwargs)
+    else:
+        rdkit_mol = molecule
+        # check if rdkit_mol has a conformation
+        if rdkit_mol.GetNumConformers() == 0:
+            rdkit_mol = compute_conformer(rdkit_mol, **kwargs)
+
+    # check if conformer is present
+    if rdkit_mol is None:
         return None
-    mol = Molecule.from_file(path)
 
-    try:
-        os.remove(path)
-    except OSError as e:
-        print(f"Error removing file {path}: {e}")
+    conformer = rdkit_mol.GetConformer(0)
 
-    return mol
+    species = [atom.GetSymbol() for atom in rdkit_mol.GetAtoms()]
+    coords = [conformer.GetAtomPosition(i) for i in range(rdkit_mol.GetNumAtoms())]
+    coords = [[pos.x, pos.y, pos.z] for pos in coords]
+
+    return Molecule(species, coords)
 
 
 def visualize_structure(structure: Structure, **kwargs) -> None:
@@ -81,28 +116,7 @@ def visualize_structure(structure: Structure, **kwargs) -> None:
     stvis.show()
 
 
-def smiles_to_3d(smiles: str) -> tuple | None:
-    """
-    Converts a SMILES string to a 3D optimized molecular structure.
-    :param smiles: a SMILES string.
-    :return: tuple with molecular structure graph, list of atom symbols, and array of 3d coordinates of atoms.
-    """
-    mol = Chem.MolFromSmiles(smiles, sanitize=True)
-    if mol is None:
-        raise ValueError(f"Invalid SMILES: {smiles}")
-    mol = Chem.AddHs(mol)  # Add hydrogens
-    a = AllChem.EmbedMolecule(mol, randomSeed=42, maxAttempts=500)  # Generate initial 3D structure
-    if a < 0:
-        a = AllChem.EmbedMolecule(mol, randomSeed=42, maxAttempts=500, useRandomCoords=True)
-        if a < 0:
-            return None
-    AllChem.MMFFOptimizeMolecule(mol)
-    coords = mol.GetConformer().GetPositions()
-    symbols = [atom.GetSymbol() for atom in mol.GetAtoms()]
-    return mol, symbols, coords
-
-
-def get_graph_from_molecule(molecule: str | Mol) -> nx.Graph:
+def mol2graph(molecule: str | Mol) -> nx.Graph:
     """
     Get a graph representation of a molecule.
 
@@ -121,12 +135,12 @@ def get_graph_from_molecule(molecule: str | Mol) -> nx.Graph:
     return nx.from_numpy_array(adjacency_matrix)
 
 
-def get_aromatic_rings(mol: Chem.Mol) -> list[tuple[int]]:
+def get_aromatic_rings(molecule: Mol | str) -> list[tuple[int]]:
     """
     Get all aromatic rings in a molecule.
 
     Args:
-        mol: A RDKit molecule.
+        molecule (Mol | str): The molecule to get aromatic rings from.
     Returns:
         A list of tuples with the indices of the atoms in the aromatic rings.
 
@@ -140,6 +154,13 @@ def get_aromatic_rings(mol: Chem.Mol) -> list[tuple[int]]:
             N#CC(=N)C#N
             []
     """
+    if isinstance(molecule, str):
+        mol = Chem.MolFromSmiles(molecule)
+    elif isinstance(molecule, Mol):
+        mol = molecule
+    else:
+        raise ValueError("Input must be a SMILES string or an RDKit Mol object.")
+
     ri = mol.GetRingInfo()
 
     aromatic_rings = []

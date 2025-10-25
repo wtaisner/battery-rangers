@@ -8,17 +8,16 @@ from pymatgen.core.structure import Molecule, Structure
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, SpacegroupAnalyzer
 from pymatgen.vis.structure_vtk import StructureVis
 
-from modules.core.features.utils import get_pymatgen_molecule_from_smiles, visualize_structure
+from modules.core.features.utils import mol2pymatgen, visualize_structure
 
 
 class AvailableSymmetry(Enum):
     """Enum for available symmetry types."""
 
-    NODE = "node"
-    EDGE = "edge"
-    RING_BONDS = "ring_bonds"
-    RING_NODES = "ring_nodes"
-    RING_OUTER_PLANE = "ring_outer_plane"
+    NODE = "Node"  # cut on nodes?
+    EDGE = "Edge"  # cut on edges
+    RING_NODES = "Ring nodes"  # cut on the opposite nodes of the ring
+    WHOLE_RING = "Whole ring"  # cut on the whole ring
 
 
 def translate_point_group_to_symmetry_description(symmetry_code: str, translation_table_path: str) -> str:
@@ -148,6 +147,6 @@ if __name__ == "__main__":
     SMILES = "Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1"
     TRANSLATION_TABLE_PATH = "../../../data/symmetries/symmetry_translation.csv"
 
-    molecule = get_pymatgen_molecule_from_smiles(SMILES)
+    molecule = mol2pymatgen(SMILES)
 
     analyse_symmetry_point_group(molecule, TRANSLATION_TABLE_PATH, visualize=True)

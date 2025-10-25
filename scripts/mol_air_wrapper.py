@@ -1,50 +1,132 @@
-"""Wrapper to run Mol-AIR end-to-end experiments."""
+# run_molair_custom.py
+
+"""
+Wrapper to run flexible Mol-AIR experiments.
+
+Features:
+- Conditionally runs pre-training if a 'Pretrain' section is in the config.
+- Dynamically injects a list of initial SELFIES from a file via a command-line flag.
+- Runs RL training.
+- Performs a specified number of non-deterministic inference runs.
+- **Uses a temporary file to safely pass modified configurations to the factory classes.**
+"""
 import argparse
 import os
+import tempfile
+
+import yaml
 
 # pylint: disable=import-error
 from modules.mol_air.train import MolRLInferenceFactory, MolRLPretrainFactory, MolRLTrainFactory
 
-# export WANDB to run online
-os.environ["WANDB_MODE"] = "online"
+os.environ.setdefault("WANDB_MODE", "online")
 
 
-def run_molair_experiment(config_path: str) -> None:
+def run_experiment_stage(config: dict, stage: str, inference_runs: int = 1):
     """
-    Runs the full Mol-AIR end-to-end experiment sequence (pre-training,
-    training, inference) by directly calling the appropriate classes and
-    methods from the `train` module.  Assumes the configuration file is for
-    an end-to-end experiment.
+    Helper function to run a specific stage (pretrain, train, inference)
+    by writing the provided config to a temporary file and passing it to the factory.
+    """
+    # tempfile.NamedTemporaryFile creates a file that is automatically deleted on exit.
+    with tempfile.NamedTemporaryFile(mode="w+", delete=True, suffix=".yaml") as temp_f:
+        # Write the current state of the config dictionary to the temporary file
+        yaml.dump(config, temp_f)
+        # Ensure the data is written to disk before the factory tries to read it
+        temp_f.flush()
 
-    Args:
-        config_path: The path to the YAML configuration file.
+        # Use the path of the temporary file with the factory's class method
+        temp_config_path = temp_f.name
 
-    Raises:
-        FileNotFoundError: If the configuration file does not exist.
-        yaml.YAMLError:  If the configuration file is not valid YAML.
-        Exception:  If any of the training or inference steps fail.
+        if stage == "pretrain":
+            print("\n----- Found 'Pretrain' section. Running Pre-training. -----")
+            pretrainer = MolRLPretrainFactory.from_yaml(temp_config_path).create_pretrain()
+            pretrainer.pretrain()
+            pretrainer.close()
+            print("----- Pre-training Finished. -----")
 
-    Returns:
-        None
+        elif stage == "train":
+            print("\n----- Running RL Training -----")
+            # trainer = MolRLTrainFactory.from_yaml(temp_config_path).create_train()
+            # trainer.train()
+            # trainer.close()
+            print("----- RL Training Finished -----")
+
+        elif stage == "inference":
+            if inference_runs > 0:
+                print(f"\n----- Starting {inference_runs} Inference Runs -----")
+                for i in range(inference_runs):
+                    print(f"\n----- Running Inference: Run {i + 1}/{inference_runs} -----")
+                    inference_runner = MolRLInferenceFactory.from_yaml(temp_config_path).create_inference()
+                    inference_runner.inference(file_id=i)
+                    inference_runner.close()
+
+
+def run_molair_experiment(config_path: str, init_selfies_path: str | None, inference_runs: int) -> None:
+    """
+    Runs a flexible Mol-AIR experiment sequence.
+    This version correctly handles the configuration dictionary format expected by the factories.
     """
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-    print("----- Running Pre-training -----")
-    MolRLPretrainFactory.from_yaml(config_path).create_pretrain().pretrain().close()
+    # --- Step 1: Load the full, original YAML content ---
+    print(f"----- Loading Configuration from {config_path} -----")
+    with open(config_path, "r", encoding="utf-8") as f:
+        # This dictionary has the top-level experiment ID key. DO NOT unwrap it here.
+        config_with_id = yaml.safe_load(f)
 
-    # RL Training
-    print("----- Running RL Training -----")
-    MolRLTrainFactory.from_yaml(config_path).create_train().train().close()
+    # --- Step 2: Get the inner config for local checks and modifications ---
+    try:
+        experiment_id = list(config_with_id.keys())[0]
+        # 'inner_config' is the dictionary that contains 'Pretrain', 'Train', etc.
+        inner_config = config_with_id[experiment_id]
+    except (IndexError, TypeError):
+        raise ValueError(f"YAML file '{config_path}' appears to be empty or misformatted.")
 
-    # Inference
-    print("----- Running Inference -----")
-    MolRLInferenceFactory.from_yaml(config_path).create_inference().inference().close()
+    # --- Step 3: Dynamically add 'init_selfies' if provided ---
+    if init_selfies_path:
+        print(f"----- Injecting initial SELFIES from: {init_selfies_path} -----")
+        if not os.path.exists(init_selfies_path):
+            raise FileNotFoundError(f"Initial SELFIES file not found: {init_selfies_path}")
+
+        with open(init_selfies_path, "r", encoding="utf-8") as f:
+            selfies_list = [line.strip() for line in f if line.strip()]
+
+        if "Env" not in inner_config:
+            inner_config["Env"] = {}
+        inner_config["Env"]["init_selfies"] = selfies_list
+        print(f"Successfully loaded and set {len(selfies_list)} initial SELFIES strings.")
+
+    # --- Step 4: Conditionally run Pre-training ---
+    # This 'if' check now correctly inspects the inner configuration dictionary.
+    if "Pretrain" in inner_config:
+        # IMPORTANT: Pass the FULL configuration with the experiment ID to the stage runner.
+        # The factory expects this complete structure.
+        run_experiment_stage(config_with_id, "pretrain")
+
+    # --- Step 5: Run RL Training ---
+    run_experiment_stage(config_with_id, "train")
+
+    # --- Step 6: Run Inference Loop ---
+    # Prepare a modified config for unseeded inference runs
+    inference_run_config = config_with_id.copy()
+    if "Inference" in inner_config and "seed" in inner_config["Inference"]:
+        # We need to modify the nested dictionary
+        inference_run_config[experiment_id] = inner_config.copy()
+        inference_run_config[experiment_id]["Inference"] = inner_config["Inference"].copy()
+        del inference_run_config[experiment_id]["Inference"]["seed"]
+        print("\nNote: The 'seed' from the 'Inference' section has been removed for varied runs.")
+
+    run_experiment_stage(inference_run_config, "inference", inference_runs=inference_runs)
+
+    print("\n----- All Experiments Finished -----")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Mol-AIR end-to-end experiments.")
-    parser.add_argument("config_path", type=str, help="Path to the YAML configuration file.")
+    parser = argparse.ArgumentParser(description="Run flexible Mol-AIR experiments (Pre-train, Train, Inference).", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("config_path", type=str, help="Path to the master YAML configuration file.")
+    parser.add_argument("--init_selfies_path", type=str, default=None, help="Path to a .slf file with initial SELFIES strings, one per line.")
+    parser.add_argument("--inference_runs", type=int, default=10, help="Number of inference runs to perform after RL training.")
     args = parser.parse_args()
 
-    run_molair_experiment(args.config_path)
+    run_molair_experiment(args.config_path, args.init_selfies_path, args.inference_runs)

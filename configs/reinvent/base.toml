@@ -1,0 +1,62 @@
+# configs/reinvent/base.toml
+
+# General settings shared across all experiments
+base_models_dir = "models/reinvent"
+base_sampling_dir = "data/sampling/reinvent"
+device = "cuda:0"
+
+# Default parameters for the metrics calculation script
+[metrics]
+
+[metrics.reference_files]
+# Defines the reference (e.g., test set) SMILES for each molecule type.
+substrate = "data/raw/substrate/test_substrate.csv"
+node = "data/raw/node/test_node.csv"
+
+[metrics.training_files]
+# Defines the training SMILES associated with each prior type.
+# NOTE: There is no entry for "vanilla", as it has no training data.
+chembl35 = "/home/witoldt/repositories/battery-rangers/data/chembl_35_sqlite/chembl_35_train.smi"
+
+[priors]
+vanilla = "models/reinvent/reinvent.prior"
+chembl35 = "models/reinvent/pretrained_chembl_35.model"
+
+[tl]
+seed = 23
+num_epochs = 100
+save_every_n_epochs = 50
+batch_size = 16
+sample_batch_size = 100
+# USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
+randomize_smiles = false
+standardize_smiles = false
+
+[rl]
+seed = 23
+batch_size = 256
+unique_sequences = true
+randomize_smiles = true
+
+[rl.learning_strategy]
+type = "dap"
+sigma = 256
+rate = 5.0e-5
+
+[rl.diversity_filter]
+type = "PenalizeSameSmiles"
+bucket_size = 25
+minscore = 0.4
+penalty_multiplier = 0.5
+
+[rl.stage]
+termination = "simple"
+max_score = 1.0
+min_steps = 50
+max_steps = 200
+
+[sampling]
+num_smiles = 10000
+num_files = 10  # Generate 10 sample files per model
+unique_molecules = false
+randomize_smiles = false

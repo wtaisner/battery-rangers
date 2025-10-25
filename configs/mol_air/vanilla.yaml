@@ -1,0 +1,31 @@
+molair_vanilla_inception:
+  Agent:
+    type: RND
+    n_steps: 128
+    epoch: 6
+    seq_len: 75
+    seq_mini_batch_size: 64
+    gamma: 1.0
+    nonepi_adv_coef: 2.0
+    entropy_coef: 0.01
+  CountIntReward:
+    crwd_coef: 0.2
+  Train:
+    num_envs: 64
+    seed: 2137
+    total_time_steps: 150000
+    summary_freq: 10000
+    agent_save_freq: 50000
+    num_inference_envs: 64 # 32
+    n_inference_episodes: 200
+    lr: 1.0e-4
+    device: cuda
+    pretrained_path: models/mol_air/vanilla/pretrained.pt
+  Inference:
+    num_envs: 64
+    n_episodes: 10000
+    device: cuda:0
+    ckpt: best
+  Env:
+    custom_property_coef: 1.0
+    vocab_path: models/mol_air/vanilla/vocab.json

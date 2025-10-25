@@ -1,0 +1,23 @@
+name = "substrate_vanilla_ft_rl_seed_molecules"
+molecule_type = "substrate"
+prior_type = "vanilla"
+recipe = "ft_rl_inception"
+
+[tl]
+smiles_file = "data/raw/substrate/train_substrate.smi"
+validation_smiles_file = "data/raw/substrate/test_substrate.smi"
+# USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
+randomize_smiles = true
+standardize_smiles = true
+
+[rl]
+known_smiles_path = "data/raw/substrate/train_substrate.smi"
+
+[rl.inception]
+smiles_file = "data/raw/substrate/train_substrate.smi"
+memory_size = 100
+sample_size = 10
+
+#[sampling]
+#num_files = 2
+#num_smiles = 10

@@ -1,0 +1,12 @@
+name = "substrate_vanilla_rl_seed_molecules"
+molecule_type = "substrate"
+prior_type = "vanilla"
+recipe = "rl_inception"
+
+[rl]
+known_smiles_path = "data/raw/substrate/train_substrate.smi"
+
+[rl.inception]
+smiles_file = "data/raw/substrate/train_substrate.smi"
+memory_size = 100
+sample_size = 10

@@ -175,3 +175,16 @@ chembl_*
 *.out
 
 wandb/
+
+# disable all marimo related files
+__marimo__
+
+# exclude all files that are regenerated constantly as data change
+*.smi
+*.slf
+*.csv
+*.png
+*.prior
+*.json
+csm_data/
+*.model # exclude all model files

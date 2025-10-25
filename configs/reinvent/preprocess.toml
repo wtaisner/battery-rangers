@@ -1,0 +1,72 @@
+# Configuration for the SMILES Preprocessing Pipeline
+
+# ========================================================================
+# IMPORTANT - RUN USING THE FOLLOWING COMMAND:
+# python modules/REINVENT4/reinvent/datapipeline/preprocess.py configs/reinvent/preprocess.toml
+# ========================================================================
+
+# --- Input/Output Files ---
+
+# Path to the input CSV or SMILES file (.smi).
+# REQUIRED.
+input_csv_file = "data/raw/node/train_node.csv"
+
+# Path where the processed/filtered SMILES will be written.
+# REQUIRED.
+output_smiles_file = "data/raw/node/train_node.smi"
+
+# --- File Reading Parameters ---
+
+# Name of the column containing SMILES strings in the input CSV.
+# Default: "SMILES"
+smiles_column = "canon_smiles"
+
+# Separator character used in the input CSV/SMILES file.
+# Must be a single character. Use "\t" for tab.
+# Default: "\t"
+separator = ","
+
+# --- Processing Parameters ---
+
+# Number of processor cores to use for parallel processing.
+# Set to 1 for single-core processing (disables multiprocessing).
+# Default: 1
+num_procs = 10
+
+# Approximate number of SMILES to process in each chunk during multiprocessing.
+# Larger chunks can be more efficient but use more memory per process.
+# Default: 500
+chunk_size = 10000
+
+# --- Filtering and Normalization ---
+
+# Optional path to a file containing custom RDKit reaction SMARTS transformations.
+# If provided, you can refer to it using the name "from_file" in the transforms list below.
+# Default: None (not used)
+# transform_file = "/path/to/your/custom_transforms.txt"
+
+# Filter section defining rules for cleaning and validating SMILES.
+[filter]
+
+# List of allowed chemical elements.
+# The script automatically includes the base elements (H, B, C, N, O, F, P, S, Cl, Br, I).
+# Add any *additional* elements your dataset might contain and you want to allow.
+# Default: [] (only base elements allowed unless specified here)
+#elements = ["Si", "Na", "K", "[SeH]", "[TeH]", "Fe"] # Example: Allow Silicon, Sodium, etc.
+
+# List of RDKit molecule filters/properties to apply.
+# SMILES failing any of these checks will be discarded.
+# Options include: "IsNone", "HasNone", "IsQueryMol", "MinHeavyAtoms", "MaxHeavyAtoms",
+# "MinRings", "MaxRings", "MaxRingSize", "MinMolWeight", "MaxMolWeight", "AllowedElements",
+# "ExcludedElements", "MolComplexity", "MolFormula", "FragmentFilter" (requires fragments list)
+# See RDKitFilter documentation for details.
+# Default: ["AllowedElements"]
+#properties = ["AllowedElements", "MinHeavyAtoms", "MaxHeavyAtoms"]
+
+# Minimum number of heavy atoms (non-hydrogen). Requires "MinHeavyAtoms" in properties.
+# Default: 1
+min_heavy_atoms = 1
+
+# Maximum number of heavy atoms (non-hydrogen). Requires "MaxHeavyAtoms" in properties.
+# Default: 100
+max_heavy_atoms = 500

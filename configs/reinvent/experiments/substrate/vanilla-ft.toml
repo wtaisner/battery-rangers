@@ -1,0 +1,15 @@
+name = "substrate_vanilla_ft"
+molecule_type = "substrate"
+prior_type = "vanilla"
+recipe = "ft"
+
+[tl]
+smiles_file = "data/raw/substrate/train_substrate.smi"
+validation_smiles_file = "data/raw/substrate/test_substrate.smi"
+# USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
+randomize_smiles = true
+standardize_smiles = true
+
+#[sampling]
+#num_files = 2
+#num_smiles = 10

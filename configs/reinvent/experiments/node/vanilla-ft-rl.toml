@@ -1,0 +1,15 @@
+name = "node_vanilla_ft_rl"
+molecule_type = "node"
+prior_type = "vanilla"
+recipe = "ft_rl"
+
+[tl]
+smiles_file = "data/raw/node/train_node.smi"
+validation_smiles_file = "data/raw/node/test_node.smi"
+# USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
+randomize_smiles = true
+standardize_smiles = true
+
+[rl]
+# Path to known SMILES for the scoring function
+known_smiles_path = "data/raw/node/train_node.smi"

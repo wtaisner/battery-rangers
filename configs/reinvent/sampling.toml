@@ -1,27 +1,46 @@
 # REINVENT4 TOML input example for sampling
 run_type = "sampling"
-device = "cuda:0"  # set torch device e.g. "cpu"
-# json_out_config = "outputs/sampling/_sampling.json"  # write this TOML to JSON
-seed = 23
+device = "cuda"
+#seed = 23
 
 [parameters]
-## Reinvent: de novo sampling
-# model_file = "outputs/transfer_learning/202503110949/tl.model" # fine-tuned only
-# model_file = "outputs/staged_learning/new_smiles_rl_from_finetuned_no_cs_symmetry.chkpt"
-# model_file = "outputs/staged_learning/rl_from_finetuned_no_cs_symmetry.chkpt"
-# model_file = "outputs/transfer_learning/new_smiles_fine_tuning.model"
-model_file = "outputs/staged_learning/new_smiles_new_finetuned_no_cs_symmetry.chkpt"
 
-output_file = 'data/sampling/reinvent/sampling_new_smiles_new_finetuned.csv'
-# output_file = 'data/sampling/reinvent/sampling_staged_learning_from_finetuned_no_cs.csv'  # TODO
+# fixing mode collapse
+model_file = "models/reinvent/node/chembl_35_pretrained_ft_rl_no_inception_fixed.model"
+output_file = "data/sampling/reinvent/node/chembl35_pretrained_ft_rl_no_inception_fixed/chembl35_pretrained_ft_rl_no_inception_fixed_1.csv"
+# vanilla
+#model_file = "models/reinvent/reinvent.prior"
+#output_file = "data/sampling/reinvent/substrate/vanilla/vanilla_10.csv"
 
-## Mol2Mol: find molecules similar to the provided molecules
-#model_file = "priors/mol2mol_medium_similarity.prior"
-#smiles_file = "mol2mol.smi"  # 1 compound per line
-#sample_strategy = "beamsearch"  # multinomial or beamsearch (deterministic)
-#temperature = 1.0 # temperature in multinomial sampling
-#tb_logdir = "tb_logs"  # name of the TensorBoard logging directory
+# vanilla + ft
+#model_file = "models/reinvent/node/vanilla_ft.model"
+#output_file = "data/sampling/reinvent/node/vanilla_finetuned/vanilla_ft_10.csv"
+
+# vanilla + RL
+#model_file = "models/reinvent/substrate/vanilla_rl_inception.model"
+#output_file = 'data/sampling/reinvent/substrate/vanilla_rl_inception/vanilla_rl_inception_9.csv'
+
+# vanilla + ft + RL
+# model_file = "models/reinvent/substrate/vanilla_ft_rl_inception.model"
+# output_file = "data/sampling/reinvent/substrate/vanilla_finetuned_rl_inception/vanilla_finetuned_rl_inception_9.csv"
+
+# chembl35 pretrained
+#model_file = "models/reinvent/pretrained_chembl_35.model"
+#output_file = "data/sampling/reinvent/substrate/chembl35_pretrained/pretrained_chembl35_10.csv"
+
+# chembl35 pretrained + RL
+# model_file = "models/reinvent/node/chembl35_pretrained_rl_inception.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_rl_inception/chembl35_pretrained_rl_inception_9.csv"
+
+# chembl35 pretrained + ft
+# model_file = "models/reinvent/node/chembl_35_fine_tuned.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_finetuned/chembl35_pretrained_finetuned_8.csv"
+
+# chembl35 pretrained + ft + RL
+# model_file = "models/reinvent/node/chembl35_pretrained_finetuned_rl_inception.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_finetuned_rl_inception/chembl35_pretrained_finetuned_rl_inception_10.csv"
+
 
 num_smiles = 10000  # number of SMILES to be sampled, 1 per input SMILES
-unique_molecules = true  # if true remove all duplicatesd canonicalize smiles
+unique_molecules = false  # if true remove all duplicatesd canonicalize smiles
 randomize_smiles = false # if true shuffle atoms in SMILES randomly
