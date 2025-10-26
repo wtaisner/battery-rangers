@@ -10,9 +10,9 @@ import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import wandb
 from upsetplot import plot
 
-import wandb
 from modules.core.enums import MoleculeType
 
 # pylint: disable=import-error

@@ -1,12 +1,9 @@
 """Functions for model training"""
 import pickle
-from typing import Literal
 
 import pandas as pd
 from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV
-from skopt import BayesSearchCV
 
 from modules.predictor.data.utils import custom_data_split
 from modules.predictor.training_and_evaluation.evaluation_metrics import smape
@@ -34,28 +31,6 @@ def feature_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: 
     sfs.fit(X, y[y.columns[0]])
     print(sfs.k_feature_names_, sfs.k_score_)
     return sfs.k_feature_names_
-
-
-def param_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: float, param_grid: dict, opt_method: Literal["grid_search", "bayesian_search"]) -> tuple:
-    """
-    Performs hyperparameter optimization using the provided parameter grid (optimization of RMSE).
-    :param model: prediction model.
-    :param X: dataframe with features.
-    :param y: dataframe with target variable.
-    :param train_size: size of the training set (proportion).
-    :param param_grid: dictionary with parameter grid.
-    :param opt_method: optimization method, either grid_search or bayesian_search
-    :return: best score and best parameters.
-    """
-    scorer = make_scorer(smape, greater_is_better=False)
-    folds = custom_data_split(X, y, train_size=train_size)
-    if opt_method == "grid_search":
-        opt = GridSearchCV(estimator=model, param_grid=param_grid, cv=folds, scoring=scorer, refit=True, n_jobs=-1, return_train_score=True)
-    else:
-        opt = BayesSearchCV(estimator=model, search_spaces=param_grid, cv=folds, scoring=scorer, refit=True, n_jobs=-1, return_train_score=True)
-
-    opt.fit(X.to_numpy(), y[y.columns[0]].to_numpy())
-    return opt.best_score_, opt.best_params_
 
 
 def train_and_save_model(model: object, X: pd.DataFrame, y: pd.DataFrame, model_save_path: str, verbose: bool = False) -> object:

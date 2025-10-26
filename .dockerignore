@@ -43,7 +43,7 @@ build/
 
 # Local files
 data/chembl_35_sqlite
-data/processed_all_custom_features
+old/processed_all_custom_features
 data/raw
 data/sampling
 models/

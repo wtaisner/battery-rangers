@@ -1,4 +1,4 @@
-"""Functions for evaluating model performance."""
+"""Evaluation metrics for model performance assessment."""
 from typing import Callable
 
 import numpy as np
@@ -102,7 +102,18 @@ def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     :param y_pred: Predictions.
     :return: Root mean squared error.
     """
-    return np.sqrt(sklearn.metrics.mean_squared_error(y_true, y_pred))
+    return sklearn.metrics.root_mean_squared_error(y_true, y_pred)
+
+
+@EvalMetrics.register("mae")
+def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Calculates mean absolute error given predictions and ground truth labels.
+    :param y_true: Ground truth labels.
+    :param y_pred: Predictions.
+    :return: Mean absolute error.
+    """
+    return sklearn.metrics.mean_absolute_error(y_true, y_pred)
 
 
 @EvalMetrics.register("mape")

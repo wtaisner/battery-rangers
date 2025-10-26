@@ -1,2 +1,0 @@
-smiles,capacity_max,flatness,PS,symmetry,%C,%N,%O,%F,MolLogP,num_atoms,num_heavy_atoms,num_bonds,num_rings,num_aromatic_rings,num_amide_bonds,num_heteroatoms,num_rotatable_bonds,num_h_acceptors,num_h_donors,tpsa,mol_wt,num_conformers,is_chiral,is_aromatic,is_branched,is_cyclic,is_heterocycle,is_homocycle
-S=S=[Mo][NH2]C1=CC=CC=C1,552,0.7865501017845933,1.1981415045213386,C1,60.0,10.0,0.0,0.0,1.2615,10,10,10,1,1,0,4,1,1,2,17.1,254.907399424,0,False,False,False,True,True,True

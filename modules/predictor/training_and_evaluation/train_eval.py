@@ -2,12 +2,11 @@
 import copy
 import os
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from modules.predictor.data.oversampling import smoter
 from modules.predictor.data.utils import prepare_data_for_regressors
 from modules.predictor.training_and_evaluation.evaluation_metrics import EvalMetrics
 from modules.predictor.training_and_evaluation.explanations import explain_model
@@ -27,16 +26,12 @@ class CrossValidationPipeline:
         self,
         X: pd.DataFrame,
         y: pd.DataFrame,
-        numerical_features: list,
-        categorical_features: list,
+        feature_types: dict,
         folds: list,
         metrics: list,
         save_dir: str,
         data_name: str,
-        oversampling: bool = False,
-        explainability: bool = False,
-        hyperparam_opt: tuple[bool, Literal["grid_search", "bayesian_search"]] | None = None,
-        feature_selection: tuple[bool, list] | None = None,
+        explainability: str = "",
         verbose: bool = False,
     ):
         """
@@ -47,32 +42,29 @@ class CrossValidationPipeline:
         :param categorical_features: list with categorical features.
         :param folds: list with cross-validation folds.
         :param metrics: list with metrics to evaluate.
-        :param save_scores_path: path to save scores.
+        :param save_dir: dir to save scores.
         :param data_name: name of the dataset.
-        :param oversampling: whether to perform oversampling.
+        :param explainability: type of explainability method to use, empty string if no explainability should be performed.
         :param hyperparam_opt: tuple of type of hyperparameter optimization and parameter grid, None if none optimization should be performed.
         :param feature_selection: tuple with boolean value whether to perform feature selection and list of features to keep.
         :param verbose: whether to print model scores.
         """
-        self.categorical_features = categorical_features
-        self.numerical_features = numerical_features
-        # if oversampling:
-        #     self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features)
-        # else:
-        #     self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features, cat_features=self.categorical_features)
+        self.feature_types = feature_types
+
         self.X = X
-        self.oversampling = oversampling
         self.y = y
         self.folds = folds
+
         self.data_name = data_name
         self.save_dir = save_dir
-        self.hyperparam_opt = hyperparam_opt
-        self.feature_selection = feature_selection
+
         self.verbose = verbose
         self.metrics = metrics
+
         self.explainability = explainability
+
         self.scores = None
-        self.shap_values = None
+        self.feature_attributions = None
 
     def preprocess_data(self, X_train: pd.DataFrame | None, X_test: pd.DataFrame | None, cat_features: list | None = None, num_features: list | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -100,23 +92,6 @@ class CrossValidationPipeline:
             elif X_train is not None:
                 X_train = prepare_data_for_regressors(X_train, (X_train, X_train), num_features, cat_features)
         return X_train, X_test
-
-    def oversampler(self, X_train: pd.DataFrame, y_train: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Perform oversampling.
-        :param X_train: training data.
-        :param y_train: target variable data.
-        :return: oversampled data.
-        """
-        if self.oversampling:
-            try:
-                numeric_cols = [i for i, col in enumerate(X_train.columns) if col in self.numerical_features]
-                X_train_oversampled, y_train_oversampled = smoter(X_train.values, y_train.values.flatten(), te=0.5, o=300, k=5, numeric_cols=numeric_cols, oversampling_type="SMOTER")
-                X_train = pd.DataFrame(X_train_oversampled, columns=X_train.columns)
-                y_train = pd.DataFrame(y_train_oversampled, columns=y_train.columns)
-            except ValueError:
-                print("Oversampling failed")
-        return X_train, y_train
 
     def select_features(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, model: object) -> tuple:
         """

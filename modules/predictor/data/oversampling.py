@@ -215,7 +215,7 @@ def create_inverse_density_relevance_function(Y):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("../../../data/old/fingerprints_maccs/data_experts1.csv")
+    df = pd.read_csv("../../../old/old/fingerprints_maccs/data_experts1.csv")
     df_features = df.drop(columns=["smiles", "capacity_max"])
     X = df.drop(columns=["smiles", "capacity_max"]).values
     y = df["capacity_max"].values

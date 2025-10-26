@@ -11,13 +11,13 @@ import multiprocessing as mp
 from itertools import combinations
 
 import numpy as np
+import wandb
 from fcd_torch import FCD
 from rdkit import Chem, DataStructs
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from rdkit.rdBase import DisableLog
 from tqdm.auto import tqdm
 
-import wandb
 from modules.core.enums import MoleculeType
 from modules.core.molecule_filter import MoleculeFilter
 
