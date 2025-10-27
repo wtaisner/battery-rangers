@@ -6,7 +6,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import BayesianRidge, Lasso, QuantileRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
-from tabpfn_extensions import AutoTabPFNRegressor
+from tabpfn_extensions import TunedTabPFNRegressor
+from tabpfn_extensions.hpo import TabPFNSearchSpace
 from xgboost import XGBRegressor
 
 
@@ -59,7 +60,7 @@ def _get_knn() -> tuple:
     :return: knn model, its parameter grid and name
     """
     knn = KNeighborsRegressor(n_jobs=-1)
-    knn_params = lambda: {"n_neighbors": [3, 5, 7]}
+    knn_params = {"n_neighbors": [3, 5, 7]}
     return knn, knn_params, "KNN Regressor", "kernel"
 
 
@@ -69,14 +70,13 @@ def _get_xgboost() -> tuple:
     :return: xgboost model, its parameter grid and name
     """
     xgb = XGBRegressor(random_state=42, n_jobs=-1)
-    xgb_params = lambda: {
+    xgb_params = {
         "n_estimators": (5, 100),
         "learning_rate": [0.05, 0.10, 0.15],
         "max_depth": list(range(5, 16)) + [None],
         "min_child_weight": [3, 5, 7],
         "gamma": [0.0, 0.1, 0.2],
         "colsample_bytree": [0.2, 0.3, 0.4],
-        "objective": ["rank:pairwise"],
     }
     return xgb, xgb_params, "XGBoost Regressor", "tree"
 
@@ -87,7 +87,7 @@ def _get_rf() -> tuple:
     :return: random forest model, its parameter grid and name
     """
     rf = RandomForestRegressor(random_state=42, n_jobs=-1)
-    rf_params = lambda: {
+    rf_params = {
         "n_estimators": (5, 100),
         "max_depth": list(range(5, 16)) + [None],
         "min_samples_split": (2, 5),
@@ -103,7 +103,7 @@ def _get_lasso() -> tuple:
     :return: lasso model, its parameter grid and name
     """
     lasso = Lasso(random_state=42)
-    lasso_params = lambda: {
+    lasso_params = {
         "alpha": [0.01, 0.1, 1.0, 10.0],
         "max_iter": [1000, 5000, 10000],
     }
@@ -116,7 +116,7 @@ def _get_quantile() -> tuple:
     :return: quantile regression model, its parameter grid and name
     """
     quantile = QuantileRegressor()
-    quantile_params = lambda: {"alpha": [0.01, 0.1, 1.0, 10.0]}
+    quantile_params = {"alpha": [0.01, 0.1, 1.0, 10.0]}
     return quantile, quantile_params, "Quantile Regressor", "coefficients"
 
 
@@ -126,7 +126,7 @@ def _get_bayes() -> tuple:
     :return:
     """
     bayes = BayesianRidge()
-    bayes_params = lambda: {}
+    bayes_params = {}
     return bayes, bayes_params, "Bayesian Ridge Regressor", "coefficients"
 
 
@@ -135,12 +135,11 @@ def _get_mlp() -> tuple:
     """
     :return: mlp model, its parameter grid and name
     """
-    mlp = MLPRegressor(random_state=42, max_iter=1000, early_stopping=True)
-    mlp_params = lambda: {
-        "loss": ["squared_error", "poisson"],
+    mlp = MLPRegressor(random_state=42, max_iter=1000, alpha=0.01, early_stopping=True)
+    mlp_params = {
         "activation": ["relu", "tanh"],
         "learning_rate": ["constant", "adaptive"],
-        "learning_rate_init": [0.0001, 0.001, 0.01, 0.1],
+        "learning_rate_init": [0.0001, 0.001, 0.01],
         "hidden_layer_sizes": ["(8,)", "(16,)", "(32,)", "(64,)", "(8, 8)", "(16, 8)", "(16, 16)", "(32, 16)", "(64, 32)", "(8, 8, 8)", "(16, 16, 16)", "(32, 32, 32)"],
         "solver": ["sgd", "adam"],
         "early_stopping": [True, False],
@@ -150,11 +149,12 @@ def _get_mlp() -> tuple:
 
 
 @Models.register("tabpfn")
-def _get_tabfn() -> tuple:
+def _get_tabpfn() -> tuple:
     """
     :return: tabpfn model, its parameter grid and name
     """
-    model = AutoTabPFNRegressor(max_time=120, device="cuda")
+    custom_space = TabPFNSearchSpace.get_classifier_space(n_ensemble_range=(2, 8))
+    model = TunedTabPFNRegressor(random_state=42, n_validation_size=0.3, device="cuda", n_trials=100, search_space=custom_space, metric="rmse")
     return model, None, "TabPFN Regressor", "kernel"
 
 

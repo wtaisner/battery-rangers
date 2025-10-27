@@ -1,3 +1,4 @@
+"""Script to generate molecular features based on specified configurations."""
 import argparse
 import os
 
@@ -26,16 +27,17 @@ if __name__ == "__main__":
 
     print(f"Generating features for {len(combinations)} combinations.")
 
+    rth = config.get("remove_threshold", 1.0)
+
     for combo in combinations:
         f_types = combo.get("types", [])
         f_params = combo.get("params", {})
-        rth = combo.get("remove_threshold", 1.0)
         print(f"Generating features for combination: {f_types}")
         print(f"With parameters: {f_params}")
 
         features_strings = [f"{f_type}_" + "_".join(str(v) for v in f_params.get(f_type, {}).values()) for f_type in f_types]
-        output_dir_csv = os.path.join(args.output_dir, "features")
-        output_dir_ftypes = os.path.join(args.output_dir, "feature_types")
+        output_dir_csv = os.path.join(args.output_dir, f"rth_{rth}", "features")
+        output_dir_ftypes = os.path.join(args.output_dir, f"rth_{rth}", "feature_types")
         output_path_csv = os.path.join(f"{output_dir_csv}", f"features_rth_{rth}_" + "_".join(features_strings) + ".csv")
         output_path_ftypes = os.path.join(f"{output_dir_ftypes}", f"feature_types_rth_{rth}_" + "_".join(features_strings) + ".yaml")
 

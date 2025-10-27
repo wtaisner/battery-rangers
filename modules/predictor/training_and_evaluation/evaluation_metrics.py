@@ -137,3 +137,14 @@ def smape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     epsilon = np.full(y_true.shape, 1e-10)
     return np.mean(2 * np.abs(y_pred - y_true) / (np.maximum(np.abs(y_true) + np.abs(y_pred), epsilon)))
+
+
+@EvalMetrics.register("r2_score")
+def r2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Calculates R^2 (coefficient of determination) regression score function given predictions and ground truth labels.
+    :param y_true: Ground truth labels.
+    :param y_pred: Predictions.
+    :return: R^2 regression score.
+    """
+    return sklearn.metrics.r2_score(y_true, y_pred)

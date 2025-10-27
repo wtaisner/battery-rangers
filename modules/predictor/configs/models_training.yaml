@@ -1,0 +1,26 @@
+save_dir: '../../../results/ctf_rth_0.9/'
+datasets_dir: '../../../data/predictor/ctf/rth_0.9'
+dataset_params:
+  num_folds: 5
+  num_bins: 5
+  num_bins_hyperparam_opt: 5
+models: [
+#  'knn',
+#  'xgboost',
+#  'random_forest',
+#  'lasso',
+#  'quantile',
+#  'bayes',
+#  'mlp',
+    'tabpfn'
+]
+metrics: [
+  'pairwise_accuracy_score',
+  'ndcg_score',
+  'rmse',
+  'mae',
+  'mape',
+  'smape',
+  'r2_score'
+]
+hyperparam_opt: True

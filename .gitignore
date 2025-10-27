@@ -188,3 +188,4 @@ __marimo__
 *.json
 csm_data/
 *.model # exclude all model files
+*/TabPFNModels/

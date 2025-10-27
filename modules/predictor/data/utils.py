@@ -1,6 +1,6 @@
 """Utils functions for data."""
 import pandas as pd
-from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
@@ -63,7 +63,7 @@ def custom_data_kfold(X: pd.DataFrame, y: pd.DataFrame, num_splits: int, num_bin
     :return: generated splits (indices)
     """
     binned_capacity = custom_discretization(y, num_bins)
-    skf = RepeatedStratifiedKFold(n_splits=5, n_repeats=num_splits, random_state=random_state)
+    skf = StratifiedKFold(n_splits=num_splits, shuffle=True, random_state=random_state)
     kfolds = list(skf.split(X, binned_capacity))
     return kfolds
 

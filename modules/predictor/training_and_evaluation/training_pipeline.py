@@ -132,7 +132,7 @@ class ModelTrainingPipeline(ABC):
         :param model_name: name of the model.
         :param model_params: parameters of the model.
         """
-        results_save_dir = os.path.join(self.save_dir, "results")
+        results_save_dir = self.save_dir
         os.makedirs(results_save_dir, exist_ok=True)
         results_path = os.path.join(results_save_dir, f"aggregated_results.txt")
         with open(results_path, "w") as f:
