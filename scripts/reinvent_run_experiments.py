@@ -61,16 +61,25 @@ def deep_merge(source: dict, destination: dict) -> dict:
     return destination
 
 
-def run_command(command: list):
-    """Executes a command and cleanly handles failures."""
+def run_command(command):
+    """
+    Executes a command and streams its output in real-time.
+    Handles failures cleanly.
+    """
     print(f"Executing: {' '.join(map(str, command))}")
-    result = subprocess.run(command, capture_output=True, text=True, check=False)
-    if result.returncode != 0:
-        print(f"ERROR: Command failed.")
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
+
+    # Use Popen to start the process and get control over its output streams
+    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, encoding="utf-8") as proc:  # Redirect stderr to stdout  # Line-buffered
+        # Read and print output line by line, in real-time
+        for line in proc.stdout:
+            print(line, end="")  # The 'end' prevents extra newlines
+
+    # Check the final return code after the process has finished
+    if proc.returncode != 0:
+        print(f"\nERROR: Command failed with return code {proc.returncode}.")
         sys.exit(1)
-    print("Execution successful.")
+
+    print("\nExecution successful.")
 
 
 def save_config_and_update_manifest(manifest_path, record):
@@ -188,6 +197,8 @@ def main():
         prior_type = PriorType(config["prior_type"])
         recipe = Recipe(config["recipe"])
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        rl_summary_dir = Path("outputs/rl_summaries")
+        rl_summary_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"\n{'=' * 60}\nRunning Experiment: {exp_name}\n  (Molecule: {mol_type.name}, Prior: {prior_type.name}, Recipe: {recipe.name})\n{'=' * 60}")
 
@@ -242,11 +253,11 @@ def main():
                 if recipe in [Recipe.RL_INCEPTION, Recipe.FT_RL_INCEPTION]:
                     inception_params = flatten_dict(config["rl"]["inception"], "inception")
                     inception_block = INCEPTION_TEMPLATE.format(**inception_params)
-
+                summary_path_prefix = rl_summary_dir / exp_name
                 format_params = flatten_dict(prepare_format_dict(config))
                 format_params.update(
                     {
-                        "summary_csv_prefix": exp_name,
+                        "summary_csv_prefix": str(summary_path_prefix),
                         "prior_model_path": str(current_prior_path),
                         "agent_file": str(current_prior_path),
                         "output_model_path": str(rl_model_path),
