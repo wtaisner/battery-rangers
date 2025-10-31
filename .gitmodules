@@ -6,3 +6,6 @@
 	path = modules/mol_air
 	url = git@github.com:wtaisner/Mol-AIR.git
 	branch = main
+[submodule "modules/bionemo/data/MolRL"]
+	path = modules/bionemo/data/MolRL
+	url = git@github.com:wtaisner/MolRL.git
