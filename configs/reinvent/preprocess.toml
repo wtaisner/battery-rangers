@@ -9,11 +9,11 @@
 
 # Path to the input CSV or SMILES file (.smi).
 # REQUIRED.
-input_csv_file = "data/raw/node/train_node.csv"
+input_csv_file = "data/raw/node/ctf_train.csv"
 
 # Path where the processed/filtered SMILES will be written.
 # REQUIRED.
-output_smiles_file = "data/raw/node/train_node.smi"
+output_smiles_file = "data/raw/node/ctf_train.smi"
 
 # --- File Reading Parameters ---
 

@@ -1,8 +1,8 @@
-name = "substrate_chembl35_ft"
+name = "reinvent_chembl35_ft_substrate"
 molecule_type = "substrate"
 prior_type = "chembl35"
 recipe = "ft"
 
 [tl]
-smiles_file = "data/raw/substrate/train_substrate.smi"
-validation_smiles_file = "data/raw/substrate/test_substrate.smi"
+smiles_file = "data/raw/substrate/ctf_train.smi"
+validation_smiles_file = "data/raw/substrate/ctf_test.smi"
