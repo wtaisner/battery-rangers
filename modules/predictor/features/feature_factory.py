@@ -3,6 +3,8 @@ from typing import Callable
 
 import numpy as np
 import pandas as pd
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.preprocessing import MinMaxScaler
 
 from modules.predictor.features.utils import fingerprint_feature_types
 
@@ -65,7 +67,7 @@ class FeatureFactory:
         return features, features_names, feature_types_combo
 
 
-def generate_features(df: pd.DataFrame, smiles_col: str, target_col: str, feature_types: list[str], remove_threshold: float, **kwargs) -> tuple[pd.DataFrame, dict]:
+def generate_features(df: pd.DataFrame, pre_dfs: dict, smiles_col: str, target_col: str, feature_types: list[str], remove_threshold: float, **kwargs) -> tuple[pd.DataFrame, dict]:
     """
     Generates fingerprints for the given dataset.
     :param df: dataframe with SMILES and target columns.
@@ -78,10 +80,47 @@ def generate_features(df: pd.DataFrame, smiles_col: str, target_col: str, featur
     """
     smiles_list = df[smiles_col].tolist()
     target_list = df[target_col].tolist()
-    feature_list, features_names, feature_types = FeatureFactory().apply(feature_types, smiles_list, **kwargs["kwargs"])
+
+    if len(pre_dfs) > 0:
+        feature_list_parts = []
+        features_names_pre = []
+        feature_types_combo = {}
+        for f_type, (pre_df, f_types) in pre_dfs.items():
+            feature_array = pre_df.drop(columns=[smiles_col, target_col]).to_numpy()
+            feature_list_parts.append(feature_array)
+            features_names_pre.extend(pre_df.drop(columns=[smiles_col, target_col]).columns.tolist())
+            for ft, fnames in f_types.items():
+                if ft not in feature_types_combo:
+                    feature_types_combo[ft] = []
+                feature_types_combo[ft].extend(fnames)
+        feature_list_pre = np.concatenate(feature_list_parts, axis=1)
+        feature_types_pre = feature_types_combo
+        feature_types = [f for f in feature_types if f not in pre_dfs.keys()]
+
+    if len(feature_types) == 0:
+        feature_list = np.empty((len(smiles_list), 0))
+        features_names = []
+        feature_types = {}
+    else:
+        feature_list, features_names, feature_types = FeatureFactory().apply(feature_types, smiles_list, **kwargs["kwargs"])
+
+    if len(pre_dfs) > 0:
+        feature_list = np.concatenate([feature_list_pre, feature_list], axis=1)
+        features_names = features_names_pre + features_names
+        for ft, fnames in feature_types_pre.items():
+            if ft not in feature_types:
+                feature_types[ft] = []
+            feature_types[ft].extend(fnames)
+
     df_features = pd.DataFrame(feature_list, columns=features_names)
+
+    scaler = MinMaxScaler()
+    df_features_scaled = scaler.fit_transform(df_features)
+    selector = VarianceThreshold(threshold=1 - remove_threshold)
+    selector.fit(df_features_scaled)
+    df_features = df_features.iloc[:, selector.get_support(indices=True)]
+
     df_features[target_col] = target_list
     df_features[smiles_col] = smiles_list
 
-    df_features = df_features[[col for col in df_features.columns if df_features[col].value_counts(normalize=True).iloc[0] <= remove_threshold]]
     return df_features, feature_types

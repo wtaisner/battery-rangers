@@ -1,0 +1,180 @@
+remove_threshold: 1.0
+feature_generation:
+  - types: ['descriptor']
+    params:
+      descriptor: {}
+  - types: ['custom_pattern']
+    params:
+      custom_pattern:
+        count: True
+  - types: ['descriptor', 'custom_pattern']
+    params:
+      descriptor: {}
+      custom_pattern:
+        count: True
+  - types: ["ecfp"]
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+  - types: ["maccs"]
+    params:
+      maccs:
+        count: True
+  - types: ["functional_groups"]
+    params:
+      functional_groups:
+        count: True
+  - types: ["atom_pair"]
+    params:
+      atom_pair:
+        count: True
+        size: 1024
+  - types: ["estate"]
+    params:
+      estate:
+        variant: 'sum'
+  - types: ["physiochemical"]
+    params:
+      physiochemical:
+        count: True
+        size: 1024
+  - types: ["bcut"]
+    params:
+      bcut: {}
+  - types: [ "ecfp", "descriptor"]
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      descriptor: {}
+  - types: [ "maccs", "descriptor"]
+    params:
+        maccs:
+            count: True
+        descriptor: {}
+  - types: [ "functional_groups", "descriptor"]
+    params:
+      functional_groups:
+        count: True
+      descriptor: {}
+  - types: [ "atom_pair", "descriptor"]
+    params:
+      atom_pair:
+          count: True
+          size: 1024
+      descriptor: {}
+  - types: [ "ecfp", "descriptor", "custom_pattern" ]
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      descriptor: {}
+      custom_pattern:
+            count: True
+  - types: [ "maccs", "descriptor", "custom_pattern" ]
+    params:
+      maccs:
+        count: True
+      descriptor: {}
+      custom_pattern:
+        count: True
+  - types: [ "functional_groups", "descriptor", "custom_pattern" ]
+    params:
+      functional_groups:
+        count: True
+      descriptor: {}
+      custom_pattern:
+        count: True
+  - types: [ "atom_pair", "descriptor", "custom_pattern" ]
+    params:
+      atom_pair:
+        count: True
+        size: 1024
+      descriptor: {}
+      custom_pattern:
+        count: True
+  - types: [ "ecfp", "bcut" ]
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      bcut: { }
+  - types: [ "maccs", "bcut" ]
+    params:
+      maccs:
+        count: True
+      bcut: { }
+  - types: [ "functional_groups", "bcut" ]
+    params:
+      functional_groups:
+        count: True
+      bcut: { }
+  - types: [ "atom_pair", "bcut" ]
+    params:
+      atom_pair:
+        count: True
+        size: 1024
+      bcut: { }
+  - types: [ "ecfp", "estate" ]
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      estate:
+        variant: 'sum'
+  - types: [ "maccs", "estate" ]
+    params:
+      maccs:
+        count: True
+      estate:
+        variant: 'sum'
+  - types: [ "functional_groups", "estate" ]
+    params:
+      functional_groups:
+        count: True
+      estate:
+        variant: 'sum'
+  - types: [ "atom_pair", "estate" ]
+    params:
+      atom_pair:
+        count: True
+        size: 1024
+      estate:
+        variant: 'sum'
+  - types: [ "ecfp", "physiochemical" ]
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      physiochemical:
+        count: True
+        size: 1024
+  - types: [ "maccs", "physiochemical" ]
+    params:
+      maccs:
+        count: True
+      physiochemical:
+        count: True
+        size: 1024
+  - types: [ "functional_groups", "physiochemical" ]
+    params:
+      functional_groups:
+        count: True
+      physiochemical:
+        count: True
+        size: 1024
+  - types: [ "atom_pair", "physiochemical" ]
+    params:
+      atom_pair:
+        count: True
+        size: 1024
+      physiochemical:
+        count: True
+        size: 1024

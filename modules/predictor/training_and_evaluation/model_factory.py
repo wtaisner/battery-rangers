@@ -6,8 +6,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import BayesianRidge, Lasso, QuantileRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
-from tabpfn_extensions import TunedTabPFNRegressor
-from tabpfn_extensions.hpo import TabPFNSearchSpace
 from xgboost import XGBRegressor
 
 
@@ -135,27 +133,34 @@ def _get_mlp() -> tuple:
     """
     :return: mlp model, its parameter grid and name
     """
-    mlp = MLPRegressor(random_state=42, max_iter=1000, alpha=0.01, early_stopping=True)
+    mlp = MLPRegressor(random_state=42, max_iter=1000, early_stopping=True)
     mlp_params = {
-        "activation": ["relu", "tanh"],
+        "activation": ["relu"],
         "learning_rate": ["constant", "adaptive"],
-        "learning_rate_init": [0.0001, 0.001, 0.01],
-        "hidden_layer_sizes": ["(8,)", "(16,)", "(32,)", "(64,)", "(8, 8)", "(16, 8)", "(16, 16)", "(32, 16)", "(64, 32)", "(8, 8, 8)", "(16, 16, 16)", "(32, 32, 32)"],
-        "solver": ["sgd", "adam"],
+        "learning_rate_init": [0.00001, 0.0001, 0.001, 0.01],
+        "hidden_layer_sizes": [
+            "(8, 4)",
+            "(8, 8)",
+            "(16, 8)",
+            "(16, 16)",
+            "(32, 16)",
+            "(64, 32)",
+            "(128, 64)",
+            "(256, 128)",
+            "(4, 4, 4)",
+            "(8, 8, 8)",
+            "(16, 16, 16)",
+            "(32, 32, 32)",
+            "(64, 64, 64)",
+            "(128, 64, 32)",
+            "(128, 128, 64)",
+            "(256, 128, 64)",
+        ],
+        "solver": ["adam"],
         "early_stopping": [True, False],
         "max_iter": [200, 500, 1000, 2000],
     }
     return mlp, mlp_params, "MLP Regressor", "kernel"
-
-
-@Models.register("tabpfn")
-def _get_tabpfn() -> tuple:
-    """
-    :return: tabpfn model, its parameter grid and name
-    """
-    custom_space = TabPFNSearchSpace.get_classifier_space(n_ensemble_range=(2, 8))
-    model = TunedTabPFNRegressor(random_state=42, n_validation_size=0.3, device="cuda", n_trials=100, search_space=custom_space, metric="rmse")
-    return model, None, "TabPFN Regressor", "kernel"
 
 
 def get_trained_model(model_path: str) -> object:

@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "accelerate>=1.5.1",
     "cairosvg>=2.7.1",
+    "chemprop>=2.2.1",
     "diffusers>=0.32.2",
     "docker>=7.1.0",
     "fastparquet>=2024.11.0",

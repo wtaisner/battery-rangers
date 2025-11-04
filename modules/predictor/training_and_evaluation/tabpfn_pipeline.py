@@ -5,11 +5,12 @@ import random
 
 import numpy as np
 import pandas as pd
+import shap
 import torch
 from tabpfn import load_fitted_tabpfn_model, save_fitted_tabpfn_model
-from tabpfn_extensions import interpretability
+from tabpfn_extensions import TunedTabPFNRegressor, interpretability
+from tabpfn_extensions.hpo import TabPFNSearchSpace
 
-from modules.predictor.training_and_evaluation.model_factory import Models
 from modules.predictor.training_and_evaluation.training_pipeline import ModelTrainingPipeline
 
 seed = 42
@@ -39,7 +40,11 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
         :param model_path: path to saved model.
         :return: tuple with results, scores, explanations, model parameters.
         """
-        proper_model_name, model, param_grid, f_importance_method = Models().get_model(model_name, model_path=model_path)
+        custom_space = TabPFNSearchSpace.get_classifier_space(n_ensemble_range=(2, 8))
+        if len(self.X.columns) > 500:
+            custom_space["ignore_pretraining_limits"] = [True]
+        proper_model_name = "TabPFN Regressor"
+
         self.init_scores()
 
         if self.verbose:
@@ -48,6 +53,8 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
         model_params = []
 
         for i, fold in enumerate(self.folds):
+            model = TunedTabPFNRegressor(random_state=42, n_validation_size=0.3, device="cuda", n_trials=500, search_space=custom_space, metric="rmse")
+
             train_idx, test_idx = fold
 
             # train-test split
@@ -57,10 +64,12 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
             y_test = copy.deepcopy(self.y.loc[test_idx, :]).reset_index(drop=True)
 
             model.fit(X_train.to_numpy(), y_train[y_train.columns[0]].to_numpy())
+            model = model.best_model_
+            model.fit(X_train.to_numpy(), y_train[y_train.columns[0]].to_numpy())
 
             y_pred = model.predict(X_test.to_numpy()).flatten()
 
-            f_imp = self.calculate_f_importance(model, f_importance_method, X_test, X_train)
+            f_imp = self.calculate_f_importance(model, "TabPFN", X_test, X_train)
 
             # model eval
             y_test_numpy = y_test.to_numpy().flatten()
@@ -82,8 +91,8 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
         model_save_dir = os.path.join(self.save_dir, "models")
         os.makedirs(model_save_dir, exist_ok=True)
         save_model_path = os.path.join(model_save_dir, f"model_{fold_num}.tabpfn_fit")
-        model.best_model_.device = "cpu"
-        save_fitted_tabpfn_model(model.best_model_, save_model_path)
+        model.device = "cpu"
+        save_fitted_tabpfn_model(model, save_model_path)
 
     def load_model(self, fold_num: int = None) -> object:
         model_save_dir = os.path.join(self.save_dir, "models")
@@ -100,10 +109,19 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
         :param X_train: train data.
         :return: tuple with method and SHAP values.
         """
-        shap_values = interpretability.shap.get_shap_values(
-            estimator=model,
-            test_x=X_test.to_numpy(),
-            attribute_names=X_test.columns.tolist(),
-            background=X_train.to_numpy(),
-        )
+        check_explainer = shap.Explainer(model.predict, X_test.to_numpy())
+        if isinstance(check_explainer, shap.ExactExplainer):
+            shap_values = interpretability.shap.get_shap_values(
+                estimator=model,
+                test_x=X_test.to_numpy(),
+                attribute_names=X_test.columns.tolist(),
+            )
+        else:
+            shap_values = interpretability.shap.get_shap_values(
+                estimator=model,
+                test_x=X_test.to_numpy(),
+                attribute_names=X_test.columns.tolist(),
+                background=X_train.to_numpy(),
+                max_evals=2 * len(X_test.columns) + 100,
+            )
         return method, shap_values

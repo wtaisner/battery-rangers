@@ -1,5 +1,4 @@
 """Functions for model training"""
-import pickle
 
 import pandas as pd
 from mlxtend.feature_selection import SequentialFeatureSelector
@@ -31,21 +30,3 @@ def feature_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: 
     sfs.fit(X, y[y.columns[0]])
     print(sfs.k_feature_names_, sfs.k_score_)
     return sfs.k_feature_names_
-
-
-def train_and_save_model(model: object, X: pd.DataFrame, y: pd.DataFrame, model_save_path: str, verbose: bool = False) -> object:
-    """
-    Trains and saves trained model.
-    :param model: prediction model.
-    :param X: data for prediction.
-    :param y: list with features' names.
-    :param model_save_path: path to save trained model.
-    :param verbose: whether to print model scores after training
-    :return: trained model
-    """
-    model.fit(X, y[y.columns[0]])
-    if verbose:
-        print(model.score(X, y[y.columns[0]]))
-    with open(model_save_path, "wb") as f:
-        pickle.dump(model, f)
-    return model

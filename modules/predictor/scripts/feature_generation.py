@@ -41,12 +41,22 @@ if __name__ == "__main__":
         output_path_csv = os.path.join(f"{output_dir_csv}", f"features_rth_{rth}_" + "_".join(features_strings) + ".csv")
         output_path_ftypes = os.path.join(f"{output_dir_ftypes}", f"feature_types_rth_{rth}_" + "_".join(features_strings) + ".yaml")
 
+        df_created = {}
+        for i, feature_string in enumerate(features_strings):
+            feature_path = os.path.join(f"{output_dir_csv}", f"features_rth_{rth}_" + feature_string + ".csv")
+            types_path = os.path.join(f"{output_dir_ftypes}", f"feature_types_rth_{rth}_" + feature_string + ".yaml")
+            if os.path.exists(feature_path):
+                df_feat = pd.read_csv(feature_path)
+                with open(types_path, "r") as f:
+                    dict_types = yaml.load(f, Loader=yaml.FullLoader)
+                df_created[f_types[i]] = (df_feat, dict_types)
+
         if os.path.exists(output_path_csv):
             print(f"Features already exist at {output_path_csv}, skipping generation.")
             print("-" * 50)
             continue
 
-        df_features, dict_feature_types = generate_features(df, smiles_col="smiles", target_col="capacity_max", feature_types=f_types, remove_threshold=rth, kwargs=f_params)
+        df_features, dict_feature_types = generate_features(df, df_created, smiles_col="smiles", target_col="capacity_max", feature_types=f_types, remove_threshold=rth, kwargs=f_params)
 
         os.makedirs(os.path.dirname(output_path_csv), exist_ok=True)
         os.makedirs(os.path.dirname(output_path_ftypes), exist_ok=True)

@@ -67,7 +67,7 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
 
             study = optuna.create_study(direction="minimize", sampler=optuna.samplers.QMCSampler(seed=42))
 
-            study.optimize(objective_rmse, n_trials=100, show_progress_bar=False)
+            study.optimize(objective_rmse, n_trials=750, show_progress_bar=False)
             best_params = study.best_params
             if "hidden_layer_sizes" in best_params:
                 best_params["hidden_layer_sizes"] = ast.literal_eval(best_params["hidden_layer_sizes"])
