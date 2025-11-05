@@ -14,7 +14,7 @@ class FlatnessFilter(GenericMoleculeFilter):
         max_flatness (float): Maximum allowed flatness value for the molecules to be kept.
     """
 
-    def __init__(self, max_attempts: int = 1, num_conformers: int = 20, max_flatness: float = 6.0):
+    def __init__(self, max_attempts: int = 1, num_conformers: int = 20, max_flatness: float = 4.0):
         super().__init__()
         self.max_attempts = max_attempts
         self.num_conformers = num_conformers

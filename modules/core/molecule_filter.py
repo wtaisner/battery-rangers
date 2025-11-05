@@ -60,10 +60,11 @@ class MoleculeFilter:
         elif filters is None and molecule_type == MoleculeType.NODE:
             self.filters = [
                 ConjugationFilter(),
-                FlatnessFilter(),
+                FlatnessFilter(max_flatness=5.0),
                 StericHindranceFilter(),
                 CSMSymmetryFilter(),
             ]
+            logger.info(f"Using Node representation, flatness has a threshold of {self.filters[1].max_flatness} and CSM symmetry has a threshold of {self.filters[3].symmetry_measure_threshold}.")
         else:
             self.filters = filters
 
