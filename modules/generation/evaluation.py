@@ -15,6 +15,7 @@ from fcd_torch import FCD
 from rdkit import Chem, DataStructs
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from rdkit.rdBase import DisableLog
+from rdkit.SimDivFilters import LeaderPicker
 from tqdm.auto import tqdm
 
 import wandb
@@ -174,6 +175,7 @@ class MoleculeGenerationEvaluator:
             "fcd": self.calculate_fcd() if self.reference_smiles else np.nan,
             "percent_passing_filters": percent_passing_filters,
             "num_valid_molecules": self.get_num_valid_molecules(),
+            "#circles": self.calculate_circles_metric()[0],
         }
 
         if log_wandb:
@@ -334,6 +336,55 @@ class MoleculeGenerationEvaluator:
 
         int_div = 1.0 - root_mean_sim_p
         return int_div
+
+    def calculate_circles_metric(self, distance_threshold: float = 0.5, fp_radius: int = 2, fp_bits: int = 1024):
+        """
+        Calculates the #Circles metric (size of the maximally diverse subset)
+        for a list of molecules using a sphere exclusion algorithm (LeaderPicker).
+
+        This implementation uses the efficient LazyBitVectorPick method which operates
+        directly on fingerprints and uses a distance threshold.
+
+        Args:
+            distance_threshold (float): The minimum Tanimoto distance between any two selected molecules.
+            fp_radius (int): Morgan fingerprint radius. Defaults to 2.
+            fp_bits (int): Morgan fingerprint number of bits. Defaults to 1024.
+
+        Returns:
+            tuple[int, list]: A tuple containing:
+                - int: The size of the diverse subset (#Circles metric).
+                - list: The indices of the selected diverse molecules.
+        """
+        unique_valid_mols = self.valid_generated_mols
+        if not unique_valid_mols or len(unique_valid_mols) < 2:
+            logger.warning("Cannot calculate internal diversity: requires at least 2 unique valid molecules, but found %d.", len(unique_valid_mols or []))
+            return 0, []
+
+        fingerprints = []
+        # Keep track of original indices for valid molecules
+        valid_mol_indices = []
+        for i, mol in enumerate(unique_valid_mols):
+            try:
+                if mol is None:
+                    continue
+                fp = GetMorganFingerprintAsBitVect(mol, fp_radius, nBits=fp_bits)
+                fingerprints.append(fp)
+                valid_mol_indices.append(i)
+            except Exception as e:
+                logger.error(f"Error calculating fingerprint for molecule at index {i}, skipping: {e}")
+
+        num_fingerprints = len(fingerprints)
+        if num_fingerprints < 2:
+            logger.warning("Could not generate enough valid fingerprints (%d) for diversity calculation.", num_fingerprints)
+            return 0, []
+
+        picker = LeaderPicker()
+
+        diverse_indices_in_fp_list = picker.LazyBitVectorPick(fingerprints, num_fingerprints, distance_threshold)
+
+        original_indices = [valid_mol_indices[i] for i in diverse_indices_in_fp_list]
+
+        return len(original_indices), list(original_indices)
 
     def calculate_fcd(self) -> float:
         """
