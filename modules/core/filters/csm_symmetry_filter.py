@@ -17,18 +17,21 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
     Args:
         symmetry_measure_threshold (float): The threshold for the CSM symmetry measure. Molecules with
             a symmetry measure below this threshold will be retained.
+        normalize_score (bool): Whether to normalize the symmetry score by number of atoms. Default is True.
         evaluated_symmetry_groups (list[str] | None): A list of symmetry groups to evaluate.
             If None, defaults to ["c2", "c3", "c4"].
     """
 
     def __init__(
         self,
-        symmetry_measure_threshold: float = 5.0,
+        symmetry_measure_threshold: float = 0.2,
+        normalize_score: bool = True,
         evaluated_symmetry_groups: list[str] | None = None,
     ):
         super().__init__()
         self.symmetry_measure_threshold = symmetry_measure_threshold
         self.csm_runner = CSMRunner()
+        self.normalize_score = normalize_score
 
         if evaluated_symmetry_groups is None:
             self.evaluated_symmetry_groups = ["c2", "c3", "c4"]
@@ -54,7 +57,11 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
 
             csm_result = self.csm_runner.analyze_molecule(mol, point_groups=self.evaluated_symmetry_groups, exact=False)
 
-            if csm_result and csm_result.lowest_csm and csm_result.lowest_csm[1] < self.symmetry_measure_threshold:
-                filtered_molecules.append(mol)
+            if self.normalize_score:
+                if csm_result and csm_result.lowest_csm_normalized and csm_result.lowest_csm_normalized[1] < self.symmetry_measure_threshold:
+                    filtered_molecules.append(mol)
+            else:
+                if csm_result and csm_result.lowest_csm and csm_result.lowest_csm[1] < self.symmetry_measure_threshold:
+                    filtered_molecules.append(mol)
 
         return filtered_molecules

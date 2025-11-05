@@ -53,6 +53,27 @@ class MoleculeCSMResult:
     error_messages: dict[str, str] = field(default_factory=dict)
 
     @property
+    def lowest_csm_normalized(self) -> tuple[str, float] | None:
+        """
+        Normalizes the lowest CSM value by the number of atoms in the molecule.
+
+        Returns:
+            A tuple containing the point group name (str) and its corresponding
+            normalized CSM value (float) for the best fit, or None if no successful
+            results are available.
+        """
+        if not self.csm_results:
+            return None
+
+        # Normalize CSM values by the number of atoms in the molecule
+        mol = Chem.MolFromSmiles(self.smiles)
+        if mol is None:
+            return None
+
+        normalized_lowest_csm = self.lowest_csm[1] / mol.GetNumAtoms()
+        return self.lowest_csm[0], normalized_lowest_csm
+
+    @property
     def lowest_csm(self) -> tuple[str, float] | None:
         """
         Finds the point group with the minimum CSM value.
