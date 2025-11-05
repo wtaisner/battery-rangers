@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.0"
+__generated_with = "0.17.4"
 app = marimo.App(width="full", sql_output="pandas")
 
 
@@ -214,6 +214,13 @@ def _(mo):
     return
 
 
+@app.cell
+def _(pd):
+    working_df = pd.read_csv("data/raw/experts_15_09_25_ctf_filtered.csv")
+    working_df.head()
+    return (working_df,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""## Flatness""")
@@ -229,9 +236,9 @@ def _():
 
 
 @app.cell
-def _(df, flatness_filter):
-    _, flatness_substrate = flatness_filter.apply(df["molecule_substrate"].tolist(), return_flatness=True)
-    _, flatness_node = flatness_filter.apply(df["molecule_node"].tolist(), return_flatness=True)
+def _(flatness_filter, working_df):
+    _, flatness_substrate = flatness_filter.apply(working_df["molecule_substrate"].tolist(), return_flatness=True)
+    _, flatness_node = flatness_filter.apply(working_df["molecule_node"].tolist(), return_flatness=True)
     return flatness_node, flatness_substrate
 
 
@@ -283,14 +290,14 @@ def _():
 
 
 @app.cell
-def _(conjugation_filter, df, steric_hindrance_filter):
+def _(conjugation_filter, steric_hindrance_filter, working_df):
     def is_molecule_xyz(mol_object, xyz_set):
         if mol_object is None:
             return False
         return mol_object in xyz_set
 
     for col in ["substrate", "node"]:
-        all_mol_objects_from_df = [mol for mol in df[f"molecule_{col}"].tolist() if mol is not None]
+        all_mol_objects_from_df = [mol for mol in working_df[f"molecule_{col}"].tolist() if mol is not None]
 
         conjugated_mol_objects_list = conjugation_filter.apply(all_mol_objects_from_df)
         steric_mol_objects_list = steric_hindrance_filter.apply(all_mol_objects_from_df)
@@ -301,15 +308,15 @@ def _(conjugation_filter, df, steric_hindrance_filter):
         conjugated_set = set(conjugated_mol_objects_list)
         steric_set = set(steric_mol_objects_list)
 
-        df[f"conjugated_{col}"] = df[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, conjugated_set))
-        df[f"steric_{col}"] = df[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, steric_set))
+        working_df[f"conjugated_{col}"] = working_df[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, conjugated_set))
+        working_df[f"steric_{col}"] = working_df[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, steric_set))
     return
 
 
 @app.cell
-def _(df):
+def _(working_df):
     # check non-conjugated substrates
-    df[not df["conjugated_substrate"]]["smiles_substrate"]
+    working_df[not working_df["conjugated_substrate"]]["smiles_substrate"]
     return
 
 
@@ -320,7 +327,7 @@ def _(mo):
 
 
 @app.cell
-def _(df):
+def _(working_df):
     from tqdm import tqdm
 
     from modules.core.features.csm_runner import CSMRunner
@@ -328,42 +335,49 @@ def _(df):
     runner = CSMRunner()
 
     measures = []
+    measures_normalized = []
 
-    for sml in tqdm(df["smiles_substrate"]):
+    for sml in tqdm(working_df["smiles_substrate"]):
         results = runner.analyze_molecule(sml, ["c2", "c3", "c4"], exact=False)
         # print(results if results.lowest_csm[1] > 5 else "")
         if results is None:
             continue
         else:
             measures.append(results.lowest_csm)
-    return (measures,)
+            measures_normalized.append(results.lowest_csm_normalized)
+    return measures, measures_normalized
 
 
 @app.cell
-def _(measures, plt):
+def _(measures, measures_normalized, np, plt):
     scores = [m[1] for m in measures]
+    scores_normalized = [m[1] for m in measures_normalized]
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
     # histogram of scores
-    plt.figure(figsize=(5, 5))
-    plt.hist(scores, bins=30)
-    plt.xlabel("Score")
-    plt.ylabel("Frequency")
-    plt.title("Histogram of Scores")
+    axes[0].hist(scores, bins=30)
+    axes[0].set_xlabel("CSM Score")
+    axes[0].set_ylabel("Frequency")
+    axes[0].set_title(
+        f"CSM: min={min(scores):.2f}, max={max(scores):.2f}, mean={np.mean(scores):.2f},\n median={np.median(scores):.2f}, 1Q={np.quantile(scores, 0.25):.2f}, 3Q={np.quantile(scores, 0.75):.2f}"
+    )
+    # histogram of normalized scores
+    axes[1].hist(scores_normalized, bins=30)
+    axes[1].set_xlabel("Normalized CSM Score")
+    axes[1].set_ylabel("Frequency")
+    axes[1].set_title(
+        f"Normalized CSM: min={min(scores_normalized):.2f}, max={max(scores_normalized):.2f}, mean={np.mean(scores_normalized):.2f}, \nmedian={np.median(scores_normalized):.2f}, 1Q={np.quantile(scores_normalized, 0.25):.2f}, 3Q={np.quantile(scores_normalized, 0.75):.2f}"
+    )
     plt.show()
     return (scores,)
-
-
-@app.cell
-def _(np, scores):
-    np.median(scores)
-    return
 
 
 @app.cell
 def _(plt, scores):
     from modules.generation.utils import score_value_exponential
 
-    new_scores = [score_value_exponential(s, min_val=1e-10, max_val=5.0, decay_rate=0.1) for s in scores]
+    new_scores = [score_value_exponential(s, min_val=1e-10, max_val=0.2, decay_rate=0.1) for s in scores]
 
     # histogram of scores
     plt.figure(figsize=(5, 5))
