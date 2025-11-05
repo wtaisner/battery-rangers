@@ -16,10 +16,10 @@ import tempfile
 
 import yaml
 
+import wandb
+
 # pylint: disable=import-error
 from modules.mol_air.train import MolRLInferenceFactory, MolRLPretrainFactory, MolRLTrainFactory
-
-os.environ.setdefault("WANDB_MODE", "online")
 
 
 def run_experiment_stage(config: dict, stage: str, inference_runs: int = 1):
@@ -46,9 +46,9 @@ def run_experiment_stage(config: dict, stage: str, inference_runs: int = 1):
 
         elif stage == "train":
             print("\n----- Running RL Training -----")
-            # trainer = MolRLTrainFactory.from_yaml(temp_config_path).create_train()
-            # trainer.train()
-            # trainer.close()
+            trainer = MolRLTrainFactory.from_yaml(temp_config_path).create_train()
+            trainer.train()
+            trainer.close()
             print("----- RL Training Finished -----")
 
         elif stage == "inference":
@@ -83,43 +83,65 @@ def run_molair_experiment(config_path: str, init_selfies_path: str | None, infer
     except (IndexError, TypeError):
         raise ValueError(f"YAML file '{config_path}' appears to be empty or misformatted.")
 
-    # --- Step 3: Dynamically add 'init_selfies' if provided ---
-    if init_selfies_path:
-        print(f"----- Injecting initial SELFIES from: {init_selfies_path} -----")
-        if not os.path.exists(init_selfies_path):
-            raise FileNotFoundError(f"Initial SELFIES file not found: {init_selfies_path}")
+    wandb.init(
+        project="Mol-AIR",
+        name=experiment_id,  # Use the experiment ID from the YAML as the run name.
+        config=inner_config,  # Log the entire configuration for reproducibility.
+        # Explicitly set the mode to 'online' to override any local settings.
+        settings=wandb.Settings(mode="online"),
+    )
 
-        with open(init_selfies_path, "r", encoding="utf-8") as f:
-            selfies_list = [line.strip() for line in f if line.strip()]
+    # Use a try...finally block to guarantee that wandb.finish() is always called,
+    # even if an error occurs during one of the stages.
+    success = False
+    try:
+        # --- Step 2: Dynamically add 'init_selfies' if provided ---
+        if init_selfies_path:
+            print(f"----- Injecting initial SELFIES from: {init_selfies_path} -----")
+            if not os.path.exists(init_selfies_path):
+                raise FileNotFoundError(f"Initial SELFIES file not found: {init_selfies_path}")
 
-        if "Env" not in inner_config:
-            inner_config["Env"] = {}
-        inner_config["Env"]["init_selfies"] = selfies_list
-        print(f"Successfully loaded and set {len(selfies_list)} initial SELFIES strings.")
+            with open(init_selfies_path, "r", encoding="utf-8") as f:
+                selfies_list = [line.strip() for line in f if line.strip()]
 
-    # --- Step 4: Conditionally run Pre-training ---
-    # This 'if' check now correctly inspects the inner configuration dictionary.
-    if "Pretrain" in inner_config:
-        # IMPORTANT: Pass the FULL configuration with the experiment ID to the stage runner.
-        # The factory expects this complete structure.
-        run_experiment_stage(config_with_id, "pretrain")
+            if "Env" not in inner_config:
+                inner_config["Env"] = {}
+            inner_config["Env"]["init_selfies"] = selfies_list
+            print(f"Successfully loaded and set {len(selfies_list)} initial SELFIES strings.")
+            # Update wandb config with the new selfies (optional but good practice)
+            wandb.config.update({"Env": inner_config["Env"]}, allow_val_change=True)
 
-    # --- Step 5: Run RL Training ---
-    run_experiment_stage(config_with_id, "train")
+        # --- Step 3: Conditionally run Pre-training ---
+        if "Pretrain" in inner_config:
+            run_experiment_stage(config_with_id, "pretrain")
 
-    # --- Step 6: Run Inference Loop ---
-    # Prepare a modified config for unseeded inference runs
-    inference_run_config = config_with_id.copy()
-    if "Inference" in inner_config and "seed" in inner_config["Inference"]:
-        # We need to modify the nested dictionary
-        inference_run_config[experiment_id] = inner_config.copy()
-        inference_run_config[experiment_id]["Inference"] = inner_config["Inference"].copy()
-        del inference_run_config[experiment_id]["Inference"]["seed"]
-        print("\nNote: The 'seed' from the 'Inference' section has been removed for varied runs.")
+        # --- Step 4: Run RL Training ---
+        run_experiment_stage(config_with_id, "train")
 
-    run_experiment_stage(inference_run_config, "inference", inference_runs=inference_runs)
+        # --- Step 5: Run Inference Loop ---
+        inference_run_config = config_with_id.copy()
+        if "Inference" in inner_config and "seed" in inner_config["Inference"]:
+            inference_run_config[experiment_id] = inner_config.copy()
+            inference_run_config[experiment_id]["Inference"] = inner_config["Inference"].copy()
+            del inference_run_config[experiment_id]["Inference"]["seed"]
+            print("\nNote: The 'seed' from the 'Inference' section has been removed for varied runs.")
 
-    print("\n----- All Experiments Finished -----")
+        run_experiment_stage(inference_run_config, "inference", inference_runs=inference_runs)
+
+        # If all stages complete without error, we mark the run as successful.
+        success = True
+        print("\n----- All Experiments Finished -----")
+
+    finally:
+        # --- WANDB INTEGRATION: FINALIZE RUN ---
+        # This block will execute whether the 'try' block succeeded or failed.
+        print("----- Finalizing WandB Run -----")
+        exit_code = 0 if success else 1  # 0 for success, 1 for failure
+        wandb.finish(exit_code=exit_code)
+        if exit_code == 1:
+            print("WandB run marked as 'failed' due to an error.")
+        else:
+            print("WandB run finished successfully.")
 
 
 if __name__ == "__main__":
