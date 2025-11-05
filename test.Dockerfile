@@ -14,6 +14,10 @@ ENV MKL_NUM_THREADS=1
 ENV OPENBLAS_NUM_THREADS=1
 
 COPY pyproject.toml .
+COPY modules/REINVENT4 modules/REINVENT4
+
+RUN ls -lR /app
+
 RUN uv sync --all-extras --dev
 
 COPY . .
