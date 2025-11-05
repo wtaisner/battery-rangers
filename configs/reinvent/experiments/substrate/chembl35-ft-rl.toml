@@ -5,9 +5,9 @@ recipe = "ft_rl"
 
 [tl]
 # Paths for the fine-tuning stage
-smiles_file = "data/raw/substrate/train_substrate.smi"
-validation_smiles_file = "data/raw/substrate/test_substrate.smi"
+smiles_file = "data/raw/substrate/ctf_train.smi"
+validation_smiles_file = "data/raw/substrate/ctf_test.smi"
 
 [rl]
 # Path for the reinforcement learning stage
-known_smiles_path = "data/raw/substrate/train_substrate.smi"
+known_smiles_path = "data/raw/substrate/ctf_train.smi"
