@@ -5,11 +5,11 @@ recipe = "rl_inception"
 
 [rl]
 # Path to known SMILES for the scoring function
-known_smiles_path = "data/raw/node/train_node.smi"
+known_smiles_path = "data/raw/node/ctf_train.smi"
 
 [rl.inception]
 # Path to seed molecules
-smiles_file = "data/raw/node/train_node.smi"
+smiles_file = "data/raw/node/ctf_train.smi"
 memory_size = 100
 sample_size = 10
 

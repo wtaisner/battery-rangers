@@ -4,4 +4,4 @@ prior_type = "chembl35"
 recipe = "rl"
 
 [rl]
-known_smiles_path = "data/raw/substrate/train_substrate.smi"
+known_smiles_path = "data/raw/substrate/ctf_train.smi"

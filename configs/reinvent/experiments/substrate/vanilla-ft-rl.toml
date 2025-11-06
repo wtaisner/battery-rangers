@@ -4,14 +4,14 @@ prior_type = "vanilla"
 recipe = "ft_rl"
 
 [tl]
-smiles_file = "data/raw/substrate/train_substrate.smi"
-validation_smiles_file = "data/raw/substrate/test_substrate.smi"
+smiles_file = "data/raw/substrate/ctf_train.smi"
+validation_smiles_file = "data/raw/substrate/ctf_test.smi"
 # USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
 randomize_smiles = true
 standardize_smiles = true
 
 [rl]
-known_smiles_path = "data/raw/substrate/train_substrate.smi"
+known_smiles_path = "data/raw/substrate/ctf_train.smi"
 
 #[sampling]
 #num_files = 2

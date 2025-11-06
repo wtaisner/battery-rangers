@@ -4,13 +4,13 @@ prior_type = "chembl35"
 recipe = "ft_rl_inception"
 
 [tl]
-smiles_file = "data/raw/node/train_node.smi"
-validation_smiles_file = "data/raw/node/test_node.smi"
+smiles_file = "data/raw/node/ctf_train.smi"
+validation_smiles_file = "data/raw/node/ctf_test.smi"
 
 [rl]
-known_smiles_path = "data/raw/node/train.smi"
+known_smiles_path = "data/raw/node/ctf_train.smi"
 
 [rl.inception]
-smiles_file = "data/raw/node/train.smi"
+smiles_file = "data/raw/node/ctf_train.smi"
 memory_size = 100
 sample_size = 10

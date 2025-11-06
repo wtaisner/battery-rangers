@@ -4,18 +4,18 @@ prior_type = "vanilla"
 recipe = "ft_rl_inception"
 
 [tl]
-smiles_file = "data/raw/node/train_node.smi"
-validation_smiles_file = "data/raw/node/test_node.smi"
+smiles_file = "data/raw/node/ctf_train.smi"
+validation_smiles_file = "data/raw/node/ctf_test.smi"
 # USE FOR CHEMBL35 pre-trained dataset with false, true for vanilla prior
 randomize_smiles = true
 standardize_smiles = true
 
 [rl]
 # Path to known SMILES for the scoring function
-known_smiles_path = "data/raw/node/train_node.smi"
+known_smiles_path = "data/raw/node/ctf_train.smi"
 
 [rl.inception]
 # Path to seed molecules
-smiles_file = "data/raw/node/train_node.smi"
+smiles_file = "data/raw/node/ctf_train.smi"
 memory_size = 100
 sample_size = 10
