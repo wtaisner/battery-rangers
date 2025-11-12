@@ -1,7 +1,7 @@
-name = "node_vanilla_rl"
+name = "REINVENT_node_vanilla_rl"
 molecule_type = "node"
 prior_type = "vanilla"
 recipe = "rl"
 
-[rl]
+[rl] # unused right now - it didnt work properly I guess, however still necessary to have this section
 known_smiles_path = "data/raw/node/ctf_train.smi"

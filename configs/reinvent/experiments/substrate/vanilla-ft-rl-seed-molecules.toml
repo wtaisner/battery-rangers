@@ -1,4 +1,4 @@
-name = "substrate_vanilla_ft_rl_seed_molecules"
+name = "REINVENT_substrate_vanilla_ft_rl_seed_molecules"
 molecule_type = "substrate"
 prior_type = "vanilla"
 recipe = "ft_rl_inception"
@@ -17,7 +17,3 @@ known_smiles_path = "data/raw/substrate/ctf_train.smi"
 smiles_file = "data/raw/substrate/ctf_train.smi"
 memory_size = 100
 sample_size = 10
-
-#[sampling]
-#num_files = 2
-#num_smiles = 10

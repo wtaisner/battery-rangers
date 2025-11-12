@@ -10,8 +10,8 @@ device = "cuda:0"
 
 [metrics.reference_files]
 # Defines the reference (e.g., test set) SMILES for each molecule type.
-substrate = "data/raw/substrate/test.csv"
-node = "data/raw/node/test.csv"
+substrate = "data/raw/substrate/ctf_test.csv"
+node = "data/raw/node/ctf_test.csv"
 
 [metrics.training_files]
 # Defines the training SMILES associated with each prior type.

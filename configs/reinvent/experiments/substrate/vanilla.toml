@@ -1,4 +1,4 @@
-name = "substrate_vanilla_sampling"
+name = "REINVENT_substrate_vanilla_sampling"
 molecule_type = "substrate"
 prior_type = "vanilla"
 recipe = "sampling"

@@ -1,4 +1,4 @@
-name = "node_vanilla_ft_rl_seed_molecules"
+name = "REINVENT_node_vanilla_ft_rl_seed_molecules"
 molecule_type = "node"
 prior_type = "vanilla"
 recipe = "ft_rl_inception"

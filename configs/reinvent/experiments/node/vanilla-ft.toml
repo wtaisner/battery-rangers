@@ -1,4 +1,4 @@
-name = "reinvent_vanilla_ft_node"
+name = "REINVENT_vanilla_ft_node"
 molecule_type = "node"
 prior_type = "vanilla"
 recipe = "ft"
