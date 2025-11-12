@@ -107,3 +107,9 @@ class SMARTSFilter(GenericMoleculeFilter):
         # If we've checked all rules and none were satisfied, the molecule fails.
         # print(f" {Chem.MolToSmiles(mol)} did not satisfy any rules.")
         return False
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        return properties.get("smarts_filter", False)

@@ -203,7 +203,9 @@ class CSMRunner:
         """
         container = self._get_or_start_container(pull_image)
 
-        input_filename = f"{uuid.uuid4().hex}.sdf"
+        file_id = uuid.uuid4()
+
+        input_filename = f"{file_id.hex}.sdf"
         host_input_path = os.path.join(self.host_data_dir, input_filename)
 
         # add increased values for CSM (thus node molecules)
@@ -218,7 +220,7 @@ class CSMRunner:
         container_input_path = os.path.join(self.container_data_dir, os.path.basename(host_input_path))
 
         for pg in point_groups:
-            output_dirname = f"output_{pg}_{uuid.uuid4().hex}"
+            output_dirname = f"output_{pg}_{file_id.hex}"
             host_output_path = os.path.join(self.host_data_dir, output_dirname)
             container_output_path = os.path.join(self.container_data_dir, output_dirname)
 

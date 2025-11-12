@@ -25,3 +25,10 @@ class GenericMoleculeFilter(ABC):
             List[Mol]: A list of RDKit Mol objects that pass the filter.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        raise NotImplementedError

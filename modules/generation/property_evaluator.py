@@ -36,10 +36,10 @@ class PropertyEvaluator:
     def __init__(
         self,
         molecule_type: MoleculeType = MoleculeType.SUBSTRATE,
-        reference_smiles: str | None = None,
+        # reference_smiles: str | None = None,
         csm_threshold: float = 0.2,
         flatness_threshold: float = 4.0,
-        db_file: str = "data/mol_db/substrate_properties.db",
+        db_file: str = "modules/bionemo/data/mol_db/substrate_properties.db",
         **kwargs,
     ):
         if molecule_type not in [MoleculeType.SUBSTRATE, MoleculeType.NODE]:
@@ -48,7 +48,7 @@ class PropertyEvaluator:
         # generic
         self.molecule_type = molecule_type
         self.num_criteria = 5 if molecule_type == MoleculeType.NODE else 6
-        self.db_file = db_file if molecule_type == MoleculeType.SUBSTRATE else "data/mol_db/node_properties.db"
+        self.db_file = db_file if molecule_type == MoleculeType.SUBSTRATE else "modules/bionemo/data/mol_db/node_properties.db"
         self.database = MoleculeDB(self.db_file)
 
         # filters/estimators
@@ -58,28 +58,32 @@ class PropertyEvaluator:
         self.csm_runner = CSMRunner()
         self.fingerprint_generator = GetMorganGenerator(radius=2)
 
+        if self.molecule_type == MoleculeType.SUBSTRATE:
+            reference_smiles = "data/raw/substrate/ctf_train.smi"
+        else:
+            reference_smiles = "data/raw/node/ctf_train.smi"
+
+        # if file ends with .smi assume it is a space separated file with smiles only (for REINVENT)
+        if reference_smiles.endswith(".smi"):
+            self.reference_smiles = pd.read_csv(reference_smiles, sep=" ", header=None)
+        elif reference_smiles.endswith(".csv"):
+            self.reference_smiles = pd.read_csv(reference_smiles)
+
+        self.reference_smiles.columns = ["canon_smiles"]
+        try:
+            self.reference_smiles["fingerprint"] = self.reference_smiles["canon_smiles"].apply(lambda x: self.fingerprint_generator.GetFingerprint(Chem.MolFromSmiles(x)))
+        except IndexError as e:
+            logger.error(f"Error processing reference SMILES file: {e}")
+            self.reference_smiles = None
+
+        logger.info(f"Reference SMILES loaded with {len(self.reference_smiles) if self.reference_smiles is not None else 'EMPTY'} entries.")
+
         # thresholds
         self.csm_threshold = csm_threshold
         self.flatness_threshold = flatness_threshold
         if self.molecule_type == MoleculeType.NODE:
             self.flatness_threshold = 5.0
             logger.info(f"Molecule type set to NODE. Adjusted csm_threshold to {self.csm_threshold} and flatness_threshold to {self.flatness_threshold}.")
-
-        # reference smiles
-        self.reference_smiles = None
-        if reference_smiles:
-            # if file ends with .smi assume it is a space separated file with smiles only (for REINVENT)
-            if reference_smiles.endswith(".smi"):
-                self.reference_smiles = pd.read_csv(reference_smiles, sep=" ", header=None)
-            elif reference_smiles.endswith(".csv"):
-                self.reference_smiles = pd.read_csv(reference_smiles)
-
-            self.reference_smiles.columns = ["canon_smiles"]
-            try:
-                self.reference_smiles["fingerprint"] = self.reference_smiles["canon_smiles"].apply(lambda x: self.fingerprint_generator.GetFingerprint(Chem.MolFromSmiles(x)))
-            except IndexError as e:
-                logger.error(f"Error processing reference SMILES file: {e}")
-                self.reference_smiles = None
 
     def evaluate(self, smiles: str) -> float:
         """
@@ -88,7 +92,7 @@ class PropertyEvaluator:
         if not smiles:
             return 1e-10
 
-        # It's good practice to canonicalize SMILES before using it as a key
+        # canonicalize SMILES before using it as a key
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return 1e-10
@@ -168,12 +172,14 @@ class PropertyEvaluator:
             fingerprint = self.fingerprint_generator.GetFingerprint(molecule)
             similarities = self.reference_smiles["fingerprint"].apply(lambda x: Chem.DataStructs.TanimotoSimilarity(fingerprint, x))
             return similarities.mean()
-        except Exception:
+        except Exception as e:
+            print(f"Error calculating similarity for {Chem.MolToSmiles(molecule)}: {e}")
             return 0.0
 
 
 if __name__ == "__main__":
-    evaluator = PropertyEvaluator(reference_smiles="data/raw/node/ctf_train.smi")
-    evaluator.evaluate(
-        "N#Cc%19ccc(c%17cc%15c(cc(c%14ccc(c%13nc(c6ccc(c4cc2c(cc(c1ccc(C#N)cc1)n2c3ccc(C#N)cc3)n4c5ccc(C#N)cc5)cc6)nc(c%12ccc(c%10cc8c(cc(c7ccc(C#N)cc7)n8c9ccc(C#N)cc9)n%10c%11ccc(C#N)cc%11)cc%12)n%13)cc%14)n%15c%16ccc(C#N)cc%16)n%17c%18ccc(C#N)cc%18)cc%19"
-    )
+    evaluator = PropertyEvaluator(reference_smiles="data/raw/node/ctf_train.smi", molecule_type=MoleculeType.NODE)
+    # evaluator.evaluate(
+    #     "Cc1ccc(C=Cc2c(O)n(-c3ccccc3)c(=Nc3ccc(S(N)(=O)=O)cc3)n2-c2ccccc2)cc1"
+    # )
+    print(evaluator._calculate_mean_similarity(Chem.MolFromSmiles("Cc1ccc(C=Cc2c(O)n(-c3ccccc3)c(=Nc3ccc(S(N)(=O)=O)cc3)n2-c2ccccc2)cc1")))

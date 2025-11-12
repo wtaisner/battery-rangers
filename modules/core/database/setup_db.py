@@ -2,6 +2,8 @@
 import datetime
 import os
 import sqlite3
+from queue import Queue
+from threading import Thread
 from typing import Any, Dict, Optional
 
 
@@ -13,18 +15,74 @@ class MoleculeDB:
     """
 
     def __init__(self, db_path: str):
-        """
-        Initialize the database connector, connect, and set up the table.
-
-        :param db_path: Path to the SQLite database file (e.g., 'data/molecules.db').
-        """
         self.db_path = db_path
         self.connection: Optional[sqlite3.Connection] = None
-
-        # Connect and set up the database upon initialization
         self._connect()
         self._enable_wal_mode()
         self._create_table()
+
+        # --- NEW: Setup the write queue and writer thread ---
+        self.write_queue = Queue()
+        self.writer_thread = Thread(target=self._writer_loop, daemon=True)
+        self.writer_thread.start()
+
+    def _writer_loop(self):
+        """The dedicated writer thread's main loop."""
+        while True:
+            # Block until an item is available in the queue
+            item = self.write_queue.get()
+
+            # Use a sentinel value (None) to signal the thread to exit
+            if item is None:
+                break
+
+            # If it's not the sentinel, it's data to be written
+            self._add_molecule_to_db(item)
+            self.write_queue.task_done()
+
+    def _add_molecule_to_db(self, properties: Dict[str, Any]):
+        """The actual database insertion logic, only called by the writer thread."""
+        insert_sql = """
+                     INSERT \
+                     OR IGNORE INTO molecules (
+            canon_smiles, smarts_filter, conjugation_filter, flatness,
+            normalized_csm, similarity, steric_hindrance, selfies
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
+                     """
+        data_tuple = (
+            properties["canon_smiles"],
+            int(properties["smarts_filter"]),
+            int(properties["conjugation_filter"]),
+            properties["flatness"],
+            properties["normalized_csm"],
+            properties["similarity"],
+            int(properties["steric_hindrance"]),
+            properties["selfies"],
+        )
+        try:
+            with self.connection:
+                self.connection.execute(insert_sql, data_tuple)
+        except sqlite3.Error as e:
+            print(f"Writer thread DB error: {e}")
+
+    def add_molecule(self, **properties):
+        """
+        Public method to add a molecule. Instead of writing directly,
+        it puts the properties dictionary onto the queue for the writer thread.
+        """
+        self.write_queue.put(properties)
+
+    def close(self):
+        """Gracefully shut down the writer thread and close the connection."""
+        print("Closing database: waiting for writer queue to empty...")
+        self.write_queue.join()  # Wait for all pending writes to complete
+        self.write_queue.put(None)  # Send sentinel to stop the writer thread
+        self.writer_thread.join()  # Wait for the thread to terminate
+
+        if self.connection:
+            self.connection.close()
+            self.connection = None
+            print("Database connection closed.")
 
     def _connect(self):
         """Establish a connection to the SQLite database."""
@@ -86,36 +144,36 @@ class MoleculeDB:
         with self.connection:
             self.connection.execute(create_table_sql)
 
-    def add_molecule(
-        self,
-        canon_smiles: str,
-        smarts_filter: bool,
-        conjugation_filter: bool,
-        flatness: float,
-        normalized_csm: float,
-        similarity: float,
-        steric_hindrance: bool,
-        selfies: str,
-    ) -> bool:
-        """
-        Add a new molecule and its properties to the database.
-        If a molecule with the same canon_smiles already exists, it will be ignored.
-
-        :return: True if a new row was inserted, False if it was ignored (already exists).
-        """
-        insert_sql = """
-                     INSERT
-                     OR IGNORE INTO molecules (
-            canon_smiles, smarts_filter, conjugation_filter, flatness,
-            normalized_csm, similarity, steric_hindrance, selfies
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
-                     """
-        data_tuple = (canon_smiles, int(smarts_filter), int(conjugation_filter), flatness, normalized_csm, similarity, int(steric_hindrance), selfies)
-
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute(insert_sql, data_tuple)
-            return cursor.rowcount > 0
+    # def add_molecule(
+    #     self,
+    #     canon_smiles: str,
+    #     smarts_filter: bool,
+    #     conjugation_filter: bool,
+    #     flatness: float,
+    #     normalized_csm: float,
+    #     similarity: float,
+    #     steric_hindrance: bool,
+    #     selfies: str,
+    # ) -> bool:
+    #     """
+    #     Add a new molecule and its properties to the database.
+    #     If a molecule with the same canon_smiles already exists, it will be ignored.
+    #
+    #     :return: True if a new row was inserted, False if it was ignored (already exists).
+    #     """
+    #     insert_sql = """
+    #                  INSERT
+    #                  OR IGNORE INTO molecules (
+    #         canon_smiles, smarts_filter, conjugation_filter, flatness,
+    #         normalized_csm, similarity, steric_hindrance, selfies
+    #     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
+    #                  """
+    #     data_tuple = (canon_smiles, int(smarts_filter), int(conjugation_filter), flatness, normalized_csm, similarity, int(steric_hindrance), selfies)
+    #
+    #     with self.connection:
+    #         cursor = self.connection.cursor()
+    #         cursor.execute(insert_sql, data_tuple)
+    #         return cursor.rowcount > 0
 
     def get_molecule_properties(self, canon_smiles: str) -> Optional[Dict[str, Any]]:
         """
@@ -172,13 +230,6 @@ class MoleculeDB:
             print("Backup completed successfully.")
         except sqlite3.Error as e:
             print(f"Backup failed: {e}")
-
-    def close(self):
-        """Close the database connection if it's open."""
-        if self.connection:
-            self.connection.close()
-            self.connection = None
-            print("Database connection closed.")
 
     def __enter__(self):
         """Enter the runtime context related to this object."""

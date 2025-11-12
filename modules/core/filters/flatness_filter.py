@@ -45,3 +45,17 @@ class FlatnessFilter(GenericMoleculeFilter):
         if return_flatness:
             return filtered_molecules, flatness_scores
         return filtered_molecules
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+
+        Args:
+            properties (dict): A dictionary containing molecule properties, including 'flatness'.
+        Returns:
+            bool: True if the molecule passes the flatness filter, False otherwise.
+        """
+        flatness = properties.get("flatness", None)
+        if flatness is None:
+            return False  # Filter out if no flatness data is available
+        return flatness <= self.max_flatness

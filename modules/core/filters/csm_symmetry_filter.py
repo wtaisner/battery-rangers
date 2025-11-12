@@ -65,3 +65,22 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
                     filtered_molecules.append(mol)
 
         return filtered_molecules
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        csm_data = properties.get("normalized_csm", {})
+        if not csm_data:
+            return False  # Filter out if no CSM data is available
+
+        if self.normalize_score:
+            lowest_csm_normalized = csm_data.get("normalized_csm", None)
+            if lowest_csm_normalized and lowest_csm_normalized < self.symmetry_measure_threshold:
+                return True  # Do not filter out
+        else:
+            lowest_csm = csm_data.get("lowest_csm", None)
+            if lowest_csm and lowest_csm < self.symmetry_measure_threshold:
+                return True  # Do not filter out
+
+        return False  # Filter out

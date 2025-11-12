@@ -65,3 +65,9 @@ class StericHindranceFilter(GenericMoleculeFilter):
                 no_steric_hindrance_molecules.append(original_mol)
 
         return no_steric_hindrance_molecules
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        return properties.get("steric_hindrance", False)  # Default to filtering out if property is missing

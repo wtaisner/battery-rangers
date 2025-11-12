@@ -116,3 +116,9 @@ class ConjugationFilter(GenericMoleculeFilter):
                         visited.add(neighbor_idx)
                         queue.append(neighbor_idx)
         return False
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        return properties.get("conjugation_filter", False)
