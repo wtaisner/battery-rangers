@@ -40,18 +40,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
+        working-directory: ${{ github.workspace }}
         run: |
           docker build -t test-dockerfile -f test.Dockerfile .
-
-#      - name: Set up python
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: "3.12.6"
-#      - name: Install dependencies
-#        run: |
-#          python -m pip install --upgrade pip
-#          pip install pylint
-#      - name: Lint with pylint
-#        run: |
-#          export PYTHONPATH=$PYTHONPATH:/home/runner/work/battery-rangers/battery-rangers
-#          pylint modules --rcfile=/home/runner/work/battery-rangers/battery-rangers/.pylintrc --disable=import-error
