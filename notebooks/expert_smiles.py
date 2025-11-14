@@ -197,6 +197,13 @@ def _(ctfs, train_test_split):
     X_ctf_train["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/ctf_train.csv", index=None)
     X_ctf_test["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/ctf_test.csv", index=None)
 
+    # save .smi for REINVENT pre-trained on chembl35
+    X_ctf_train["smiles_substrate"].to_csv("data/raw/substrate/ctf_train_chembl35.smi", index=None, sep=" ", header=None)
+    X_ctf_test["smiles_substrate"].to_csv("data/raw/substrate/ctf_test_chembl35.smi", index=None, sep=" ", header=None)
+
+    X_ctf_train["smiles_node"].to_csv("data/raw/node/ctf_train_chembl35.smi", index=None, sep=" ", header=None)
+    X_ctf_test["smiles_node"].to_csv("data/raw/node/ctf_test_chembl35.smi", index=None, sep=" ", header=None)
+
     # save for nodes
     X_ctf_train["selfies_node"].to_csv("data/raw/node/ctf_train_selfies.slf", sep=" ", index=None, header=None)
     X_ctf_test["selfies_node"].to_csv("data/raw/node/ctf_test_selfies.slf", sep=" ", index=None, header=None)
@@ -339,7 +346,7 @@ def _(working_df):
 
     for sml in tqdm(working_df["smiles_substrate"]):
         results = runner.analyze_molecule(sml, ["c2", "c3", "c4"], exact=False)
-        # print(results if results.lowest_csm[1] > 5 else "")
+        print(results)
         if results is None:
             continue
         else:
