@@ -25,9 +25,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive' # <-- FIX: This line fetches the submodule contents
-      - name: Maximize build space
-        uses: easimon/maximize-build-space-action@v10
+          submodules: 'recursive'
+      - name: Maximize build disk space
+        uses: easimon/maximize-build-space@v10
         with:
           # This is a list of components to remove.
           # You can customize it if you need to keep some tools.
