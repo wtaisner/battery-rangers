@@ -14,8 +14,6 @@ from upsetplot import plot
 
 import wandb
 from modules.core.enums import MoleculeType
-
-# pylint: disable=import-error
 from modules.generation.evaluation import MoleculeGenerationEvaluator
 
 parser = argparse.ArgumentParser(description="Evaluate molecule generation metrics for one or more runs.")
@@ -45,6 +43,8 @@ parser.add_argument(
 )
 
 parser.add_argument("--log_wandb", action="store_true", help="Enable logging of the aggregated report to Weights & Biases.")  # Makes this a flag: --log_wandb
+parser.add_argument("--backup_db", action="store_true", help="Logs MoleculeDB as an artifact to wandb.")
+parser.add_argument("--db_dir", type=str, help="Where the database is stored", default="modules/bionemo/data/mol_db/")
 parser.add_argument("--wandb_project", type=str, default="molecule-generation", help="Specify the wandb project name.")
 parser.add_argument("--wandb_entity", type=str, default="witold_taisner", help="Specify the wandb entity (user or team).")
 # argument that if provided will set molecule type to NODE, otherwise it will be set to SUBSTRATE
@@ -67,7 +67,12 @@ if __name__ == "__main__":
     else:
         training_smiles = pd.read_csv(args.training_smiles)["canonical_smiles"].tolist()
 
-    reference_smiles = pd.read_csv(args.reference_smiles)["canon_smiles"].tolist()
+    if MoleculeType(args.molecule_type) == MoleculeType.NODE:
+        reference_smiles = pd.read_csv("data/raw/node/ctf_test.csv")["canon_smiles"].tolist()
+    else:
+        reference_smiles = pd.read_csv("data/raw/substrate/ctf_test.csv")["canon_smiles"].tolist()
+
+    print(f"Loaded {len(reference_smiles)} reference SMILES for evaluation.")
 
     generated_files = sorted(glob.glob(args.generated_smiles))
     if not generated_files:
@@ -147,6 +152,13 @@ if __name__ == "__main__":
             if args.log_wandb:
                 print("\n---> Logging aggregated report to Weights & Biases...")
                 wandb.init(project=args.wandb_project, entity=args.wandb_entity, name=args.run_name, config=vars(args))  # Log script arguments for reproducibility
+
+                if args.backup_db:
+                    db_path = os.path.join(args.db_dir, f"{args.molecule_type}_properties.db")
+                    artifact = wandb.Artifact(name="molecule_db", type="database")
+                    artifact.add_file(db_path)
+                    wandb.log_artifact(artifact)
+                    print(f"---> Logged MoleculeDB artifact from {db_path}.")
 
                 # Log metrics as a flat dictionary for easy plotting in wandb
                 wandb_log_dict = {}
