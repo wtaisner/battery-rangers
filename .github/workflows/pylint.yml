@@ -26,6 +26,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive' # <-- FIX: This line fetches the submodule contents
+      - name: Maximize build space
+        uses: easimon/maximize-build-space-action@v10
+        with:
+          # This is a list of components to remove.
+          # You can customize it if you need to keep some tools.
+          # The default list is usually sufficient.
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          # This action also clears the Docker cache by default
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
