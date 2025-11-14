@@ -1,8 +1,8 @@
-name = "reinvent_chembl35_ft_node"
+name = "REINVENT_node_chembl35_ft"
 molecule_type = "node"
 prior_type = "chembl35"
 recipe = "ft"
 
 [tl]
-smiles_file = "data/raw/node/ctf_train.smi"
-validation_smiles_file = "data/raw/node/ctf_test.smi"
+smiles_file = "data/raw/node/ctf_train_chembl35.smi"
+validation_smiles_file = "data/raw/node/ctf_test_chembl35.smi"

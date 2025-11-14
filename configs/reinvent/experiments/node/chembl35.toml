@@ -1,4 +1,4 @@
-name = "node_chembl35"
+name = "REINVENT_node_chembl35"
 molecule_type = "node"
 prior_type = "chembl35"
 recipe = "sampling"
