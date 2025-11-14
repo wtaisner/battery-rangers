@@ -2,6 +2,7 @@
 
 import logging
 
+import numpy as np
 from rdkit.Chem import Mol
 
 from modules.core.features.csm_runner import CSMRunner
@@ -70,17 +71,11 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
         """
         Reads properties from a dictionary (database) and decides whether to filter the molecule.
         """
-        csm_data = properties.get("normalized_csm", {})
-        if not csm_data:
+        lowest_csm_normalized = properties.get("normalized_csm", np.inf)
+        if not lowest_csm_normalized:
             return False  # Filter out if no CSM data is available
 
-        if self.normalize_score:
-            lowest_csm_normalized = csm_data.get("normalized_csm", None)
-            if lowest_csm_normalized and lowest_csm_normalized < self.symmetry_measure_threshold:
-                return True  # Do not filter out
-        else:
-            lowest_csm = csm_data.get("lowest_csm", None)
-            if lowest_csm and lowest_csm < self.symmetry_measure_threshold:
-                return True  # Do not filter out
+        if lowest_csm_normalized < self.symmetry_measure_threshold:
+            return True  # Keep molecule
 
         return False  # Filter out
