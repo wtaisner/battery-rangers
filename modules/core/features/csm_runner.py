@@ -18,7 +18,6 @@ import uuid
 from dataclasses import dataclass, field
 
 import docker
-from docker.client import DockerClient
 from docker.errors import ImageNotFound, NotFound
 from docker.models.containers import Container
 from rdkit import Chem
@@ -94,180 +93,153 @@ class MoleculeCSMResult:
 
 
 class CSMRunner:
-    """
-    Manages and executes CSM computations using a background Docker container.
-
-    This class provides a simplified interface to the `teamcsm/csm`
-    CLI tool. It handles starting/stopping the container, creating input files
-    via a provided utility function, executing the CSM calculations, and parsing
-    the output into a structured `MoleculeCSMAnalysis` object.
-    """
-
-    client: DockerClient
-    image_name: str
-    container_name: str
-    host_data_dir: str
-    container_data_dir: str
-    current_user_id: int = os.getuid()
-    current_group_id: int = os.getgid()
-
     def __init__(
         self,
         image_name: str = "teamcsm/csm:latest",
-        container_name: str = "csm_runner_container",
-        data_dir: str = "/tmp/csm_data",
+        container_name: str = "csm_runner_default",
+        local_dir: str = "./csm_workspace",
     ) -> None:
-        """
-        Initializes the CSMRunner and sets up configuration.
-
-        Args:
-            image_name: The name of the Docker image to use for calculations.
-            container_name: The name to assign to the running Docker container.
-            data_dir: The local directory for storing input and output files.
-                      This directory will be mounted as a volume in the container.
-        """
         self.client = docker.from_env()
         self.image_name = image_name
         self.container_name = container_name
-        self.host_data_dir = os.path.abspath(data_dir)
-        self.container_data_dir = "/data"  # Mount point inside the container
 
-        if not os.path.exists(self.host_data_dir):
-            os.makedirs(self.host_data_dir)
+        # 1. Local Workspace: Where Python writes files
+        self.local_workspace = os.path.abspath(local_dir)
 
-    def _get_or_start_container(self, pull_image: bool) -> Container:
-        """
-        Ensures the Docker container is running and returns it.
+        # 2. Host Workspace: What path the Docker Daemon on the host should mount.
+        # If you are inside a container/DevContainer, set 'CSM_HOST_MOUNT_PATH'
+        # to the actual path on your HOST machine.
+        self.host_workspace = os.getenv("CSM_HOST_MOUNT_PATH", self.local_workspace)
+        self.container_internal_data_dir = "/data"
 
-        This method checks if the container exists. If it does, it starts it if
-        it's stopped. If it doesn't exist, it creates and starts a new one.
-        It can optionally pull the image first.
+        if not os.path.exists(self.local_workspace):
+            os.makedirs(self.local_workspace, exist_ok=True)
 
-        Args:
-            pull_image: If True, ensures the latest Docker image is pulled
-                        before starting the container.
-
-        Returns:
-            The running `docker.models.containers.Container` object.
-
-        Raises:
-            DockerException: If there's an issue communicating with the Docker daemon.
-        """
+    def _get_or_start_container(self, pull_image: bool) -> docker.models.containers.Container:
         if pull_image:
             try:
                 self.client.images.get(self.image_name)
             except ImageNotFound:
-                print(f"Pulling latest image '{self.image_name}'...")
                 self.client.images.pull(self.image_name)
-                print("Image pulled.")
 
         try:
             container = self.client.containers.get(self.container_name)
+
+            # Check for stale mounts (if the directory path changed)
+            mounts = container.attrs.get("Mounts", [])
+            mounted_host_path = next((m["Source"] for m in mounts if m["Destination"] == self.container_internal_data_dir), None)
+
+            if mounted_host_path and os.path.abspath(mounted_host_path) != os.path.abspath(self.host_workspace):
+                container.remove(force=True)
+                raise NotFound("Recreating due to stale path")
+
             if container.status != "running":
                 container.start()
             return container
+
         except NotFound:
-            print(f"Container '{self.container_name}' not found. Creating a new one.")
             return self.client.containers.run(
                 self.image_name,
                 name=self.container_name,
                 detach=True,
-                user=f"{self.current_user_id}:{self.current_group_id}",
-                tty=True,  # Keeps the container running in the background
-                volumes={self.host_data_dir: {"bind": self.container_data_dir, "mode": "rw"}},
+                tty=True,
+                # Mount the HOST path to /data
+                volumes={self.host_workspace: {"bind": self.container_internal_data_dir, "mode": "rw"}},
             )
 
     def analyze_molecule(
-        self,
-        molecule: Mol | str,
-        point_groups: list[str],
-        pull_image: bool = False,
-        exact: bool = True,
+        self, molecule: Mol | str, point_groups: list[str], pull_image: bool = False, exact: bool = True, max_conformer_attempts: int = 5000, num_conformers: int = 1, cleanup_on_exit: bool = True
     ) -> MoleculeCSMResult | None:
-        """
-        Performs a full CSM analysis for a molecule against multiple point groups.
-
-        This is the main public method of the class. It orchestrates the entire
-        workflow: starting the container, creating the input SDF file, executing
-        the CSM calculation for each specified point group, and parsing the results.
-
-        Args:
-            molecule: The SMILES string of the molecule to analyze or an RDKit Mol object.
-            point_groups: A list of point group strings (e.g., ['c2', 'd6'])
-                          to calculate the CSM against.
-            pull_image: If True, ensures the Docker image is up-to-date before running.
-            exact: If True, exact calculations are performed, otherwise approximate.
-        Returns:
-            A `MoleculeCSMAnalysis` object containing the aggregated results and
-            any errors encountered.
-        """
         container = self._get_or_start_container(pull_image)
+        run_id = uuid.uuid4().hex
 
-        file_id = uuid.uuid4()
+        # FIX 1: Add prefix to ensure valid filename format
+        input_filename = f"mol_{run_id}.sdf"
+        local_input_path = os.path.join(self.local_workspace, input_filename)
+        paths_to_clean = [local_input_path]
 
-        input_filename = f"{file_id.hex}.sdf"
-        host_input_path = os.path.join(self.host_data_dir, input_filename)
+        try:
+            molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=max_conformer_attempts, num_conformers=num_conformers, filename=local_input_path)
 
-        # add increased values for CSM (thus node molecules)
-        molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=10, num_conformers=100, filename=host_input_path)
+            if molecule is None or not os.path.exists(local_input_path):
+                return None
 
-        if molecule is None:
-            return None
-
-        analysis = MoleculeCSMResult(smiles=Chem.MolToSmiles(molecule))
-
-        analysis.input_sdf_path = host_input_path
-        container_input_path = os.path.join(self.container_data_dir, os.path.basename(host_input_path))
-
-        for pg in point_groups:
-            output_dirname = f"output_{pg}_{file_id.hex}"
-            host_output_path = os.path.join(self.host_data_dir, output_dirname)
-            container_output_path = os.path.join(self.container_data_dir, output_dirname)
-
-            command = [
-                "csm",
-                "exact" if exact else "approx",
-                pg,
-                "--input",
-                container_input_path,
-                "--output",
-                container_output_path,
-                "--keep-structure",
-            ]
-            exit_code, (stdout, stderr) = container.exec_run(command, demux=True)
-
-            if exit_code != 0:
-                analysis.error_messages[pg] = stderr.decode("utf-8") if stderr else "Execution failed with no stderr."
-                continue
-
+            # FIX 2: Ensure file is world-readable so Container User can read it
             try:
-                csm_txt_path = os.path.join(host_output_path, "csm.txt")
-                with open(csm_txt_path, "r") as f:
-                    data_line = next(line for line in f if not line.startswith("#"))
-                    csm_value = float(data_line.strip().split()[-1])
-                analysis.csm_results[pg] = csm_value
-                analysis.output_dirs[pg] = host_output_path
-            except (IOError, StopIteration, IndexError, ValueError) as e:
-                analysis.error_messages[pg] = f"Failed to parse output file: {e}"
+                os.chmod(local_input_path, 0o644)
+            except Exception:
+                pass  # Ignore on Windows or if not owner
 
-        return analysis
+            analysis = MoleculeCSMResult(smiles=Chem.MolToSmiles(molecule))
+            analysis.input_sdf_path = local_input_path
 
-    def cleanup(self) -> None:
-        """
-        Removes all contents of the data directory.
+            container_input_path = os.path.join(self.container_internal_data_dir, input_filename)
 
-        This method provides a simple way to reset the data directory by deleting
-        every file and sub-directory within it, ensuring a clean state for
-        subsequent runs.
-        """
-        print(f"Cleaning all contents of the data directory: {self.host_data_dir}")
-        for item_name in os.listdir(self.host_data_dir):
-            item_path = os.path.join(self.host_data_dir, item_name)
-            try:
-                if os.path.isfile(item_path) or os.path.islink(item_path):
-                    os.unlink(item_path)
-                elif os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
-            except Exception as e:
-                print(f"Failed to delete {item_path}. Reason: {e}")
-        print("Cleanup complete.")
+            # FIX 3: Verify Visibility immediately
+            # If this fails, we know the Mount Path is wrong.
+            check_code, _ = container.exec_run(f"test -f {container_input_path}")
+            if check_code != 0:
+                err_msg = (
+                    f"MOUNT ERROR: The container cannot find the file at {container_input_path}.\n"
+                    f"Python wrote to: {local_input_path}\n"
+                    f"Docker mounted:  {self.host_workspace} -> /data\n"
+                    "SOLUTION: If you are running inside a container/DevContainer, you MUST set "
+                    "the 'CSM_HOST_MOUNT_PATH' environment variable to the actual path on the host machine."
+                )
+                # Use c2 as a bucket for this critical error so it surfaces immediately
+                analysis.error_messages["c2"] = err_msg
+                return analysis
+
+            for pg in point_groups:
+                output_dirname = f"output_{pg}_{run_id}"
+                local_output_path = os.path.join(self.local_workspace, output_dirname)
+                container_output_path = os.path.join(self.container_internal_data_dir, output_dirname)
+                paths_to_clean.append(local_output_path)
+
+                command = [
+                    "csm",
+                    "exact" if exact else "approx",
+                    pg,
+                    "--input",
+                    container_input_path,
+                    "--output",
+                    container_output_path,
+                    "--keep-structure",
+                ]
+
+                exit_code, (stdout, stderr) = container.exec_run(command, demux=True)
+
+                if exit_code != 0:
+                    analysis.error_messages[pg] = stderr.decode("utf-8") if stderr else "Error"
+                    continue
+
+                try:
+                    csm_txt_path = os.path.join(local_output_path, "csm.txt")
+                    with open(csm_txt_path, "r") as f:
+                        data_line = next(line for line in f if not line.startswith("#"))
+                        csm_value = float(data_line.strip().split()[-1])
+                    analysis.csm_results[pg] = csm_value
+                    analysis.output_dirs[pg] = local_output_path
+                except Exception as e:
+                    analysis.error_messages[pg] = f"Parse error: {e}"
+
+            return analysis
+
+        finally:
+            if cleanup_on_exit:
+                for path in paths_to_clean:
+                    if not os.path.exists(path):
+                        continue
+                    try:
+                        if os.path.isdir(path):
+                            shutil.rmtree(path)
+                        else:
+                            os.remove(path)
+                    except PermissionError:
+                        # Permission Denied? Ask Docker to delete it.
+                        rel_name = os.path.basename(path)
+                        container_target = os.path.join(self.container_internal_data_dir, rel_name)
+                        try:
+                            container.exec_run(["rm", "-rf", container_target])
+                        except Exception as e:
+                            print(f"Failed to clean up {container_target} via Docker: {e}")

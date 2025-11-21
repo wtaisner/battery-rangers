@@ -2,118 +2,120 @@
 import logging
 
 import networkx as nx
-import pymatgen.core
-from pymatgen.core.structure import Molecule, Structure
-from pymatgen.vis.structure_vtk import StructureVis
+
+# import pymatgen.core
+# from pymatgen.core.structure import Molecule, Structure
+# from pymatgen.vis.structure_vtk import StructureVis
 from rdkit import Chem
-from rdkit.Chem import Mol, rdDistGeom
+from rdkit.Chem import AllChem, Mol, rdDistGeom
 
 # debug logger
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
 logger.setLevel(logging.INFO)
 
 
-def compute_conformer(molecule: str | Mol, num_conformers: int = 20, max_attempts: int = 5, save_file: bool = False, filename: str = "") -> Mol | None:
+def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_attempts: int = 5000, save_file: bool = False, filename: str = "") -> Chem.Mol | None:
     """
-    Compute a 3D conformation for a molecule and return a new RDKit molecule with the conformation.
-
+    Compute 3D conformer(s) for a given molecule using RDKit's ETKDGv3 algorithm and store in file.
     Args:
         molecule: A SMILES string or RDKit molecule.
-        num_conformers: The number of conformers to generate (default is 10).
-        max_attempts: The maximum number of attempts to generate a conformation (default is 1).
-        save_file: Whether to save the generated conformers to an SDF file (default is False).
-        filename: The name of the file to save the conformers to. If not provided, a default name will be generated based on the molecule's name.
+        num_conformers: Number of conformers to generate.
+        max_attempts: Maximum attempts for embedding.
+        save_file: Whether to save the generated conformer(s) to an SDF file.
+        filename: The filename to save the SDF file. If empty, uses molecule name.
     Returns:
-        The RDKit molecule with a 3D conformation or None if it failed.
+        The RDKit molecule with 3D coordinates or None if generation failed.
     """
 
+    # 1. Standardize Input
     if isinstance(molecule, str):
-        rdkit_mol = Chem.MolFromSmiles(molecule)
+        mol = Chem.MolFromSmiles(molecule)
     else:
-        rdkit_mol = molecule
+        mol = Chem.Mol(molecule)  # Create a copy to avoid modifying original input
 
-    # Only proceed if the molecule is valid and has no conformers.
-    if rdkit_mol.GetNumConformers() < 1:
-        random_coords = rdkit_mol.GetNumAtoms() > 90 or rdkit_mol.GetNumBonds() > 100  # rule of thumb, obtained from data
-        rdkit_mol = Chem.AddHs(rdkit_mol)
+    if not mol:
+        logger.warning(f"Invalid molecule input: {molecule}")
+        return None
 
-        # Assign a name to the molecule if it doesn't have one, for default filename generation.
-        if not rdkit_mol.HasProp("_Name"):
-            smi = Chem.MolToSmiles(rdkit_mol)
-            rdkit_mol.SetProp("_Name", smi)
+    use_random_coords = mol.GetNumAtoms() > 90 or mol.GetNumBonds() > 100
 
-        rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=0, useRandomCoords=random_coords)
+    mol_with_hs = Chem.AddHs(mol)
+
+    if not mol_with_hs.HasProp("_Name"):
+        mol_with_hs.SetProp("_Name", Chem.MolToSmiles(mol))
+
+    # 5. Generate Conformers
+    conf_ids = rdDistGeom.EmbedMultipleConfs(mol=mol_with_hs, randomSeed=23, numConfs=num_conformers, maxAttempts=max_attempts, useRandomCoords=use_random_coords, numThreads=1, ETversion=2)
+
+    if not conf_ids:
+        logger.info(f"Failed to generate conformation for: {mol_with_hs.GetProp('_Name')}")
+        return None
+
+    try:
+        AllChem.MMFFOptimizeMolecule(mol_with_hs)
+    except Exception:
+        pass
 
     if save_file:
         if not filename:
-            # Generate a default filename from the molecule's name, sanitizing it for file systems.
-            mol_name = rdkit_mol.GetProp("_Name").replace("/", "_").replace("\\", "_")
-            output_filename = f"{mol_name}_conformers.sdf"
-        else:
-            # Ensure the provided filename ends with .sdf
-            if not filename.lower().endswith(".sdf"):
-                output_filename = f"{filename}.sdf"
-            else:
-                output_filename = filename
+            safe_name = mol_with_hs.GetProp("_Name")
+            filename = f"{safe_name}.sdf"
 
-        # Use SDWriter, which correctly handles writing a molecule with multiple conformers to SDF.
-        writer = Chem.SDWriter(output_filename)
-        writer.write(rdkit_mol)
-        writer.close()
-        logger.debug(f"Molecule with conformer(s) saved to {output_filename}")
+        try:
+            with Chem.SDWriter(filename) as writer:
+                writer.write(mol_with_hs)
+            logger.info(f"Saved with to {filename}")
+        except Exception as e:
+            logger.error(f"Failed to save {filename}: {e}")
 
-    # check if conformer was generated
-    if rdkit_mol.GetNumConformers() > 0:
-        return Chem.RemoveAllHs(rdkit_mol)
+    mol_no_hs = Chem.RemoveHs(mol_with_hs)
 
-    logger.debug(f"Failed to generate conformation for molecule: {molecule if isinstance(molecule, str) else Chem.MolToSmiles(molecule)}")
-
-    return None
+    return mol_no_hs
 
 
-def mol2pymatgen(molecule: str | Mol, **kwargs) -> pymatgen.core.Molecule | None:
-    """
-    Convert a molecule from SMILES or RDKit Mol to a pymatgen Molecule object.
-    Args:
-        molecule: A SMILES string or RDKit molecule.
-    kwargs: Additional keyword arguments for the compute_conformer function.
-    Returns:
-        The pymatgen Molecule object or None if the conversion failed.
+# def mol2pymatgen(molecule: str | Mol, **kwargs) -> pymatgen.core.Molecule | None:
+#     """
+#     Convert a molecule from SMILES or RDKit Mol to a pymatgen Molecule object.
+#     Args:
+#         molecule: A SMILES string or RDKit molecule.
+#     kwargs: Additional keyword arguments for the compute_conformer function.
+#     Returns:
+#         The pymatgen Molecule object or None if the conversion failed.
 
-    """
-    if isinstance(molecule, str):
-        rdkit_mol = compute_conformer(molecule, **kwargs)
-    else:
-        rdkit_mol = molecule
-        # check if rdkit_mol has a conformation
-        if rdkit_mol.GetNumConformers() == 0:
-            rdkit_mol = compute_conformer(rdkit_mol, **kwargs)
+#     """
+#     if isinstance(molecule, str):
+#         rdkit_mol = compute_conformer(molecule, **kwargs)
+#     else:
+#         rdkit_mol = molecule
+#         # check if rdkit_mol has a conformation
+#         if rdkit_mol.GetNumConformers() == 0:
+#             rdkit_mol = compute_conformer(rdkit_mol, **kwargs)
 
-    # check if conformer is present
-    if rdkit_mol is None:
-        return None
+#     # check if conformer is present
+#     if rdkit_mol is None:
+#         return None
 
-    conformer = rdkit_mol.GetConformer(0)
+#     conformer = rdkit_mol.GetConformer(0)
 
-    species = [atom.GetSymbol() for atom in rdkit_mol.GetAtoms()]
-    coords = [conformer.GetAtomPosition(i) for i in range(rdkit_mol.GetNumAtoms())]
-    coords = [[pos.x, pos.y, pos.z] for pos in coords]
+#     species = [atom.GetSymbol() for atom in rdkit_mol.GetAtoms()]
+#     coords = [conformer.GetAtomPosition(i) for i in range(rdkit_mol.GetNumAtoms())]
+#     coords = [[pos.x, pos.y, pos.z] for pos in coords]
 
-    return Molecule(species, coords)
+#     return Molecule(species, coords)
 
 
-def visualize_structure(structure: Structure, **kwargs) -> None:
-    """
-    Visualizes the given structure using StructureVis.
+# def visualize_structure(structure: Structure, **kwargs) -> None:
+#     """
+#     Visualizes the given structure using StructureVis.
 
-    Args:
-        structure (Structure): The structure to be visualized.
-    Returns:
-        None
-    """
-    stvis = StructureVis(**kwargs)
-    stvis.set_structure(structure)
-    stvis.show()
+#     Args:
+#         structure (Structure): The structure to be visualized.
+#     Returns:
+#         None
+#     """
+#     stvis = StructureVis(**kwargs)
+#     stvis.set_structure(structure)
+#     stvis.show()
 
 
 def mol2graph(molecule: str | Mol) -> nx.Graph:

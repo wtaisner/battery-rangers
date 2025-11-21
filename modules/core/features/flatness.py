@@ -26,12 +26,12 @@ def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, **kw
     """
 
     if isinstance(molecule, str):
-        rdkit_mol = compute_conformer(molecule, **kwargs)
+        rdkit_mol = compute_conformer(molecule, num_conformers=10, max_attempts=100, **kwargs)
     else:
         rdkit_mol = molecule
         # check if rdkit_mol has a conformation
         if rdkit_mol.GetNumConformers() == 0:
-            rdkit_mol = compute_conformer(rdkit_mol)
+            rdkit_mol = compute_conformer(rdkit_mol, num_conformers=10, max_attempts=100)
 
     # check if conformer is present
     if rdkit_mol is None:

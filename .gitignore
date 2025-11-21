@@ -181,6 +181,6 @@ __marimo__
 *.png
 *.prior
 *.json
-csm_data/
+csm_workspace/
 
 models/

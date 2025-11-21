@@ -21,7 +21,6 @@ class MoleculeDB:
         self._enable_wal_mode()
         self._create_table()
 
-        # --- NEW: Setup the write queue and writer thread ---
         self.write_queue = Queue()
         self.writer_thread = Thread(target=self._writer_loop, daemon=True)
         self.writer_thread.start()
@@ -144,41 +143,9 @@ class MoleculeDB:
         with self.connection:
             self.connection.execute(create_table_sql)
 
-    # def add_molecule(
-    #     self,
-    #     canon_smiles: str,
-    #     smarts_filter: bool,
-    #     conjugation_filter: bool,
-    #     flatness: float,
-    #     normalized_csm: float,
-    #     similarity: float,
-    #     steric_hindrance: bool,
-    #     selfies: str,
-    # ) -> bool:
-    #     """
-    #     Add a new molecule and its properties to the database.
-    #     If a molecule with the same canon_smiles already exists, it will be ignored.
-    #
-    #     :return: True if a new row was inserted, False if it was ignored (already exists).
-    #     """
-    #     insert_sql = """
-    #                  INSERT
-    #                  OR IGNORE INTO molecules (
-    #         canon_smiles, smarts_filter, conjugation_filter, flatness,
-    #         normalized_csm, similarity, steric_hindrance, selfies
-    #     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
-    #                  """
-    #     data_tuple = (canon_smiles, int(smarts_filter), int(conjugation_filter), flatness, normalized_csm, similarity, int(steric_hindrance), selfies)
-    #
-    #     with self.connection:
-    #         cursor = self.connection.cursor()
-    #         cursor.execute(insert_sql, data_tuple)
-    #         return cursor.rowcount > 0
-
     def get_molecule_properties(self, canon_smiles: str) -> Optional[Dict[str, Any]]:
         """
         Looks up a molecule by its canonical SMILES and returns all its properties.
-        This operation is highly optimized due to the primary key index.
 
         :param canon_smiles: The canonical SMILES string of the molecule to find.
         :return: A dictionary of the molecule's properties if found, otherwise None.
@@ -187,16 +154,38 @@ class MoleculeDB:
             print("Error: No active database connection.")
             return None
 
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM molecules WHERE canon_smiles = ?", (canon_smiles,))
-        result_tuple = cursor.fetchone()
+        result_tuple = None
+        column_names = []
+
+        # Retry loop to handle "Cursor needed to be reset" errors
+        max_retries = 3
+        for attempt in range(max_retries):
+            cursor = None
+            try:
+                cursor = self.connection.cursor()
+                cursor.execute("SELECT * FROM molecules WHERE canon_smiles = ?", (canon_smiles,))
+                result_tuple = cursor.fetchone()
+
+                # If found, grab column names immediately while cursor is valid
+                if result_tuple:
+                    column_names = [description[0] for description in cursor.description]
+
+                # Success - break the retry loop
+                break
+            except sqlite3.InterfaceError:
+                if attempt == max_retries - 1:
+                    print(f"Warning: Failed to fetch properties for {canon_smiles} after retries.")
+                    return None
+            except Exception as e:
+                print(f"Database error for {canon_smiles}: {e}")
+                return None
+            finally:
+                if cursor:
+                    cursor.close()
 
         if result_tuple:
-            # Get column names from the cursor description
-            column_names = [description[0] for description in cursor.description]
             properties = dict(zip(column_names, result_tuple))
 
-            # Convert integer columns back to booleans for consistency
             bool_columns = ["smarts_filter", "conjugation_filter", "steric_hindrance"]
             for col in bool_columns:
                 if col in properties:
