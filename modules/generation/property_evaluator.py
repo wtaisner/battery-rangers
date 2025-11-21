@@ -1,6 +1,7 @@
 """Property evaluator class, used to evaluate a set of defined properties for a given molecule(s)."""
 import logging
 import math
+import os
 
 import pandas as pd
 import selfies as sf
@@ -49,19 +50,20 @@ class PropertyEvaluator:
         self.molecule_type = molecule_type
         self.num_criteria = 5 if molecule_type == MoleculeType.NODE else 6
         self.db_file = db_file if molecule_type == MoleculeType.SUBSTRATE else "modules/bionemo/data/mol_db/node_properties.db"
+        print(f"Using database file: {self.db_file}")
         self.database = MoleculeDB(self.db_file)
 
         # filters/estimators
         self.conjugation_filter = ConjugationFilter()
         self.smarts_filter = SMARTSFilter(kwargs.get("smarts", None))
         self.steric_hindrance_filter = StericHindranceFilter()
-        self.csm_runner = CSMRunner()
+        self.csm_runner = CSMRunner(container_name=f"csm_runner_worker_{os.getpid()}")
         self.fingerprint_generator = GetMorganGenerator(radius=2)
 
         if self.molecule_type == MoleculeType.SUBSTRATE:
-            reference_smiles = "data/raw/substrate/ctf_train.smi"
+            reference_smiles = "data/raw/substrate/ctf_train.csv"
         else:
-            reference_smiles = "data/raw/node/ctf_train.smi"
+            reference_smiles = "data/raw/node/ctf_train.csv"
 
         # if file ends with .smi assume it is a space separated file with smiles only (for REINVENT)
         if reference_smiles.endswith(".smi"):
