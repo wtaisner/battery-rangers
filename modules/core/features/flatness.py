@@ -1,6 +1,4 @@
 """Flatness feature calculation."""
-import logging
-
 import matplotlib.pyplot as plt
 import numpy as np
 from rdkit import Chem
@@ -10,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 from modules.core.features.utils import compute_conformer
 
 
-def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, **kwargs) -> float | None:
+def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, num_conformers: int = 10, **kwargs) -> float | None:
     """
     Calculate the flatness of a molecule.
 
@@ -20,18 +18,19 @@ def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, **kw
     Args:
         molecule: An RDKit molecule or a SMILES string.
         plot_visualization: Whether to plot the molecule and the fitted plane.
+        num_conformers: Number of conformers to generate for the molecule.
         **kwargs: Additional arguments for the compute_conformer function.
     Returns:
         The flatness of the molecule.
     """
 
     if isinstance(molecule, str):
-        rdkit_mol = compute_conformer(molecule, num_conformers=10, max_attempts=100, **kwargs)
+        rdkit_mol = compute_conformer(molecule, num_conformers=num_conformers, **kwargs)
     else:
         rdkit_mol = molecule
         # check if rdkit_mol has a conformation
-        if rdkit_mol.GetNumConformers() == 0:
-            rdkit_mol = compute_conformer(rdkit_mol, num_conformers=10, max_attempts=100)
+        if rdkit_mol.GetNumConformers() < num_conformers:
+            rdkit_mol = compute_conformer(rdkit_mol, num_conformers=num_conformers, **kwargs)
 
     # check if conformer is present
     if rdkit_mol is None:
@@ -53,8 +52,6 @@ def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, **kw
 
         if plot_visualization:
             __visualize_the_plane(coords, model)
-
-    # logging.info(f"RMSDs: {np.mean(rmsds)} +/- {np.std(rmsds)}")
 
     return np.mean(rmsds)
 
@@ -98,12 +95,8 @@ def __visualize_the_plane(coords: np.ndarray, model: LinearRegression) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
     # Example usage
     smiles = "Nc1ccc(-c2nc(-c3ccc(N)cc3)nc(-c3ccc(N4C(=O)c5ccc6c7c(ccc(c57)C4=O)C(=O)OC6=O)cc3)n2)cc1"
 
-    f = get_flatness_mol(smiles, True, max_attempts=1, num_conformers=20)
-    logging.info(f"Flatness: {f}")
-
-    mol = Chem.MolFromSmiles(smiles)
+    f = get_flatness_mol(smiles, True, max_attempts=100, num_conformers=10)
+    print(f"Flatness: {f}")

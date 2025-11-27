@@ -19,13 +19,17 @@ def score_value_exponential(value: float, min_val: float = 2.0, max_val: float =
     Returns:
       The calculated score (between 0 and 1.0).
     """
-    if min_val <= value <= max_val:
-        return 1.0
-    if value < min_val:
-        distance = min_val - value
+    try:
+        if min_val <= value <= max_val:
+            return 1.0
+        if value < min_val:
+            distance = min_val - value
+            # Exponential decay: score = exp(-k * distance)
+            return math.exp(-decay_rate * distance)
+        # value > max_val
+        distance = value - max_val
         # Exponential decay: score = exp(-k * distance)
         return math.exp(-decay_rate * distance)
-    # value > max_val
-    distance = value - max_val
-    # Exponential decay: score = exp(-k * distance)
-    return math.exp(-decay_rate * distance)
+    except Exception as e:
+        # Handle any unexpected errors gracefully
+        return 0.0

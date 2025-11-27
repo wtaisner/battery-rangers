@@ -14,7 +14,7 @@ class FlatnessFilter(GenericMoleculeFilter):
         max_flatness (float): Maximum allowed flatness value for the molecules to be kept.
     """
 
-    def __init__(self, max_attempts: int = 1, num_conformers: int = 20, max_flatness: float = 4.0):
+    def __init__(self, max_attempts: int = 100, num_conformers: int = 10, max_flatness: float = 4.0):
         super().__init__()
         self.max_attempts = max_attempts
         self.num_conformers = num_conformers
@@ -37,7 +37,7 @@ class FlatnessFilter(GenericMoleculeFilter):
         filtered_molecules = []
         flatness_scores: list[tuple[float, Mol]] = []
         for mol in molecules:
-            f = get_flatness_mol(mol, False, num_conformers=self.num_conformers, max_attempts=self.max_attempts)
+            f = get_flatness_mol(molecule=mol, plot_visualization=False, num_conformers=self.num_conformers, max_attempts=self.max_attempts)
 
             flatness_scores.append((f, mol))
             if f and f <= self.max_flatness:

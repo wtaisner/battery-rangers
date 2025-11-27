@@ -7,7 +7,6 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 from tqdm import tqdm
 
-from modules.core.database import MoleculeDB
 from modules.core.enums import MoleculeType
 from modules.core.filters.conjugation_filter import ConjugationFilter
 from modules.core.filters.csm_symmetry_filter import CSMSymmetryFilter
@@ -15,6 +14,7 @@ from modules.core.filters.flatness_filter import FlatnessFilter
 from modules.core.filters.generic_filter import GenericMoleculeFilter
 from modules.core.filters.smarts_filter import SMARTSFilter
 from modules.core.filters.steric_hindrance_filter import StericHindranceFilter
+from modules.generation.property_evaluator import PropertyEvaluator
 
 # Set up the logger for the module
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
@@ -54,7 +54,13 @@ class MoleculeFilter:
         """
         self.db_file = db_file if molecule_type == MoleculeType.SUBSTRATE else "modules/bionemo/data/mol_db/node_properties.db"
         self.molecule_type = molecule_type
-        self.database = MoleculeDB(self.db_file)
+
+        logger.info("Initializing PropertyEvaluator for MoleculeFilter...")
+        self.evaluator = PropertyEvaluator(
+            molecule_type=self.molecule_type,
+            db_file=self.db_file,
+        )
+
         if filters is None and molecule_type == MoleculeType.SUBSTRATE:
             self.filters = [
                 SMARTSFilter(),
@@ -74,25 +80,24 @@ class MoleculeFilter:
         else:
             self.filters = filters
 
-    def apply_against_all_filters(self, molecules: list[str | Mol], **kwargs) -> dict[str, dict[str, bool]]:
+    def apply_against_all_filters(self, molecules: list[str | Mol]) -> dict[str, dict[str, bool]]:
         """
-        Check each molecule against each filter using a "read-from-db-or-compute" strategy.
+        Check each molecule against each filter.
 
-        For each molecule, it first tries to read pre-computed properties from the database
-        and apply filters based on them. If the molecule is not in the database, it falls
-        back to computing the filter results on-the-fly.
-
-        NOTE: This method does NOT write new results to the database.
+        Strategy:
+        1. Check Database.
+        2. If missing, use PropertyEvaluator to calculate all properties and write to DB.
+        3. Fetch from DB and apply filters.
+        4. Fallback to on-the-fly calculation if DB interaction fails. In general, this shouldn't happen.
 
         Args:
             molecules (list[str | Mol]): The list of molecules either as SMILES strings or RDKit Mol objects.
             If SMILES strings, they are converted to RDKit Mol objects.
-            **kwargs: Additional keyword arguments passed to filter apply methods.
         """
         if not molecules:
             return {}
 
-        logger.info(f"Checking filters for {len(molecules)} molecules with DB fallback.")
+        logger.info(f"Checking filters for {len(molecules)} molecules.")
         filter_results: dict[str, dict[str, bool]] = {}
 
         molecules_to_filter = []
@@ -108,36 +113,28 @@ class MoleculeFilter:
         else:
             molecules_to_filter = list(molecules)
 
-        for mol in tqdm(molecules_to_filter, desc="Checking filters (DB/Compute)"):
+        for mol in tqdm(molecules_to_filter, desc="Checking filters"):
             canon_smiles = Chem.MolToSmiles(mol)
             filter_results[canon_smiles] = {}
 
-            # Attempt to read from the database
-            db_properties = self.database.get_molecule_properties(canon_smiles)
+            properties = self.evaluator.get_properties_and_cache(canon_smiles)
 
-            if db_properties:
-                # --- PATH 1: CACHE HIT (Fast) ---
-                # Molecule found in the database, use pre-computed properties.
-                logger.debug(f"'{canon_smiles}' found in DB. Using cached properties for filtering.")
-                for filter_operator in self.filters:
-                    filter_name = filter_operator.__class__.__name__
-                    passed = filter_operator.filter_from_property(db_properties)
-                    filter_results[canon_smiles][filter_name] = passed
-            else:
-                # --- PATH 2: CACHE MISS (Fallback to on-the-fly computation) ---
-                # Molecule not in the database, apply filters directly.
-                logger.debug(f"'{canon_smiles}' not in DB. Computing filters on-the-fly.")
+            if properties:
+                # We have data (either from DB or fresh from RAM)
                 for filter_operator in self.filters:
                     filter_name = filter_operator.__class__.__name__
                     try:
-                        filter_pass_list = filter_operator.apply([mol], **kwargs)
-                        passed = bool(filter_pass_list)  # True if the result list is not empty
+                        # Ensure the filter knows how to read from the dict
+                        passed = filter_operator.filter_from_property(properties)
                         filter_results[canon_smiles][filter_name] = passed
                     except Exception as e:
+                        logger.error(f"Filter {filter_name} failed on data for {canon_smiles}: {e}")
                         filter_results[canon_smiles][filter_name] = False
-                        logger.error(f"Error applying filter {filter_name} to molecule {canon_smiles}: {e}")
+            else:
+                logger.error(f"Could not determine properties for '{canon_smiles}'. Marking all filters as failed.")
+                for filter_operator in self.filters:
+                    filter_results[canon_smiles][filter_operator.__class__.__name__] = False
 
-        logger.debug(f"Filter checking complete for {len(molecules_to_filter)} molecules.")
         return filter_results
 
     # pylint: disable=too-many-branches

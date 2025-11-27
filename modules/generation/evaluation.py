@@ -441,7 +441,20 @@ class MoleculeGenerationEvaluator:
         if self.valid_generated_smiles_canon:
             results = self.molecule_filter.apply_against_all_filters(self.valid_generated_mols)
 
-            percent_passing_filters = len([smiles for smiles, outcomes in results.items() if all(outcomes.values())]) / len(self.valid_generated_mols)
+            passing_count = 0
+
+            # --- DEBUG LOGGING START ---
+            logger.info("--- Filter Failure Analysis ---")
+            for smiles, outcomes in results.items():
+                if all(outcomes.values()):
+                    passing_count += 1
+                else:
+                    # Collect names of filters that returned False
+                    failed_filters = [k for k, v in outcomes.items() if not v]
+                    logger.info(f"Molecule '{smiles}' failed: {failed_filters}")
+            # --- DEBUG LOGGING END ---
+
+            percent_passing_filters = passing_count / len(self.valid_generated_mols)
             return percent_passing_filters, results
 
         return 0.0, {}

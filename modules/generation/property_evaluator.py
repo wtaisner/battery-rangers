@@ -87,50 +87,81 @@ class PropertyEvaluator:
             self.flatness_threshold = 5.0
             logger.info(f"Molecule type set to NODE. Adjusted csm_threshold to {self.csm_threshold} and flatness_threshold to {self.flatness_threshold}.")
 
-    def evaluate(self, smiles: str) -> float:
+    def _fetch_or_compute_properties(self, smiles: str) -> dict | None:
         """
-        Evaluate properties for a molecule, using the database as a write-through cache.
+        Internal helper: canonicalizes SMILES, checks DB, computes on miss,
+        writes to DB, and returns the properties dictionary.
+        Returns None if SMILES is invalid or computation fails.
         """
         if not smiles:
-            return 1e-10
+            logger.warning("Empty SMILES string provided.")
+            return None
 
         # canonicalize SMILES before using it as a key
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
-            return 1e-10
+            logger.warning(f"Invalid SMILES string provided: {smiles}")
+            return None
         canon_smiles = Chem.MolToSmiles(mol)
 
         # 1. Check database for the CANONICAL smiles (Cache Hit)
         db_properties = self.database.get_molecule_properties(canon_smiles)
         if db_properties:
-            logger.debug(f"'{canon_smiles}' found in database. Using cached properties.")
-            return self._calculate_score_from_properties(db_properties)
+            logger.info(f"'{canon_smiles}' found in database. Using cached properties.")
+            return db_properties
 
         # 2. If not in DB, calculate RAW properties (Cache Miss)
-        logger.debug(f"'{canon_smiles}' not in database. Calculating properties.")
+        logger.info(f"'{canon_smiles}' not in database. Calculating properties.")
         try:
             # This dictionary will hold the RAW values to be stored in the database
             raw_properties = {
                 "canon_smiles": canon_smiles,
-                "flatness": get_flatness_mol(mol) or float("inf"),  # Store raw flatness error
-                "normalized_csm": self._get_raw_csm(mol),  # Store raw CSM value
+                "flatness": get_flatness_mol(mol) or float("inf"),
+                "normalized_csm": self._get_raw_csm(mol),
                 "similarity": self._calculate_mean_similarity(mol) if self.reference_smiles is not None else 0.0,
-                "selfies": sf.encoder(canon_smiles),  # Convert to SELFIES for DB
+                "selfies": sf.encoder(canon_smiles),
                 "smarts_filter": len(self.smarts_filter.apply([mol])) > 0,
                 "conjugation_filter": len(self.conjugation_filter.apply([mol])) > 0,
                 "steric_hindrance": len(self.steric_hindrance_filter.apply([mol])) > 0,
             }
 
-            # 3. Write the newly calculated properties to the database
+            # 3. Write the newly calculated properties to the database (Fire and Forget)
             self.database.add_molecule(**raw_properties)
-            logger.debug(f"Added '{canon_smiles}' properties to the database.")
+            logger.info(f"Added '{canon_smiles}' properties to the database.")
 
-            # 4. Calculate the final score from the new RAW properties
-            return self._calculate_score_from_properties(raw_properties)
+            # 4. Return the dictionary directly from memory
+            return raw_properties
 
         except Exception as e:
             logger.error(f"Failed to evaluate or add '{canon_smiles}' to database: {e}", exc_info=True)
+            return None
+
+    def evaluate(self, smiles: str) -> float:
+        """
+        Evaluate properties for a molecule and return a numeric score.
+        """
+        # Call the helper
+        properties = self._fetch_or_compute_properties(smiles)
+
+        # Handle failure case (invalid smiles or computation error)
+        if properties is None:
             return 1e-10
+
+        # Calculate score from the dict
+        return self._calculate_score_from_properties(properties)
+
+    def get_properties_and_cache(self, smiles: str) -> dict:
+        """
+        Retrieves properties from DB or calculates them, returning the full dictionary.
+        """
+        # Call the helper
+        properties = self._fetch_or_compute_properties(smiles)
+
+        # Handle failure case (return empty dict to match original signature)
+        if properties is None:
+            return {}
+
+        return properties
 
     def _calculate_score_from_properties(self, properties: dict) -> float:
         """

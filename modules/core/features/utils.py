@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 logger.setLevel(logging.INFO)
 
 
-def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_attempts: int = 5000, save_file: bool = False, filename: str = "") -> Chem.Mol | None:
+def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_attempts: int = 2000, save_file: bool = False, filename: str = "") -> Chem.Mol | None:
     """
     Compute 3D conformer(s) for a given molecule using RDKit's ETKDGv3 algorithm and store in file.
     Args:
@@ -45,7 +45,7 @@ def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_att
         mol_with_hs.SetProp("_Name", Chem.MolToSmiles(mol))
 
     # 5. Generate Conformers
-    conf_ids = rdDistGeom.EmbedMultipleConfs(mol=mol_with_hs, randomSeed=23, numConfs=num_conformers, maxAttempts=max_attempts, useRandomCoords=use_random_coords, numThreads=1, ETversion=2)
+    conf_ids = rdDistGeom.EmbedMultipleConfs(mol=mol_with_hs, randomSeed=23, numConfs=num_conformers, maxAttempts=max_attempts, useRandomCoords=use_random_coords, numThreads=8, ETversion=2)
 
     if not conf_ids:
         logger.info(f"Failed to generate conformation for: {mol_with_hs.GetProp('_Name')}")
@@ -64,9 +64,8 @@ def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_att
         try:
             with Chem.SDWriter(filename) as writer:
                 writer.write(mol_with_hs)
-            logger.info(f"Saved with to {filename}")
         except Exception as e:
-            logger.error(f"Failed to save {filename}: {e}")
+            logger.error(f"Failed to save conformation for {Chem.MolToSmiles(mol)}: {e}")
 
     mol_no_hs = Chem.RemoveHs(mol_with_hs)
 

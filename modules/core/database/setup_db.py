@@ -2,6 +2,7 @@
 import datetime
 import os
 import sqlite3
+import time
 from queue import Queue
 from threading import Thread
 from typing import Any, Dict, Optional
@@ -10,203 +11,185 @@ from typing import Any, Dict, Optional
 class MoleculeDB:
     """
     Class to handle a SQLite database for storing and retrieving molecule properties.
-    It automatically connects, sets up the schema, and provides methods for
-    adding data, performing fast lookups, and creating backups.
+
+    Fixes implemented:
+    1. Separate database connections for the main thread (Reader) and background thread (Writer).
+    2. Retry logic for reads to handle concurrency edge cases.
+    3. Explicit cursor lifecycle management to prevent memory/resource leaks.
     """
 
     def __init__(self, db_path: str):
         self.db_path = db_path
-        self.connection: Optional[sqlite3.Connection] = None
-        self._connect()
-        self._enable_wal_mode()
-        self._create_table()
 
+        # 1. Setup the Reader Connection (Main Thread)
+        self.reader_connection = self._create_connection()
+        self._initialize_db_schema()
+
+        # 2. Setup the Writer Queue and Thread
         self.write_queue = Queue()
         self.writer_thread = Thread(target=self._writer_loop, daemon=True)
         self.writer_thread.start()
 
-    def _writer_loop(self):
-        """The dedicated writer thread's main loop."""
-        while True:
-            # Block until an item is available in the queue
-            item = self.write_queue.get()
-
-            # Use a sentinel value (None) to signal the thread to exit
-            if item is None:
-                break
-
-            # If it's not the sentinel, it's data to be written
-            self._add_molecule_to_db(item)
-            self.write_queue.task_done()
-
-    def _add_molecule_to_db(self, properties: Dict[str, Any]):
-        """The actual database insertion logic, only called by the writer thread."""
-        insert_sql = """
-                     INSERT \
-                     OR IGNORE INTO molecules (
-            canon_smiles, smarts_filter, conjugation_filter, flatness,
-            normalized_csm, similarity, steric_hindrance, selfies
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
-                     """
-        data_tuple = (
-            properties["canon_smiles"],
-            int(properties["smarts_filter"]),
-            int(properties["conjugation_filter"]),
-            properties["flatness"],
-            properties["normalized_csm"],
-            properties["similarity"],
-            int(properties["steric_hindrance"]),
-            properties["selfies"],
-        )
+    def _create_connection(self) -> sqlite3.Connection:
+        """Helper to create a properly configured SQLite connection."""
+        # check_same_thread=False allows this specific connection object to be passed
+        # around if you eventually use multi-threaded DataLoaders, though we try to avoid sharing it.
+        # timeout=30 waits 30s for the lock to clear before raising an error.
         try:
-            with self.connection:
-                self.connection.execute(insert_sql, data_tuple)
-        except sqlite3.Error as e:
-            print(f"Writer thread DB error: {e}")
-
-    def add_molecule(self, **properties):
-        """
-        Public method to add a molecule. Instead of writing directly,
-        it puts the properties dictionary onto the queue for the writer thread.
-        """
-        self.write_queue.put(properties)
-
-    def close(self):
-        """Gracefully shut down the writer thread and close the connection."""
-        print("Closing database: waiting for writer queue to empty...")
-        self.write_queue.join()  # Wait for all pending writes to complete
-        self.write_queue.put(None)  # Send sentinel to stop the writer thread
-        self.writer_thread.join()  # Wait for the thread to terminate
-
-        if self.connection:
-            self.connection.close()
-            self.connection = None
-            print("Database connection closed.")
-
-    def _connect(self):
-        """Establish a connection to the SQLite database."""
-        try:
-            # The check_same_thread=False is important for use cases where you might
-            # share the DB connection across different threads, common in RL envs.
-            self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
+            conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=30)
+            # Enable Write-Ahead Logging for better concurrency (Readers don't block Writers)
+            conn.execute("PRAGMA journal_mode=WAL;")
+            # synchronous=NORMAL is faster and safe enough for WAL mode
+            conn.execute("PRAGMA synchronous=NORMAL;")
+            return conn
         except sqlite3.Error as e:
             print(f"Database connection error: {e}")
             raise
 
-    def _enable_wal_mode(self):
-        """
-        Enable Write-Ahead Logging (WAL) for better concurrency.
-        WAL allows multiple readers to operate while data is being written.
-        """
-        with self.connection:
-            self.connection.execute("PRAGMA journal_mode=WAL;")
-
-    def _create_table(self):
-        """Create the 'molecules' table if it doesn't already exist."""
+    def _initialize_db_schema(self):
+        """Create the table using the reader connection."""
         create_table_sql = """
-                           CREATE TABLE IF NOT EXISTS molecules
-                           (
-                               canon_smiles
-                               TEXT
-                               PRIMARY
-                               KEY,
-                               smarts_filter
-                               INTEGER
-                               NOT
-                               NULL,
-                               conjugation_filter
-                               INTEGER
-                               NOT
-                               NULL,
-                               flatness
-                               REAL
-                               NOT
-                               NULL,
-                               normalized_csm
-                               REAL
-                               NOT
-                               NULL,
-                               similarity
-                               REAL
-                               NOT
-                               NULL,
-                               steric_hindrance
-                               INTEGER
-                               NOT
-                               NULL,
-                               selfies
-                               TEXT
-                               NOT
-                               NULL
-                           ) \
-                           """
-        with self.connection:
-            self.connection.execute(create_table_sql)
+            CREATE TABLE IF NOT EXISTS molecules (
+                canon_smiles TEXT PRIMARY KEY,
+                smarts_filter INTEGER NOT NULL,
+                conjugation_filter INTEGER NOT NULL,
+                flatness REAL NOT NULL,
+                normalized_csm REAL NOT NULL,
+                similarity REAL NOT NULL,
+                steric_hindrance INTEGER NOT NULL,
+                selfies TEXT NOT NULL
+            )
+        """
+        with self.reader_connection:
+            self.reader_connection.execute(create_table_sql)
+
+    def _writer_loop(self):
+        """
+        The dedicated writer thread's main loop.
+        CRITICAL FIX: This thread opens its OWN connection to the DB.
+        """
+        # Create a private connection for this thread
+        writer_conn = self._create_connection()
+
+        while True:
+            # Block until an item is available
+            item = self.write_queue.get()
+
+            # Sentinel check to exit thread
+            if item is None:
+                break
+
+            # Perform the write using the private connection
+            self._write_to_db(writer_conn, item)
+            self.write_queue.task_done()
+
+        # Clean up the private connection when thread exits
+        writer_conn.close()
+
+    def _write_to_db(self, conn: sqlite3.Connection, properties: Dict[str, Any]):
+        """Internal write logic using the specific writer connection."""
+        insert_sql = """
+            INSERT OR IGNORE INTO molecules (
+                canon_smiles, smarts_filter, conjugation_filter, flatness,
+                normalized_csm, similarity, steric_hindrance, selfies
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        # Safe casting
+        try:
+            data_tuple = (
+                properties["canon_smiles"],
+                int(properties["smarts_filter"]),
+                int(properties["conjugation_filter"]),
+                properties["flatness"],
+                properties["normalized_csm"],
+                properties["similarity"],
+                int(properties["steric_hindrance"]),
+                properties["selfies"],
+            )
+
+            with conn:
+                conn.execute(insert_sql, data_tuple)
+
+        except sqlite3.Error as e:
+            print(f"Writer thread DB error for {properties.get('canon_smiles', 'UNKNOWN')}: {e}")
+        except KeyError as e:
+            print(f"Missing key in properties dict during write: {e}")
+
+    def add_molecule(self, **properties):
+        """
+        Public API: Non-blocking add. Puts data into the queue.
+        """
+        self.write_queue.put(properties)
 
     def get_molecule_properties(self, canon_smiles: str) -> Optional[Dict[str, Any]]:
         """
-        Looks up a molecule by its canonical SMILES and returns all its properties.
-
-        :param canon_smiles: The canonical SMILES string of the molecule to find.
-        :return: A dictionary of the molecule's properties if found, otherwise None.
+        Robustly fetch molecule properties, handling potential concurrency noise.
         """
-        if not self.connection:
+        if not self.reader_connection:
             print("Error: No active database connection.")
             return None
 
         result_tuple = None
         column_names = []
 
-        # Retry loop to handle "Cursor needed to be reset" errors
+        # Retry loop to handle transient DB lock/state issues
         max_retries = 3
+
         for attempt in range(max_retries):
             cursor = None
             try:
-                cursor = self.connection.cursor()
+                # Always create a fresh cursor
+                cursor = self.reader_connection.cursor()
                 cursor.execute("SELECT * FROM molecules WHERE canon_smiles = ?", (canon_smiles,))
                 result_tuple = cursor.fetchone()
 
-                # If found, grab column names immediately while cursor is valid
                 if result_tuple:
                     column_names = [description[0] for description in cursor.description]
 
-                # Success - break the retry loop
+                # Success, exit retry loop
                 break
+
+            except sqlite3.OperationalError:
+                # "Database is locked" - wait a bit and retry
+                time.sleep(0.05 * (attempt + 1))
             except sqlite3.InterfaceError:
+                # "Cursor needed to be reset" - logic flow issue, usually fixed by fresh cursor
                 if attempt == max_retries - 1:
-                    print(f"Warning: Failed to fetch properties for {canon_smiles} after retries.")
-                    return None
+                    print(f"Warning: DB InterfaceError for {canon_smiles} after retries.")
             except Exception as e:
-                print(f"Database error for {canon_smiles}: {e}")
+                print(f"Unexpected DB error for {canon_smiles}: {e}")
                 return None
             finally:
+                # CRITICAL: Always close the cursor
                 if cursor:
                     cursor.close()
 
+        # Parse result
         if result_tuple:
             properties = dict(zip(column_names, result_tuple))
 
+            # Convert integers back to booleans
             bool_columns = ["smarts_filter", "conjugation_filter", "steric_hindrance"]
             for col in bool_columns:
                 if col in properties:
                     properties[col] = bool(properties[col])
             return properties
-        else:
-            # Molecule not found in the database
-            return None
+
+        return None
 
     def backup_db(self):
-        """
-        Creates a backup of the current database file.
-        The backup is named 'backup_<YYYY-MM-DD>_<original_name>.db'
-        and saved in the same directory.
-        """
-        if not self.connection:
+        """Creates a backup using the reader connection."""
+        if not self.reader_connection:
             print("Error: No active connection to back up.")
             return
 
         today = datetime.date.today().strftime("%Y-%m-%d")
         db_dir, db_filename = os.path.split(self.db_path)
+        # Handle case where db_path is just a filename
+        if not db_dir:
+            db_dir = "."
+
         backup_filename = f"backup_{today}_{db_filename}"
         backup_path = os.path.join(db_dir, backup_filename)
 
@@ -214,58 +197,35 @@ class MoleculeDB:
         try:
             backup_conn = sqlite3.connect(backup_path)
             with backup_conn:
-                self.connection.backup(backup_conn)
+                self.reader_connection.backup(backup_conn)
             backup_conn.close()
             print("Backup completed successfully.")
         except sqlite3.Error as e:
             print(f"Backup failed: {e}")
 
+    def close(self):
+        """Gracefully shut down."""
+        print("Closing database: waiting for writer queue to empty...")
+        # 1. Wait for pending writes
+        self.write_queue.join()
+
+        # 2. Signal thread to stop
+        self.write_queue.put(None)
+        self.writer_thread.join()
+
+        # 3. Close reader connection
+        if self.reader_connection:
+            self.reader_connection.close()
+            self.reader_connection = None
+            print("Database connection closed.")
+
     def __enter__(self):
-        """Enter the runtime context related to this object."""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Exit the runtime context and ensure the connection is closed."""
         self.close()
 
-
-# --- Example Usage ---
-if __name__ == "__main__":
-    DB_FILE = "molecules_example.db"
-
-    # Instantiate the database object once, outside your main loop
-    db = MoleculeDB(DB_FILE)
-    print(f"Database '{DB_FILE}' initialized.")
-
-    # --- Population Step (done once) ---
-    db.add_molecule(canon_smiles="CCO", smarts_filter=True, conjugation_filter=False, flatness=0.98, normalized_csm=1.2, similarity=0.85, steric_hindrance=False, selfies="[C][C][O]")
-    db.add_molecule(canon_smiles="c1ccccc1", smarts_filter=True, conjugation_filter=True, flatness=1.0, normalized_csm=0.5, similarity=0.9, steric_hindrance=False, selfies="[c][c][c][c][c][c]")
-
-    # --- Fast Lookup Step (done many times in your RL loop) ---
-    print("\n--- Performing Lookups ---")
-
-    # Case 1: Molecule exists
-    mol_smiles_1 = "CCO"
-    properties_1 = db.get_molecule_properties(mol_smiles_1)
-    if properties_1:
-        print(f"Found properties for '{mol_smiles_1}':")
-        print(properties_1)
-        assert properties_1["smarts_filter"] is True  # Note: The value is a proper boolean
-    else:
-        print(f"Molecule '{mol_smiles_1}' not found.")
-
-    print("-" * 20)
-
-    # Case 2: Molecule does not exist
-    mol_smiles_2 = "C(F)(F)(F)C"
-    properties_2 = db.get_molecule_properties(mol_smiles_2)
-    if properties_2:
-        print(f"Found properties for '{mol_smiles_2}':")
-        print(properties_2)
-    else:
-        print(f"Molecule '{mol_smiles_2}' not found. (As expected)")
-
-    # --- Backup and Close ---
-    print("\n--- Backing up and closing ---")
-    db.backup_db()
-    db.close()  # Explicitly close when not using a 'with' statement```
+    # For backward compatibility if 'connection' attribute was accessed directly
+    @property
+    def connection(self):
+        return self.reader_connection
