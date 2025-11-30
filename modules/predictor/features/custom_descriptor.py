@@ -12,12 +12,12 @@ from modules.predictor.features.feature_factory import FeatureFactory
 
 
 @FeatureFactory.register("descriptor")
-def descriptor() -> object:
+def descriptor(all_features: bool = False) -> object:
     """
     Generate custom molecular descriptors.
     :return: CustomDescriptor object.
     """
-    return CustomDescriptor()
+    return CustomDescriptor(all_features=all_features)
 
 
 class CustomDescriptor:
@@ -37,7 +37,7 @@ class CustomDescriptor:
             Get feature names for custom descriptors.
     """
 
-    def __init__(self):
+    def __init__(self, all_features: bool = False):
         self.csm_runner = CSMRunner()
 
         self.desc = {
@@ -52,11 +52,14 @@ class CustomDescriptor:
             "o%": partial(self.calculate_percentage, idx=8),
             "n%": partial(self.calculate_percentage, idx=7),
             "c%": partial(self.calculate_percentage, idx=6),
-            "flatness": get_flatness_mol,
-            "symmetry_c2": partial(self.calculate_symmetry, point_group=["c2"]),
-            "symmetry_c3": partial(self.calculate_symmetry, point_group=["c3"]),
-            "symmetry_c4": partial(self.calculate_symmetry, point_group=["c4"]),
         }
+        if all_features:
+            self.desc.update(
+                {
+                    "flatness": get_flatness_mol,
+                    # "symmetry": partial(self.calculate_symmetry, point_group=["c2", "c3", "c4"]),
+                }
+            )
 
     @staticmethod
     def calculate_percentage(mol: Chem.Mol, idx: int) -> float:

@@ -9,7 +9,6 @@ from modules.predictor.features.custom_descriptor import *
 from modules.predictor.features.custom_patterns import *
 from modules.predictor.features.feature_factory import *
 from modules.predictor.features.fingerprints import *
-from modules.predictor.features.selfies import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data_path", type=str, required=True, help="Path to the input data file - raw dataset")

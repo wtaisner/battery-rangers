@@ -1,5 +1,5 @@
-save_dir: '../../../results/cof_rth_0.99_0.9/'
-datasets_dir: '../../../data/predictor/cof/rth_0.99_0.9'
+save_dir: '../../../results/ctf_rth_1.0/'
+datasets_dir: '../../../data/predictor/ctf/rth_1.0/'
 dataset_params:
   num_folds: 10
   num_bins: 5
@@ -11,13 +11,13 @@ models: [
   'lasso',
   'quantile',
   'bayes',
-    'mlp',
+  'mlp',
   'tabpfn',
   'chemprop'
 ]
 chemprop_params:
   chemprop_model_path: '../training_and_evaluation/foundation_models/chemeleon_mp.pt'
-  chemprop_dataset_path: '../../../data/predictor/cof/data_substrate_cofs.csv'
+  chemprop_dataset_path: '../../../data/predictor/ctf/data_substrate_ctfs.csv'
 metrics: [
   'pairwise_accuracy_score',
   'ndcg_score',

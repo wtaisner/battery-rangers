@@ -1,23 +1,23 @@
-save_dir: '../../../results/ctf_rth_0.99/'
-datasets_dir: '../../../data/predictor/ctf/rth_0.99'
+save_dir: '../../../results/cof_rth_0.99/'
+datasets_dir: '../../../data/predictor/cof/rth_0.99/'
 dataset_params:
   num_folds: 10
-  num_bins: 5
-  num_bins_hyperparam_opt: 5
+  num_bins: 10
+  num_bins_hyperparam_opt: 10
 models: [
-#  'knn',
-#  'xgboost',
-#  'random_forest',
-#  'lasso',
-#  'quantile',
-#  'bayes',
-    'mlp',
-#  'tabpfn',
-#  'chemprop'
+  'knn',
+  'xgboost',
+  'random_forest',
+  'lasso',
+  'quantile',
+  'bayes',
+  'mlp',
+  'tabpfn',
+  'chemprop'
 ]
 chemprop_params:
   chemprop_model_path: '../training_and_evaluation/foundation_models/chemeleon_mp.pt'
-  chemprop_dataset_path: '../../../data/predictor/ctf/data_substrate_ctfs.csv'
+  chemprop_dataset_path: '../../../data/predictor/cof/data_substrate_cofs.csv'
 metrics: [
   'pairwise_accuracy_score',
   'ndcg_score',

@@ -98,7 +98,7 @@ if __name__ == "__main__":
                 folds = custom_data_kfold_ctf_cof(X, y, cof_types, num_splits=num_folds, num_bins=num_bins, random_state=42)
 
                 save_dir = os.path.join(results_dir, model, d_name)
-                print(model, save_dir)
+                print(d_name, model, save_dir)
                 os.makedirs(save_dir, exist_ok=True)
                 if os.path.exists(os.path.join(save_dir, "aggregated_results.txt")):
                     continue

@@ -51,7 +51,7 @@ class FeatureFactory:
                 raise ValueError(f"Feature function '{name}' is not defined.")
             fp = self._features[name](**kwargs[name])
             fps = fp.fit_transform(smiles)
-            if name in ["descriptor", "custom_pattern", "one_hot_selfies"]:
+            if name in ["descriptor", "custom_pattern"]:
                 fps_names = fp.get_feature_names_out()
                 feature_types = fp.get_feature_types()
             else:

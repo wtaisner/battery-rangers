@@ -69,7 +69,7 @@ def _get_xgboost() -> tuple:
     """
     xgb = XGBRegressor(random_state=42, n_jobs=-1)
     xgb_params = {
-        "n_estimators": (5, 100),
+        "n_estimators": list(range(5, 101, 5)),
         "learning_rate": [0.05, 0.10, 0.15],
         "max_depth": list(range(5, 16)) + [None],
         "min_child_weight": [3, 5, 7],
@@ -86,7 +86,7 @@ def _get_rf() -> tuple:
     """
     rf = RandomForestRegressor(random_state=42, n_jobs=-1)
     rf_params = {
-        "n_estimators": (5, 100),
+        "n_estimators": list(range(5, 101, 5)),
         "max_depth": list(range(5, 16)) + [None],
         "min_samples_split": (2, 5),
         "min_samples_leaf": (1, 5),
@@ -124,7 +124,7 @@ def _get_bayes() -> tuple:
     :return:
     """
     bayes = BayesianRidge()
-    bayes_params = {}
+    bayes_params = {"alpha_1": [1e-6, 1e-5, 1e-4], "alpha_2": [1e-6, 1e-5, 1e-4], "lambda_1": [1e-6, 1e-5, 1e-4], "lambda_2": [1e-6, 1e-5, 1e-4]}
     return bayes, bayes_params, "Bayesian Ridge Regressor", "coefficients"
 
 

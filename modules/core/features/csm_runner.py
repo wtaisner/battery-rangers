@@ -185,8 +185,7 @@ class CSMRunner:
         input_filename = f"{uuid.uuid4().hex}.sdf"
         host_input_path = os.path.join(self.host_data_dir, input_filename)
 
-        # add increased values for CSM (thus node molecules)
-        molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=100, num_conformers=1000, filename=host_input_path)
+        molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=50, num_conformers=100, filename=host_input_path)
 
         if molecule is None:
             return None

@@ -53,7 +53,7 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
         model_params = []
 
         for i, fold in enumerate(self.folds):
-            model = TunedTabPFNRegressor(random_state=42, n_validation_size=0.3, device="cuda", n_trials=500, search_space=custom_space, metric="rmse")
+            model = TunedTabPFNRegressor(random_state=42, n_validation_size=0.3, device="cuda", n_trials=100, search_space=custom_space, metric="rmse")
 
             train_idx, test_idx = fold
 
@@ -109,6 +109,10 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
         :param X_train: train data.
         :return: tuple with method and SHAP values.
         """
+        found_ecfp = [1 for col in X_test.columns if "ecfp" in col]
+        found_bcut = [1 for col in X_test.columns if "bcut" in col]
+        if len(found_ecfp) > 0 or len(found_bcut) > 0:
+            return method, []
         check_explainer = shap.Explainer(model.predict, X_test.to_numpy())
         if isinstance(check_explainer, shap.ExactExplainer):
             shap_values = interpretability.shap.get_shap_values(

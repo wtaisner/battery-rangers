@@ -74,24 +74,24 @@ def ndcg_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     :param y_pred: Predictions.
     :return: Normalized discounted cumulative gain.
     """
-    y_true_rank = (
-        pd.DataFrame(y_true, columns=["target"])
-        .rank(ascending=True)
-        .to_numpy()
-        .reshape(
-            -1,
-        )
-    )
-    y_pred_rank = (
-        pd.DataFrame(y_pred, columns=["target"])
-        .rank(ascending=True)
-        .to_numpy()
-        .reshape(
-            -1,
-        )
-    )
+    # y_true_rank = (
+    #     pd.DataFrame(y_true, columns=["target"])
+    #     .rank(ascending=True)
+    #     .to_numpy()
+    #     .reshape(
+    #         -1,
+    #     )
+    # )
+    # y_pred_rank = (
+    #     pd.DataFrame(y_pred, columns=["target"])
+    #     .rank(ascending=True)
+    #     .to_numpy()
+    #     .reshape(
+    #         -1,
+    #     )
+    # )
 
-    return sklearn.metrics.ndcg_score([y_true_rank], [y_pred_rank])
+    return sklearn.metrics.ndcg_score([y_true], [y_pred])
 
 
 @EvalMetrics.register("rmse")
