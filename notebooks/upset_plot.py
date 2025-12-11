@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.4"
+__generated_with = "0.18.0"
 app = marimo.App(width="full")
 
 
@@ -20,6 +20,7 @@ def _():
     import wandb
 
     warnings.filterwarnings("ignore")
+    warnings.simplefilter(action="ignore", category=FutureWarning)
     return json, os, pd, plot, plt, wandb
 
 
@@ -92,7 +93,7 @@ def _(json, os, pd, wandb):
 @app.cell
 def _(download_wandb_table, plot, plt):
     runs_to_plot = [
-        "witold_taisner/molecule-generation/bky4y8eb",
+        "witold_taisner/molecule-generation/15o3nk8o",
     ]
 
     for run in runs_to_plot:

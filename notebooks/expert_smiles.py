@@ -1,12 +1,13 @@
 import marimo
 
-__generated_with = "0.17.4"
+__generated_with = "0.18.0"
 app = marimo.App(width="full", sql_output="pandas")
 
 
 @app.cell
 def _():
     import math
+    import sys
 
     import lets_plot as lp
     import marimo as mo
@@ -19,12 +20,22 @@ def _():
 
     logger = RDLogger.logger()
     logger.setLevel(RDLogger.CRITICAL)
-    return Chem, math, mo, np, pd, plt, sf, train_test_split
+    return Chem, math, mo, np, pd, plt, sf, sys, train_test_split
+
+
+@app.cell
+def _(sys):
+    sys.path.append("../")
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# 15.09.2025 - data reading / parsing""")
+    mo.md(
+        r"""
+    # 15.09.2025 - data reading / parsing
+    """
+    )
     return
 
 
@@ -108,7 +119,11 @@ def _(df):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Train-Test Split | SELFIES encoding""")
+    mo.md(
+        r"""
+    # Train-Test Split | SELFIES encoding
+    """
+    )
     return
 
 
@@ -157,7 +172,11 @@ def _(df, train_test_split):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## SMARTS - CTF filtering""")
+    mo.md(
+        r"""
+    ## SMARTS - CTF filtering
+    """
+    )
     return
 
 
@@ -217,7 +236,11 @@ def _(ctfs, train_test_split):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Filters""")
+    mo.md(
+        r"""
+    # Filters
+    """
+    )
     return
 
 
@@ -228,9 +251,24 @@ def _(pd):
     return (working_df,)
 
 
+@app.cell
+def _(Chem, working_df):
+    # compute mean number of atoms for substrates and nodes
+    working_df["molecule_substrate"] = working_df["smiles_substrate"].apply(Chem.MolFromSmiles)
+    working_df["molecule_node"] = working_df["smiles_node"].apply(Chem.MolFromSmiles)
+    mean_atoms_substrate = working_df["molecule_substrate"].apply(lambda x: x.GetNumAtoms() if x is not None else 0).mean()
+    mean_atoms_node = working_df["molecule_node"].apply(lambda x: x.GetNumAtoms() if x is not None else 0).mean()
+    mean_atoms_substrate, mean_atoms_node
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Flatness""")
+    mo.md(
+        r"""
+    ## Flatness
+    """
+    )
     return
 
 
@@ -282,7 +320,11 @@ def _(flatness_node, flatness_substrate, plot_flatness):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Conjugation & steric hindrance""")
+    mo.md(
+        r"""
+    ## Conjugation & steric hindrance
+    """
+    )
     return
 
 
@@ -329,7 +371,11 @@ def _(working_df):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Symmetry (CSM)""")
+    mo.md(
+        r"""
+    ## Symmetry (CSM)
+    """
+    )
     return
 
 
@@ -398,7 +444,11 @@ def _(plt, scores):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Summary""")
+    mo.md(
+        r"""
+    ## Summary
+    """
+    )
     return
 
 
@@ -427,7 +477,11 @@ def _(df, plt):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Property evaluator""")
+    mo.md(
+        r"""
+    ## Property evaluator
+    """
+    )
     return
 
 
