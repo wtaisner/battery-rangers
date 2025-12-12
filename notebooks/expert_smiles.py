@@ -182,20 +182,43 @@ def _(mo):
 
 @app.cell
 def _():
-    from modules.core.filters.smarts_filter import Rule, SMARTSFilter
+    import os
 
-    smarts_filter = SMARTSFilter(rules=[Rule(["C#N"], 2)])
-    return (smarts_filter,)
+    os.getcwd()
+    return
 
 
 @app.cell
-def _(df, smarts_filter):
+def _(Chem, pd):
+    from modules.core.filters.smarts_filter import InclusionRule, SMARTSFilter
+
+    ctf_filter = SMARTSFilter(rules=[InclusionRule(["C#N"], 2)])
+    smarts_filter = SMARTSFilter()
+
+    data = pd.read_excel("data/ctfy-wygenerowane-capacity-20-11-2025_with_filters.xlsx")
+
+    # check how many columns from last three have "no" in all three
+    last_three = data.columns[-3:]
+    data["all_no"] = data[last_three].apply(lambda x: all(v == "no" for v in x), axis=1)
+    print(data["all_no"].value_counts())
+
+    data["passed_smarts"] = data["smiles"].apply(lambda x: smarts_filter.apply([Chem.MolFromSmiles(x)]))
+
+    # count non empty passed_smarts
+    data["passed_smarts_count"] = data["passed_smarts"].apply(lambda x: len(x) if x is not None else 0)
+    data["passed_smarts_bool"] = data["passed_smarts_count"] > 0
+    data["passed_smarts_bool"].value_counts()
+    return (ctf_filter,)
+
+
+@app.cell
+def _(ctf_filter, df):
     print(f"Total molecules: {len(df)}")
-    filtered = smarts_filter.apply(df["molecule_substrate"])
+    filtered = ctf_filter.apply(df["molecule_substrate"])
     print(f"CTF only: {len(filtered)}")
 
     for idx, mol in enumerate(df["molecule_substrate"]):
-        filtered = smarts_filter.apply([mol])
+        filtered = ctf_filter.apply([mol])
         if not filtered:
             df.at[idx, "CTF"] = False
         else:

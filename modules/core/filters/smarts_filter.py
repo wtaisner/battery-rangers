@@ -1,4 +1,4 @@
-"""Filter that leaves molecules with certain substructures present at the "end" of the molecule."""
+"""A filter that matches SMARTS patterns with inclusion and exclusion rules and given cardinality."""
 from dataclasses import dataclass
 
 from rdkit import Chem
@@ -8,14 +8,38 @@ from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 @dataclass(frozen=True)
-class Rule:
+class InclusionRule:
     """
-    A molecule matches this rule if it contains at least `min_cardinality`
-    substructure matches for EVERY SMARTS pattern in the `smarts_patterns` tuple.
+    Positive Rule: A molecule is APPROVED if it matches this pattern with specific cardinality.
+
+    Args:
+        smarts_pattern (str): The SMARTS pattern to look for.
+        min_cardinality (int): The molecule is approved if the pattern
+                               appears AT LEAST this number of times.
     """
 
-    smarts_patterns: list[str]  # List of SMARTS patterns to match
+    smarts_pattern: str
     min_cardinality: int = 2
+
+
+@dataclass(frozen=True)
+class ExclusionRule:
+    """
+    Negative Rule: A molecule is DISCARDED if it matches these patterns.
+
+    Args:
+        smarts_pattern (str): The SMARTS pattern to look for.
+        max_cardinality (int): The molecule is discarded if the pattern
+                               appears MORE than this number of times.
+                               Set to 0 to discard if present at all.
+        penalty_sensitivity (float): Used for RL scoring. Controls how sharply the
+                                     reward drops when the rule is violated.
+                                     Default 1.0. Higher = steeper penalty.
+    """
+
+    smarts_pattern: str
+    max_cardinality: int = 0
+    penalty_sensitivity: float = 1.0
 
 
 class SMARTSFilter(GenericMoleculeFilter):
@@ -27,39 +51,52 @@ class SMARTSFilter(GenericMoleculeFilter):
     matches for EVERY SMARTS pattern defined within that rule.
 
     Args:
-        rules (list[Rule] | None): A list of Rule objects to filter by.
+        inclusion_rules (list[InclusionRule] | None): A list of Rule objects to filter by.
             If None, defaults to a simple list where each original SMARTS
             pattern must be present at least once.
+        exclusion_rules (list[ExclusionRule] | None): A list of ExclusionRule objects.
+            If a molecule matches any of these exclusion rules, it is discarded.
     """
 
-    def __init__(self, rules: list[Rule] | None = None):
-        if rules is None:
-            self.rules = [
-                Rule(["C#N"], 2),
-                # Rule(["[NH2]", "Br"], 1),
-                # Rule(["[NH2]", "Cl"], 1),
-                # Rule(["Cl"], 2),  # TODO: should be depended on the number of symmetry axes - i.e. 2 for 1 and 3 for 3
-                # Rule(["Br"], 2),  # TODO: as above
-                # Rule(["[CH]=O", "[NH2]"], 1),
-                # Rule(["[NH2]", "c1nccc1"], 2),
-                # Rule(["[NH2]", "[#6](-c)-[#7r6]-[#6](-c)"], 2),
-                # Rule(["[OH]", "O1-B-O-c:c1"], 1),
-                # Rule(["[#6]=[#8]", "[#7]1~[#6]~[#6]~[#7]~[#6]~[#6]~1"], 1),
+    def __init__(self, inclusion_rules: list[InclusionRule] | None = None, exclusion_rules: list[ExclusionRule] | None = None):
+        if inclusion_rules is None:
+            self.inclusion_rules = [
+                # Function 1: CTF pattern
+                InclusionRule("C#N", 2),
             ]
-
         else:
-            self.rules = rules
+            self.inclusion_rules = inclusion_rules
 
-        self._compiled_rules = []
-        for rule in self.rules:
-            compiled_patterns = tuple(Chem.MolFromSmarts(s) for s in rule.smarts_patterns)
+        if exclusion_rules is None:
+            self.exclusion_rules = [
+                # Function 1: has_rings_less_than_5_atoms
+                ExclusionRule(smarts_pattern="[r3,r4]", max_cardinality=0),
+                # Function 2: has_multiple_triple_C_C_bonds
+                ExclusionRule(smarts_pattern="[#6]#[#6]", max_cardinality=1),
+                # Function 3: has_N_N_bond
+                ExclusionRule(smarts_pattern="[#7]~[#7]", max_cardinality=0),
+            ]
+        else:
+            self.exclusion_rules = exclusion_rules
 
-            # Check for invalid SMARTS
-            if not all(compiled_patterns):
-                invalid_smarts = [s for s, p in zip(rule.smarts_patterns, compiled_patterns) if p is None]
-                raise ValueError(f"Invalid SMARTS pattern(s) found: {invalid_smarts}")
+        self._compiled_inclusion_rules = []
+        for rule in self.inclusion_rules:
+            pattern = Chem.MolFromSmarts(rule.smarts_pattern)
 
-            self._compiled_rules.append((compiled_patterns, rule.min_cardinality))
+            if pattern is None:
+                raise ValueError(f"Invalid inclusion SMARTS pattern: {rule.smarts_pattern}")
+
+            self._compiled_inclusion_rules.append((pattern, rule.min_cardinality))
+
+        # Storing (pattern_object, max_cardinality, penalty_sensitivity)
+        self._compiled_exclusion_rules = []
+        for rule in self.exclusion_rules:
+            pattern = Chem.MolFromSmarts(rule.smarts_pattern)
+
+            if pattern is None:
+                raise ValueError(f"Invalid exclusion SMARTS pattern: {rule.smarts_pattern}")
+
+            self._compiled_exclusion_rules.append((pattern, rule.max_cardinality, rule.penalty_sensitivity))
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
@@ -74,11 +111,11 @@ class SMARTSFilter(GenericMoleculeFilter):
 
     def check_smarts(self, mol: Chem.Mol) -> bool:
         """
-        Check if the molecule satisfies any of the defined rules.
+        Binary check: Does the molecule pass the filter?
 
-        A molecule passes if it satisfies at least one rule.
-        A rule is satisfied if all of its SMARTS patterns meet the minimum
-        cardinality requirement.
+        Passes if:
+        1. It does NOT violate any ExclusionRule.
+        2. It satisfies **ALL** InclusionRules.
 
         Args:
             mol (Chem.Mol): The molecule to evaluate.
@@ -88,25 +125,68 @@ class SMARTSFilter(GenericMoleculeFilter):
         if mol is None:
             return False
 
-        for idx, (compiled_patterns, min_cardinality) in enumerate(self._compiled_rules):
-            rule_is_satisfied = True
+        # 1. Check Exclusions (Fail fast)
+        for pattern, max_cardinality, _ in self._compiled_exclusion_rules:
+            matches = mol.GetSubstructMatches(pattern)
+            if len(matches) > max_cardinality:
+                return False
 
-            for pattern in compiled_patterns:
-                # Get the number of non-overlapping matches
-                num_matches = len(mol.GetSubstructMatches(pattern))
+        # 2. Check Inclusions (Must satisfy ALL rules)
+        for pattern, min_cardinality in self._compiled_inclusion_rules:
+            num_matches = len(mol.GetSubstructMatches(pattern))
+            if num_matches < min_cardinality:
+                return False
 
-                # If this pattern does not meet the minimum count, the rule fails.
-                if num_matches < min_cardinality:
-                    rule_is_satisfied = False
-                    break  # Exit the inner loop and check the next rule.
+        return True
 
-            # If the inner loop completed without being broken, the rule is satisfied.
-            if rule_is_satisfied:
-                return True  # The molecule passed the filter.
+    def get_reward(self, mol: Chem.Mol) -> float:
+        """
+        Calculates a continuous score (0.0 to 1.0) for RL.
 
-        # If we've checked all rules and none were satisfied, the molecule fails.
-        # print(f" {Chem.MolToSmiles(mol)} did not satisfy any rules.")
-        return False
+        - 1.0: Perfect match (passes binary filter).
+        - < 1.0: Partial match or contains forbidden structures.
+
+        Scoring Logic:
+        - Exclusions: Score = 1 / (1 + (excess_count * sensitivity))
+        - Inclusions: Score = min(1.0, count / target)
+        - Final: Arithmetic mean of all rule scores.
+
+        Args:
+            mol (Chem.Mol): The molecule to evaluate.
+        Returns:
+            float: A score between 0.0 and 1.0.
+        """
+        if mol is None:
+            return 0.0
+
+        scores = []
+
+        # --- 1. Score Exclusions (Hyperbolic Decay) ---
+        for pattern, max_allowed, sensitivity in self._compiled_exclusion_rules:
+            count = len(mol.GetSubstructMatches(pattern))
+            if count <= max_allowed:
+                scores.append(1.0)
+            else:
+                excess = count - max_allowed
+                # Decay score based on how much we exceeded the limit
+                score = 1.0 / (1.0 + (excess * sensitivity))
+                scores.append(score)
+
+        # --- 2. Score Inclusions (Linear Ramp) ---
+        for pattern, min_required in self._compiled_inclusion_rules:
+            count = len(mol.GetSubstructMatches(pattern))
+            if count >= min_required:
+                scores.append(1.0)
+            else:
+                # Partial credit: e.g., found 1 but needed 2 -> 0.5
+                scores.append(count / float(min_required))
+
+        # --- 3. Final Aggregation ---
+        if not scores:
+            return 0.0
+
+        # Return average of all component scores
+        return sum(scores) / len(scores)
 
     def filter_from_property(self, properties: dict) -> bool:
         """

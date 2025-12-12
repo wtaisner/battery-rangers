@@ -7,67 +7,113 @@ from rdkit.Chem import Mol
 
 from modules.core.features.utils import compute_conformer
 from modules.core.filters.generic_filter import GenericMoleculeFilter
+from modules.generation.utils import score_value_exponential
 
 
 class StericHindranceFilter(GenericMoleculeFilter):
     """
     Filter that leaves molecules without steric hindrance between nitrile groups.
-    This version replicates the user's method of generating a fresh 3D
-    conformation and checking it without optimization.
+
+    Functionality:
+    1. Binary Filter: Discards molecules if any pair of nitrile nitrogens is closer than `distance_threshold`.
+    2. Continuous Reward: Uses `score_value_exponential` to penalize violations.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        distance_threshold: float = 4.1,
+    ):
         """
-        Initialize the filter by compiling the SMARTS pattern once.
+        Args:
+            distance_threshold (float): The minimum allowed distance (Angstroms).
+                                        This maps to `min_val` in scoring.
         """
         self.nitrile_pattern = Chem.MolFromSmarts("N~*")
+        self.distance_threshold = distance_threshold
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Apply the filter to a list of RDKIT molecules.
-
-        Args:
-            molecules (list[Mol]): The list of RDKIT molecules to filter.
-        Returns:
-            list[Mol]: The list of RDKIT molecules that passed the filter.
+        Apply the binary filter to a list of RDKit molecules.
         """
-        no_steric_hindrance_molecules = []
-        distance_threshold = 4.1  # Angstroms
+        return [mol for mol in molecules if self.check_steric_hindrance(mol)]
 
-        for original_mol in molecules:
-            # Find nitrile groups first to avoid unnecessary 3D generation.
-            matches = original_mol.GetSubstructMatches(self.nitrile_pattern)
+    def check_steric_hindrance(self, mol: Mol) -> bool:
+        """
+        Binary check: Returns True if the molecule passes (NO steric hindrance).
+        Returns False if atoms are too close.
+        """
+        min_dist = self._get_min_nitrile_distance(mol)
+
+        if min_dist is None:
+            # Passes if there are < 2 nitriles.
+            # Fails if conformer generation broke (depending on policy, usually fail).
+            matches = mol.GetSubstructMatches(self.nitrile_pattern)
+            return len(matches) < 2
+
+        # Binary strict check
+        return min_dist >= self.distance_threshold
+
+    def get_reward(self, mol: Mol) -> float:
+        """
+        Calculates a continuous score (0.0 to 1.0) for RL using `score_value_exponential`.
+        """
+        if mol is None:
+            return 0.0
+
+        min_dist = self._get_min_nitrile_distance(mol)
+
+        # Case 1: Less than 2 nitriles -> No hindrance possible -> Perfect score
+        if min_dist is None:
+            matches = mol.GetSubstructMatches(self.nitrile_pattern)
             if len(matches) < 2:
-                no_steric_hindrance_molecules.append(original_mol)
-                continue
+                return 1.0
+            # Case 2: Conformer generation failed -> Zero score
+            return 0.0
 
-            if original_mol.GetNumConformers() == 0:
-                original_mol = compute_conformer(original_mol)
+        # Case 3: Calculate Score
+        # We define the "optimal range" as [4.1, infinity]
+        # Any distance < 4.1 triggers the exponential decay in the helper function.
+        return score_value_exponential(value=min_dist, min_val=self.distance_threshold, max_val=np.inf)  # e.g., 4.1
 
-            if original_mol is None or original_mol.GetNumConformers() == 0:  # No conformer generated
-                continue
+    def _get_min_nitrile_distance(self, mol: Mol) -> float | None:
+        """
+        Helper: Generates 3D conformer and finds the minimum distance between any two nitrile nitrogens.
+        Returns None if < 2 nitriles or conformer generation fails.
+        """
+        matches = mol.GetSubstructMatches(self.nitrile_pattern)
+        if len(matches) < 2:
+            return None
 
-            nitrogen_indices = [match[0] for match in matches]
+        # Check for existing conformer, else compute one
+        if mol.GetNumConformers() == 0:
+            mol_3d = compute_conformer(mol)
+            if mol_3d is None or mol_3d.GetNumConformers() == 0:
+                return None
+            conformer = mol_3d.GetConformer(0)
+        else:
+            conformer = mol.GetConformer(0)
 
-            conformer = original_mol.GetConformer(0)
-            # Check distances between all pairs of nitrile nitrogen atoms
-            is_hindered = False
-            for idx1, idx2 in combinations(nitrogen_indices, 2):
-                pos1 = np.array(conformer.GetAtomPosition(idx1))
-                pos2 = np.array(conformer.GetAtomPosition(idx2))
-                distance = np.linalg.norm(pos1 - pos2)
+        nitrogen_indices = [match[0] for match in matches]
 
-                if distance < distance_threshold:
-                    is_hindered = True
-                    break
+        min_distance = float("inf")
+        found_pair = False
 
-            if not is_hindered:
-                no_steric_hindrance_molecules.append(original_mol)
+        # Check all pairs to find the "worst case" (closest) distance
+        for idx1, idx2 in combinations(nitrogen_indices, 2):
+            pos1 = np.array(conformer.GetAtomPosition(idx1))
+            pos2 = np.array(conformer.GetAtomPosition(idx2))
+            dist = np.linalg.norm(pos1 - pos2)
 
-        return no_steric_hindrance_molecules
+            if dist < min_distance:
+                min_distance = dist
+            found_pair = True
+
+        return min_distance if found_pair else None
 
     def filter_from_property(self, properties: dict) -> bool:
         """
         Reads properties from a dictionary (database) and decides whether to filter the molecule.
         """
-        return properties.get("steric_hindrance", False)  # Default to filtering out if property is missing
+        # Logic: If 'steric_hindrance' is True, we filter it OUT.
+        # So we return False (don't keep).
+        return not properties.get("steric_hindrance", False)

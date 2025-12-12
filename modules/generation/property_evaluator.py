@@ -41,7 +41,6 @@ class PropertyEvaluator:
         csm_threshold: float = 0.2,
         flatness_threshold: float = 4.0,
         db_file: str = "modules/bionemo/data/mol_db/substrate_properties.db",
-        **kwargs,
     ):
         if molecule_type not in [MoleculeType.SUBSTRATE, MoleculeType.NODE]:
             raise ValueError(f"Invalid molecule type: {molecule_type}. Must be either MoleculeType.SUBSTRATE or MoleculeType.NODE.")
@@ -55,7 +54,7 @@ class PropertyEvaluator:
 
         # filters/estimators
         self.conjugation_filter = ConjugationFilter()
-        self.smarts_filter = SMARTSFilter(kwargs.get("smarts", None))
+        self.smarts_filter = SMARTSFilter()
         self.steric_hindrance_filter = StericHindranceFilter()
         self.csm_runner = CSMRunner(container_name=f"csm_runner_worker_{os.getpid()}")
         self.fingerprint_generator = GetMorganGenerator(radius=2)
@@ -120,9 +119,9 @@ class PropertyEvaluator:
                 "normalized_csm": self._get_raw_csm(mol),
                 "similarity": self._calculate_mean_similarity(mol) if self.reference_smiles is not None else 0.0,
                 "selfies": sf.encoder(canon_smiles),
-                "smarts_filter": len(self.smarts_filter.apply([mol])) > 0,
+                "smarts_filter": self.smarts_filter.get_reward(mol),
                 "conjugation_filter": len(self.conjugation_filter.apply([mol])) > 0,
-                "steric_hindrance": len(self.steric_hindrance_filter.apply([mol])) > 0,
+                "steric_hindrance": self.steric_hindrance_filter.get_reward(mol),
             }
 
             # 3. Write the newly calculated properties to the database (Fire and Forget)
@@ -174,12 +173,12 @@ class PropertyEvaluator:
 
         # Convert boolean filter results to scores
         conjugation_score = 1.0 if properties["conjugation_filter"] else 1e-10
-        steric_hindrance_score = 1.0 if properties["steric_hindrance"] else 1e-10
+        steric_hindrance_score = properties.get("steric_hindrance", 1e-10)
 
         similarity_score = properties["similarity"] if properties["similarity"] > 0 else 1e-10
 
         if self.molecule_type == MoleculeType.SUBSTRATE:
-            smarts_score = 1.0 if properties["smarts_filter"] else 1e-10
+            smarts_score = properties.get("smarts_filter", 1e-10)
             total_score = smarts_score + conjugation_score + flatness_score + similarity_score + steric_hindrance_score + symmetry_score
         else:  # MoleculeType.NODE
             total_score = conjugation_score + symmetry_score + flatness_score + similarity_score + steric_hindrance_score
