@@ -108,5 +108,33 @@ def _(final_df, plt, sns):
     return
 
 
+@app.cell
+def _(final_df, pd):
+    pct_metrics = ["validity", "uniqueness", "novelty_wrt_reference_set", "novelty_wrt_training_set", "percent_passing_filters", "internal_diversity"]
+
+    metric_bases = [col.replace("_mean", "") for col in final_df.columns if col.endswith("_mean") and col.replace("_mean", "_std") in final_df.columns]
+
+    metadata_cols = ["name", "tags", "molecule_type"]
+    output_df = final_df[metadata_cols].copy()
+
+    for metric in metric_bases:
+        mean_col = f"{metric}_mean"
+        std_col = f"{metric}_std"
+
+        mean_val = pd.to_numeric(final_df[mean_col], errors="coerce")
+        std_val = pd.to_numeric(final_df[std_col], errors="coerce")
+
+        if metric in pct_metrics:
+            # PERCENTAGE LOGIC:
+            output_df[metric] = (mean_val * 100).map("{:.1f}".format) + "(" + (std_val * 1000).map("{:.0f}".format) + ")"
+        else:
+            # ABSOLUTE LOGIC (FCD, #circles):
+            output_df[metric] = mean_val.map("{:.1f}".format) + "(" + (std_val * 10).map("{:.0f}".format) + ")"
+
+    output_df.drop(columns=["num_valid_molecules"], inplace=True)
+    output_df
+    return
+
+
 if __name__ == "__main__":
     app.run()

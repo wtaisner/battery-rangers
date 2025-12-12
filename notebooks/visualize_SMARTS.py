@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.13"
+__generated_with = "0.18.0"
 app = marimo.App(width="full")
 
 
@@ -107,7 +107,7 @@ def _():
 @app.cell
 def _(plot_molecule_with_smarts_highlight):
     # 29, 33, 34
-    smiles = r"C/C=C1/C(=O)C(=CNc2cccc3c(N)cccc23)C(=O)/C(=C/C)C1=O"
+    smiles = r"N#Cc1ccc(-n2cc(C#N)c(C#N)c2)cc1"
     # smiles = r"C/C=C1C(/C(C(/C(C\1=O)=C/Nc2c3cccc(N)c3ccc2)=O)=C\C)=O"
     # smiles = r"CC=c(c(=O)c(=CC)c(=O)c1=CNc2ccc(C(c3cc(N)ccc3C4=O)=O)c4c2)c1=O"
 
@@ -118,17 +118,20 @@ def _(plot_molecule_with_smarts_highlight):
     patterns = [
         # "Br",
         # "Cl",
-        "[NH2]",
+        # "[NH2]",
         # "C#N",
-        "[CH]=O",
+        # "[CH]=O",
         # "c1nccc1",
         # "[#6](-c)-[#7r6]-[#6](-c)",
         # "[OH]",
         # "O1-B-O-c:c1",
         # "[#6]=[#8]", # C=O
         # "[#7]1~[#6]~[#6]~[#7]~[#6]~[#6]~1"
-        "C=C-N"
+        # "C=C-N",
         # "s~c~n"
+        "[r3,r4]",
+        "[#6]#[#6]",
+        "[#7]~[#7]",
     ]
 
     plot_molecule_with_smarts_highlight(
