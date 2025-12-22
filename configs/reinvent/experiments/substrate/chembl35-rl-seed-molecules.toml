@@ -1,4 +1,4 @@
-name = "REINVENT_substrate_chembl35_rl_seed_molecules"
+name = "REINVENT-substrate-chembl35-rl-seed-molecules"
 molecule_type = "substrate"
 prior_type = "chembl35"
 recipe = "rl_inception"

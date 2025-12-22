@@ -1,4 +1,4 @@
-name = "REINVENT_node_vanilla_rl_inception"
+name = "REINVENT-node-vanilla-rl-seed-molecules"
 molecule_type = "node"
 prior_type = "vanilla"
 recipe = "rl_inception"
