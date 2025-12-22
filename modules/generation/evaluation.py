@@ -89,9 +89,9 @@ class MoleculeGenerationEvaluator:
 
         # --- Preprocess SMILES ---
         # This step validates and canonicalizes SMILES, preparing them for metric calculation.
-        # It stores the *count* of valid molecules before deduplication (n_generated_valid)
-        # and the *list* of unique valid canonical SMILES (valid_generated_smiles_canon).
-        self.valid_generated_mols, self.valid_generated_smiles_canon, self.n_generated_valid = self._preprocess_smiles_list(self.generated_smiles, "Generated")
+        # It stores the count of valid molecules before deduplication (n_generated_valid)
+        # and the *list* of unique valid canonical SMILES (valid_unique_generated_smiles_canon).
+        self.valid_unique_generated_mols, self.valid_unique_generated_smiles_canon, self.n_generated_valid = self._preprocess_smiles_list(self.generated_smiles, "Generated")
         self.n_generated_total: int = len(self.generated_smiles)
 
         # If training set is empty, we set valid_training_smiles_canon to an empty list
@@ -189,7 +189,7 @@ class MoleculeGenerationEvaluator:
 
             if log_examples:
                 # log num_examples random examples from generated molecules that are not in training and reference set
-                unique_valid_generated_set = set(self.valid_generated_smiles_canon)
+                unique_valid_generated_set = set(self.valid_unique_generated_smiles_canon)
                 novel_molecules_set = unique_valid_generated_set - set(self.valid_training_smiles_canon) - set(self.valid_reference_smiles_canon)
                 num_novel = len(novel_molecules_set)
 
@@ -230,7 +230,7 @@ class MoleculeGenerationEvaluator:
             Uniqueness score [0.0, 1.0]. Returns 0.0 if no valid molecules generated.
         """
         # The number of unique valid molecules is the length of the deduplicated list.
-        num_unique_valid = len(self.valid_generated_smiles_canon)
+        num_unique_valid = len(self.valid_unique_generated_smiles_canon)
 
         if self.n_generated_valid == 0:
             # logger.warning("Cannot calculate uniqueness: No valid generated molecules.")
@@ -256,7 +256,7 @@ class MoleculeGenerationEvaluator:
             logger.warning("Cannot calculate novelty: Reference set is None.")
             return np.nan  # Cannot calculate novelty without a reference set
 
-        unique_valid_generated_set = set(self.valid_generated_smiles_canon)
+        unique_valid_generated_set = set(self.valid_unique_generated_smiles_canon)
         num_unique_valid = len(unique_valid_generated_set)
 
         if num_unique_valid == 0:
@@ -291,7 +291,7 @@ class MoleculeGenerationEvaluator:
             Internal diversity score [0.0, 1.0]. Returns 0.0 if fewer than 2
             unique valid molecules exist.
         """
-        unique_valid_mols = self.valid_generated_mols
+        unique_valid_mols = self.valid_unique_generated_mols
         if len(unique_valid_mols) < 2:
             logger.warning("Cannot calculate internal diversity: requires at least 2 unique valid molecules, but found %d.", len(unique_valid_mols))
             return 0.0
@@ -355,7 +355,7 @@ class MoleculeGenerationEvaluator:
                 - int: The size of the diverse subset (#Circles metric).
                 - list: The indices of the selected diverse molecules.
         """
-        unique_valid_mols = self.valid_generated_mols
+        unique_valid_mols = self.valid_unique_generated_mols
         if not unique_valid_mols or len(unique_valid_mols) < 2:
             logger.warning("Cannot calculate internal diversity: requires at least 2 unique valid molecules, but found %d.", len(unique_valid_mols or []))
             return 0, []
@@ -408,7 +408,7 @@ class MoleculeGenerationEvaluator:
             raise ValueError("Reference SMILES are required for FCD calculation.")
 
         # Use the unique valid canonical SMILES lists derived during preprocessing
-        gen_smiles_list = self.valid_generated_smiles_canon  # Unique list
+        gen_smiles_list = self.valid_unique_generated_smiles_canon  # Unique list
         ref_smiles_list = list(self.valid_reference_smiles_canon)  # Unique list
 
         if not gen_smiles_list:
@@ -438,8 +438,8 @@ class MoleculeGenerationEvaluator:
         Returns:
             The percent of generated molecules that pass all filters.
         """
-        if self.valid_generated_smiles_canon:
-            results = self.molecule_filter.apply_against_all_filters(self.valid_generated_mols)
+        if self.valid_unique_generated_smiles_canon:
+            results = self.molecule_filter.apply_against_all_filters(self.valid_unique_generated_mols)
 
             passing_count = 0
 
@@ -454,7 +454,7 @@ class MoleculeGenerationEvaluator:
                     logger.info(f"Molecule '{smiles}' failed: {failed_filters}")
             # --- DEBUG LOGGING END ---
 
-            percent_passing_filters = passing_count / len(self.valid_generated_mols)
+            percent_passing_filters = passing_count / len(self.valid_unique_generated_mols)
             return percent_passing_filters, results
 
         return 0.0, {}

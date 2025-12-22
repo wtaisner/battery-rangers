@@ -32,7 +32,7 @@ class BatteryPropertiesSubstrate:
 
     def __init__(self, params: Parameters):
         self.known_smiles_path = params.known_smiles_path
-        self.property_evaluator = PropertyEvaluator(reference_smiles=self.known_smiles_path, molecule_type=MoleculeType.SUBSTRATE)
+        self.property_evaluator = PropertyEvaluator(molecule_type=MoleculeType.SUBSTRATE)
 
     def __call__(self, smiles: list[str]) -> ComponentResults:
         """Evaluate the properties for a given molecule.
@@ -56,7 +56,7 @@ class BatteryPropertiesNode:
 
     def __init__(self, params: Parameters):
         self.known_smiles_path = params.known_smiles_path
-        self.property_evaluator = PropertyEvaluator(reference_smiles=self.known_smiles_path, molecule_type=MoleculeType.NODE)
+        self.property_evaluator = PropertyEvaluator(molecule_type=MoleculeType.NODE)
 
     def __call__(self, smiles: list[str]) -> ComponentResults:
         """Evaluate the properties for a given molecule.

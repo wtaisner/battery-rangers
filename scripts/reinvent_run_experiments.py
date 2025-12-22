@@ -344,7 +344,8 @@ def main():
             "--reference_smiles",
             reference_smiles_path,
             "--run_name",
-            f"{exp_name}_{timestamp}",
+            # f"{exp_name}_{timestamp}",
+            f"{exp_name}",
             "--molecule_type",
             mol_type.value,
         ]

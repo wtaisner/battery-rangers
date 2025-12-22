@@ -192,4 +192,5 @@ class SMARTSFilter(GenericMoleculeFilter):
         """
         Reads properties from a dictionary (database) and decides whether to filter the molecule.
         """
-        return properties.get("smarts_filter", False)
+        smarts_score = properties.get("smarts_filter", None)
+        return smarts_score is not None and smarts_score >= 0.999  # Keep only if no smarts filter violations detected

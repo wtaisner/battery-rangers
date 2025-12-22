@@ -114,6 +114,9 @@ class StericHindranceFilter(GenericMoleculeFilter):
         """
         Reads properties from a dictionary (database) and decides whether to filter the molecule.
         """
-        # Logic: If 'steric_hindrance' is True, we filter it OUT.
-        # So we return False (don't keep).
-        return not properties.get("steric_hindrance", False)
+        # Logic: if score is 1 -> keep molecule (no steric hindrance)
+        # if score < 1 -> filter out
+
+        steric_hindrance_score = properties.get("steric_hindrance", None)
+
+        return steric_hindrance_score is not None and steric_hindrance_score >= 0.999  # Keep only if no steric hindrance detected
