@@ -175,11 +175,38 @@ if __name__ == "__main__":
                 wandb_upset_table = wandb.Table(dataframe=df_for_upset)
                 wandb.log({"upset_plot_data": wandb_upset_table})
 
-                # log upset plot to wandb
-                fig = plt.figure(figsize=(10, 6))
-                print(df_for_upset.head())
-                plot_dict = plot(df_for_upset.groupby(list(df_for_upset.columns)).size(), fig=fig)
-                wandb.log({"upset_plot": fig})
+                # --- Log UpSet Plot as Image ---
+                print("---> Generating and logging UpSet plot...")
+
+                # 1. Prepare data
+                upset_data = df_for_upset.groupby(list(df_for_upset.columns)).size()
+
+                # 2. Create Figure
+                # Increase figsize to ensure labels fit
+                fig = plt.figure(figsize=(12, 8))
+
+                # 3. Plot using the settings that worked locally for you
+                plot(
+                    upset_data,
+                    fig=fig,
+                    show_percentages=True,
+                    sort_by="cardinality",
+                    # min_subset_size="1%"
+                )
+                plt.title(f"Filter Failures: {args.run_name}")
+
+                # 4. Save to temporary PNG
+                # bbox_inches='tight' is crucial for UpSet plots to prevent clipping labels
+                temp_img_name = "temp_upset_plot.png"
+                plt.savefig(temp_img_name, dpi=300, bbox_inches="tight")
+
+                # 5. Log the image to WandB
+                wandb.log({"upset_plot": wandb.Image(temp_img_name)})
+
+                # 6. Cleanup
+                plt.close(fig)
+                if os.path.exists(temp_img_name):
+                    os.remove(temp_img_name)
 
                 wandb.finish()
                 print("---> Logging complete.")
