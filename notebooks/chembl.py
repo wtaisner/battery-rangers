@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.4"
+__generated_with = "0.18.0"
 app = marimo.App(width="full")
 
 
@@ -22,7 +22,11 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# ChEMBL35""")
+    mo.md(
+        r"""
+    # ChEMBL35
+    """
+    )
     return
 
 
@@ -130,7 +134,11 @@ def _(merged_df):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Prepare CHEMBL for machine learning tasks""")
+    mo.md(
+        r"""
+    ## Prepare CHEMBL for machine learning tasks
+    """
+    )
     return
 
 
