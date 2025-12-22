@@ -1,4 +1,4 @@
-"""Filter that removes molecules which are not conjugated.
+"""A filter that removes non-conjugated molecules.
 https://www.masterorganicchemistry.com/2017/01/24/conjugation-and-resonance/
 Za "brak sprzężenia"  (oczywiście jest to pojęcie bardzo uproszczone) w tej strukturze związku odpowiadają atomy -S-C-C - i pojedyncze wiązania pomiędzy nimi. Należy zaznaczyć, że ten skrót myślowy - brak sprzężenia - dotyczy elektronów pi znajdujących się na orbitalach p w danym atomie, które tworzą wiązania wielokrotne pomiędzy atomami (podwójne i potrójne). Przykładowo w pierścieniu benzenowym, mamy wiązania wielokrotne podwójne, pomiędzy atomami C=C oraz C=N. Przykładowo, jedno wiązanie w C=C jest wiązaniem sigma, czyli para elektronów (1 elektron od 1 atomu C oraz 1elektron od 2 atomu C) tworzy wiązanie chemiczne pomiędzy atomami C-C. Ta para elektronów znajduje się na osi rdzeni atomowych atomów C-C, dlatego jest nazywane sigma. Są one silnie przyciągane przez rdzenie atomowe obu atomów, stad nie mogą one przemieszczać się pomiędzy atomami. Wszystkie wiązania pojedyncze w strukturach związków mają taki charakter. Czyli w odniesieniu do -S-C-C, wszystkie wiązania mają charakter sigma, elektrony nie przemieszczają się.
 W wiązaniach wielokrotnych, jedno wiązanie ma zawsze charakter sigma, a pozostałe mają charakter pi. Czyli w C=C, 1 wiązanie to sigma a 2 wiązanie to pi. Wiązanie chemiczne pi, oznacza, ze tworzą to wiązanie elektrony pi znajdujące się na orbitalach p. Jeżeli orbitale p sa zorientowane w przestrzeni w taki sposób, ze nie leża w osi rdzeni atomowych, to są słabej przyciagne przez nie i mają większą swobodę ruchu w przestrzeni wokół rdzeni (po orbitalach atomowych). Orbital atomowy - w ujęciu matematycznych - jest to przestrzeń wokół jadra atomowego, która można opisać funkcja, największe prawdopodobieństwo ruchu elektronu wokół jadra atomowego. Orbital s przedstawiany jest jako sfera, a orbital p jako dwie pętle stykające się końcami.
@@ -8,8 +8,8 @@ Wracając do pierwotnego pytania. Elektrony pi z pierścienia benzenowego nie mo
 Siarkę można oznaczyć symbolicznie jako X, ponieważ istota tutaj jest charakter wiązania chemicznego pomiędzy atomami a nie rodzaj atomu.
 """
 import itertools
+from collections import deque
 
-import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Mol
 
@@ -17,186 +17,108 @@ from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 
 class ConjugationFilter(GenericMoleculeFilter):
-    """Filter that removes molecules which are not conjugated."""
+    """
+    Filters molecules based on a conditional, multi-criteria approach to conjugation.
+
+    The filter applies a hierarchical logic:
+
+    1.  **For molecules with 2 or more nitrogen atoms:** The primary criterion is
+        electronic connectivity. The molecule passes **if and only if** all nitrogen
+        atoms are mutually connected through a fully conjugated path. The presence of
+        other non-conjugated groups is ignored.
+
+    2.  **For molecules with 0 or 1 nitrogen atoms:** The N-N connectivity rule is
+        not applicable. The molecule is judged on its overall structural integrity.
+        It passes **if and only if** it does not contain any "conjugation-breaking"
+        linkers (e.g., a C-C-C alkyl chain).
+    """
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Apply the filter to a list of RDKit molecules.
+        Applies the conjugation filter to a list of RDKit molecules.
 
         Args:
-            molecules (list[Mol]): The list of RDKit molecules to filter.
-        Returns:
-            list[Mol]: The list of RDKit molecules that passed the filter.
-        """
-        final_smiles = []
-        for sml in molecules:
-            if not self.check_conjugation(sml) or self.check_any_n_n_path(sml):
-                final_smiles.append(sml)
-        return final_smiles
-
-    @staticmethod
-    def check_conjugation(mol: Mol) -> bool:
-        """Check whether a molecule is conjugated. If it does, it will be removed.
-
-        Args:
-            mol (Mol): The molecule to check.
-        Returns:
-            bool: True if the molecule is conjugated, False otherwise.
-        """
-
-        if mol is None:
-            return False
-
-        # Define a generic SMARTS pattern for any three connected atoms
-        pattern_single_aromatic = Chem.MolFromSmarts("*-*-*")  # * matches any atom, - matches single bonds
-        matches = mol.GetSubstructMatches(pattern_single_aromatic, uniquify=True)
-        # for each match, check whether two consecutive bonds are conjugated
-        num_conjugated = 0
-        for match in matches:
-            for i in range(len(match) - 2):
-                bond1 = mol.GetBondBetweenAtoms(match[i], match[i + 1])
-                bond2 = mol.GetBondBetweenAtoms(match[i + 1], match[i + 2])
-
-                if bond1.GetIsConjugated() and bond2.GetIsConjugated():
-                    num_conjugated += 1
-
-        if len(matches) == num_conjugated or len(matches) == 0:
-            return False  # All matches are conjugated or there are no matches
-        return True  # At least one match is not conjugated
-
-        # for each match, check whether two consecutive bonds are conjugated
-        # num_conjugated = 0
-        # for match in matches:
-        #     for i in range(len(match) - 2):
-        #         middle_atom = mol.GetAtomWithIdx(match[i + 1])
-        #         symbol = middle_atom.GetSymbol()
-        #         # get free electrons
-        #         # maximum number of valence electrons, i.e. for oxygen it is 6
-        #         max_valence = Chem.GetPeriodicTable().GetNOuterElecs(middle_atom.GetSymbol())
-        #
-        #         lone_electrons = max_valence - middle_atom.GetTotalValence()
-        #         if lone_electrons > 0:
-        #             num_conjugated += 1
-        # if len(matches) == num_conjugated or len(matches) == 0:
-        #     return False  # All matches are conjugated or there are no matches
-        # return True  # At least one match is not conjugated
-
-    def check_any_n_n_path(self, mol: Mol) -> bool:
-        """Check whether there exists a path between two nitrogen atoms that has sprzężenie.
-
-        Args:
-            mol (Mol): The molecule to check.
-        Returns:
-            bool: True if there exists a path between two nitrogen atoms that has sprzężenie, False otherwise.
-        """
-        # Find all nitrogen atoms in the molecule
-        smarts = "N#*"  # N atom with a triple bond to any atom
-        pattern = Chem.MolFromSmarts(smarts)
-
-        # Get all matches of the SMARTS pattern
-        matches = mol.GetSubstructMatches(pattern, uniquify=True)
-
-        # Check if there are at least two nitrogen atoms in the molecule
-        if len(matches) < 2:
-            return False
-
-        nitrogens = [x if mol.GetAtomWithIdx(x).GetSymbol() == "N" else y for x, y in matches]
-
-        # get all possible pairs of nitrogen atoms
-        pairs = itertools.combinations(nitrogens, 2)
-
-        # Get all paths between each pair of nitrogen atoms
-        all_paths = []
-        for pair in pairs:
-            all_paths += self.get_all_paths_dfs(mol, pair[0], pair[1])
-
-        # check if any path has an X-Y-Z pattern
-        valid_paths = [path for path in all_paths if not self.has_two_single_bonds_in_path(mol, path)]
-
-        return len(valid_paths) > 0
-
-    def get_all_paths_dfs(self, mol: Chem.Mol, start_idx: int, end_idx: int) -> list[list[int]]:
-        """
-        Find all paths between two atoms in a molecule using DFS.
-
-        Args:
-            mol (rdkit.Chem.Mol): The molecule to search.
-            start_idx (int): Index of the starting atom.
-            end_idx (int): Index of the target atom.
+            molecules (list[Mol]): The list of RDKit molecules to be filtered.
+            **kwargs: Additional keyword arguments (for API compatibility, unused).
 
         Returns:
-            list of list: A list containing all possible paths, each as a list of atom indices.
+            list[Mol]: A new list containing only the molecules that passed the
+                       conjugation criteria.
         """
-        adj_list = self.get_adjacency_list(mol)
+        passed_molecules: list[Mol] = []
+        for mol in molecules:
+            if mol is None:
+                continue
 
-        def dfs(current: int, target: int, visited: set, path: list[int]) -> None:
-            """
-            Recursive DFS function.
+            # First, determine which rule set applies based on nitrogen count.
+            nitrogen_indices: list[int] = [match[0] for match in mol.GetSubstructMatches(Chem.MolFromSmarts("[N]"))]
 
-            Args:
-                current (int): Current atom index.
-                target (int): Target atom index.
-                visited (set): Set of visited atom indices.
-                path (list): Current path being explored.
-
-            Returns:
-                None. Appends valid paths to the result list.
-            """
-            path.append(current)
-            visited.add(current)
-
-            if current == target:
-                paths.append(path[:])  # Save a copy of the current path
+            # --- CONDITIONAL LOGIC ---
+            if len(nitrogen_indices) >= 2:
+                # Rule set 1: For molecules with multiple nitrogens, only N-N path matters.
+                if self._are_all_nitrogens_connected(mol, nitrogen_indices):
+                    passed_molecules.append(mol)
             else:
-                for neighbor in adj_list[current]:
-                    if neighbor not in visited:
-                        dfs(neighbor, target, visited, path)
+                # Rule set 2: For molecules with < 2 nitrogens, only structural integrity matters.
+                if not self._contains_conjugation_break(mol):
+                    passed_molecules.append(mol)
 
-            path.pop()
-            visited.remove(current)
-
-        paths: list[list[int]] = []
-        dfs(start_idx, end_idx, set(), [])
-        return paths
+        return passed_molecules
 
     @staticmethod
-    def has_two_single_bonds_in_path(mol: Chem.Mol, atom_path: list[int]) -> bool:
+    def _contains_conjugation_break(mol: Mol | None) -> bool:
         """
-        Check if there exists any triplet in the given atom path where both bonds are single.
-
-        Args:
-            mol (Chem.Mol): RDKit molecule object.
-            atom_path (list[int]): A list of atom IDs representing a valid path in the molecule.
-
-        Returns:
-            bool: True if at least one triplet has two single bonds, False otherwise.
+        Checks if the molecule contains a definitive break in conjugation.
+        Returns True if a break is found, False otherwise.
         """
-        # Iterate over consecutive triplets in the path
-        for i in range(len(atom_path) - 2):
-            a, b, c = int(atom_path[i]), int(atom_path[i + 1]), int(atom_path[i + 2])
+        if mol is None:
+            return True
 
-            # Get the bonds in the triplet
-            bond1 = mol.GetBondBetweenAtoms(a, b)
-            bond2 = mol.GetBondBetweenAtoms(b, c)
-
-            # Check if both bonds are single
-            if bond1.GetBondType() == Chem.rdchem.BondType.SINGLE and bond2.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                return True  # Found a triplet with two single bonds
-
-        return False  # No triplet with two single bonds found
+        pattern = Chem.MolFromSmarts("[!#1]~[!#1]~[!#1]")
+        for match in mol.GetSubstructMatches(pattern, uniquify=True):
+            atom1_idx, atom2_idx, atom3_idx = match
+            bond1 = mol.GetBondBetweenAtoms(atom1_idx, atom2_idx)
+            bond2 = mol.GetBondBetweenAtoms(atom2_idx, atom3_idx)
+            if bond1.GetBondType() == Chem.rdchem.BondType.SINGLE and bond2.GetBondType() == Chem.rdchem.BondType.SINGLE and not bond1.GetIsConjugated() and not bond2.GetIsConjugated():
+                return True
+        return False
 
     @staticmethod
-    def get_adjacency_list(mol: Chem.Mol) -> dict[int, list[int]]:
+    def _are_all_nitrogens_connected(mol: Mol, nitrogen_indices: list[int]) -> bool:
         """
-        Generate an adjacency list for the molecule using RDKit's adjacency matrix.
-
-        Args:
-            mol (rdkit.Chem.Mol): The molecule to process.
-
-        Returns:
-            dict: A dictionary where keys are atom indices and values are lists of neighboring atom indices.
+        Checks if a fully conjugated path exists between every pair of nitrogen atoms.
+        This method assumes it is only called when len(nitrogen_indices) >= 2.
         """
-        # Get the adjacency matrix as a NumPy array
-        adjacency_matrix = Chem.rdmolops.GetAdjacencyMatrix(mol)
-        adjacency_list = {i: list(np.nonzero(adjacency_matrix[i])[0]) for i in range(len(adjacency_matrix))}
-        return adjacency_list
+        # No need to check mol is None or len, as that's handled in apply()
+        nitrogen_pairs = itertools.combinations(nitrogen_indices, 2)
+        for start_idx, end_idx in nitrogen_pairs:
+            if not ConjugationFilter._find_conjugated_path_bfs(mol, start_idx, end_idx):
+                return False  # A non-connected pair was found.
+        return True  # All pairs were successfully connected.
+
+    @staticmethod
+    def _find_conjugated_path_bfs(mol: Mol, start_idx: int, end_idx: int) -> bool:
+        """
+        Efficiently finds if a conjugated path exists between two atoms using BFS.
+        """
+        queue: deque[int] = deque([start_idx])
+        visited: set[int] = {start_idx}
+        while queue:
+            current_idx = queue.popleft()
+            if current_idx == end_idx:
+                return True
+            current_atom = mol.GetAtomWithIdx(current_idx)
+            for neighbor in current_atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited:
+                    bond = mol.GetBondBetweenAtoms(current_idx, neighbor_idx)
+                    if bond.GetIsConjugated():
+                        visited.add(neighbor_idx)
+                        queue.append(neighbor_idx)
+        return False
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        return properties.get("conjugation_filter", False)

@@ -1,0 +1,12 @@
+name = "REINVENT-node-vanilla-rl-seed-molecules"
+molecule_type = "node"
+prior_type = "vanilla"
+recipe = "rl_inception"
+
+[rl]
+known_smiles_path = "data/raw/node/ctf_train.smi"
+
+[rl.inception]
+smiles_file = "data/raw/node/ctf_train.smi"
+memory_size = 100
+sample_size = 10

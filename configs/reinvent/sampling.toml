@@ -1,37 +1,44 @@
 # REINVENT4 TOML input example for sampling
 run_type = "sampling"
 device = "cuda"
-seed = 23
+#seed = 23
 
 [parameters]
 
-# vanilla + RL
-#model_file = "outputs/staged_learning/vanilla_rl.chkpt"
-#output_file = 'data/sampling/reinvent/vanilla_rl.csv'
-
+# fixing mode collapse
+model_file = "models/reinvent/node/chembl_35_pretrained_ft_rl_no_inception_fixed.model"
+output_file = "data/sampling/reinvent/node/chembl35_pretrained_ft_rl_no_inception_fixed/chembl35_pretrained_ft_rl_no_inception_fixed_1.csv"
 # vanilla
-#model_file = "modules/REINVENT4/priors/reinvent.prior"
-#output_file = "data/sampling/reinvent/vanilla.csv"
+#model_file = "models/reinvent/reinvent.prior"
+#output_file = "data/sampling/reinvent/substrate/vanilla/vanilla_10.csv"
 
 # vanilla + ft
-#model_file = "outputs/transfer_learning/vanilla_finetuned.model"
-#output_file = "data/sampling/reinvent/vanilla_finetuned.csv"
+#model_file = "models/reinvent/node/vanilla_ft.model"
+#output_file = "data/sampling/reinvent/node/vanilla_finetuned/vanilla_ft_10.csv"
 
-# vanill + ft + RL
-#model_file = "outputs/staged_learning/vanilla_finetuned_rl.chkpt"
-#output_file = "data/sampling/reinvent/vanilla_finetuned_rl.csv"
+# vanilla + RL
+#model_file = "models/reinvent/substrate/vanilla_rl_inception.model"
+#output_file = 'data/sampling/reinvent/substrate/vanilla_rl_inception/vanilla_rl_inception_9.csv'
+
+# vanilla + ft + RL
+# model_file = "models/reinvent/substrate/vanilla_ft_rl_inception.model"
+# output_file = "data/sampling/reinvent/substrate/vanilla_finetuned_rl_inception/vanilla_finetuned_rl_inception_9.csv"
 
 # chembl35 pretrained
-#model_file = "outputs/transfer_learning/200_epochs/pretrained_chembl_35.model"
-#output_file = "data/sampling/reinvent/pretrained_chembl_35.csv"
+#model_file = "models/reinvent/pretrained_chembl_35.model"
+#output_file = "data/sampling/reinvent/substrate/chembl35_pretrained/pretrained_chembl35_10.csv"
+
+# chembl35 pretrained + RL
+# model_file = "models/reinvent/node/chembl35_pretrained_rl_inception.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_rl_inception/chembl35_pretrained_rl_inception_9.csv"
 
 # chembl35 pretrained + ft
-#model_file = "outputs/transfer_learning/200_epochs/chembl_35_fine_tuned.model"
-#output_file = "data/sampling/reinvent/finetuned_chembl_35.csv"
+# model_file = "models/reinvent/node/chembl_35_fine_tuned.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_finetuned/chembl35_pretrained_finetuned_8.csv"
 
 # chembl35 pretrained + ft + RL
-model_file = "outputs/staged_learning/chembl_finetuned_rl_with_inception.chkpt"
-output_file = "data/sampling/reinvent/finetuned_chembl_35_rl.csv"
+# model_file = "models/reinvent/node/chembl35_pretrained_finetuned_rl_inception.model"
+# output_file = "data/sampling/reinvent/node/chembl35_pretrained_finetuned_rl_inception/chembl35_pretrained_finetuned_rl_inception_10.csv"
 
 
 num_smiles = 10000  # number of SMILES to be sampled, 1 per input SMILES

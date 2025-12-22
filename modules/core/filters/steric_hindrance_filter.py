@@ -1,86 +1,122 @@
 """Filter that leaves molecules without steric hindrance."""
-import os
 from itertools import combinations
 
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from modules.core.features.utils import mol_to_xyz
+from modules.core.features.utils import compute_conformer
 from modules.core.filters.generic_filter import GenericMoleculeFilter
+from modules.generation.utils import score_value_exponential
 
 
 class StericHindranceFilter(GenericMoleculeFilter):
-    """Filter that leaves molecules without steric hindrance."""
+    """
+    Filter that leaves molecules without steric hindrance between nitrile groups.
+
+    Functionality:
+    1. Binary Filter: Discards molecules if any pair of nitrile nitrogens is closer than `distance_threshold`.
+    2. Continuous Reward: Uses `score_value_exponential` to penalize violations.
+    """
+
+    def __init__(
+        self,
+        distance_threshold: float = 4.1,
+    ):
+        """
+        Args:
+            distance_threshold (float): The minimum allowed distance (Angstroms).
+                                        This maps to `min_val` in scoring.
+        """
+        self.nitrile_pattern = Chem.MolFromSmarts("N~*")
+        self.distance_threshold = distance_threshold
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
         """
-        Apply the filter to a list of RDKIT molecules.
-
-        Args:
-            molecules (list[Mol]): The list of RDKIT molecules to filter.
-        Returns:
-            list[Mol]: The list of RDKIT molecules that passed the filter.
+        Apply the binary filter to a list of RDKit molecules.
         """
-        no_steric_hindrance_molecules = []
-        for mol in molecules:
-            path = mol_to_xyz(mol, save_file=True, directory="tmp")
-            coordinates = np.loadtxt(path, skiprows=1, usecols=(1, 2, 3))
+        return [mol for mol in molecules if self.check_steric_hindrance(mol)]
 
-            # remove the file after loading
-            try:
-                os.remove(path)
-            except OSError as e:
-                print(f"Error removing file {path}: {e}")
-
-            nitrogen_indices = self.get_indices_of_n(mol)
-            if len(nitrogen_indices) < 2:
-                continue
-
-            distances = self.get_distances_between_n(nitrogen_indices, coordinates)
-            if np.any(distances < 4.1):
-                continue
-            no_steric_hindrance_molecules.append(mol)
-        return no_steric_hindrance_molecules
-
-    @staticmethod
-    def get_indices_of_n(mol: Mol) -> list[int]:
+    def check_steric_hindrance(self, mol: Mol) -> bool:
         """
-        Get the indices of nitrogen atoms involved in triple bonds with carbon in a given molecule.
-
-        Args:
-            mol (Mol): A RDKit Mol object
-
-        Returns:
-            List[int]: A list of indices for nitrogen atoms bonded to carbon via a triple bond.
+        Binary check: Returns True if the molecule passes (NO steric hindrance).
+        Returns False if atoms are too close.
         """
+        min_dist = self._get_min_nitrile_distance(mol)
 
-        nitrogen_indices = [
-            bond.GetEndAtomIdx() if bond.GetBeginAtom().GetSymbol() == "C" and bond.GetEndAtom().GetSymbol() == "N" else bond.GetBeginAtomIdx()
-            for bond in mol.GetBonds()
-            if bond.GetBondType() == Chem.BondType.TRIPLE and {"C", "N"} == {bond.GetBeginAtom().GetSymbol(), bond.GetEndAtom().GetSymbol()}
-        ]
+        if min_dist is None:
+            # Passes if there are < 2 nitriles.
+            # Fails if conformer generation broke (depending on policy, usually fail).
+            matches = mol.GetSubstructMatches(self.nitrile_pattern)
+            return len(matches) < 2
 
-        return nitrogen_indices
+        # Binary strict check
+        return min_dist >= self.distance_threshold
 
-    @staticmethod
-    def get_distances_between_n(nitrogen_indices: list[int], xyz: np.ndarray) -> np.ndarray:
+    def get_reward(self, mol: Mol) -> float:
         """
-        Calculate pairwise distances between nitrogen atoms based on their 3D coordinates.
-
-        Args:
-            nitrogen_indices (List[int]): Indices of nitrogen atoms.
-            xyz (np.ndarray): A numpy array of shape (N, 3) representing 3D coordinates of atoms.
-
-        Returns:
-            np.ndarray: A 1D array of pairwise distances between nitrogen atoms.
+        Calculates a continuous score (0.0 to 1.0) for RL using `score_value_exponential`.
         """
-        if not isinstance(xyz, np.ndarray) or xyz.shape[1] != 3:
-            raise ValueError("xyz must be a numpy array with shape (N, 3)")
+        if mol is None:
+            return 0.0
 
-        try:
-            distances = [np.linalg.norm(xyz[idx1] - xyz[idx2]) for idx1, idx2 in combinations(nitrogen_indices, 2)]
-        except IndexError as e:
-            print("Error in calculating distances.: ", e)
-            distances = [5.0]
-        return np.array(distances)
+        min_dist = self._get_min_nitrile_distance(mol)
+
+        # Case 1: Less than 2 nitriles -> No hindrance possible -> Perfect score
+        if min_dist is None:
+            matches = mol.GetSubstructMatches(self.nitrile_pattern)
+            if len(matches) < 2:
+                return 1.0
+            # Case 2: Conformer generation failed -> Zero score
+            return 0.0
+
+        # Case 3: Calculate Score
+        # We define the "optimal range" as [4.1, infinity]
+        # Any distance < 4.1 triggers the exponential decay in the helper function.
+        return score_value_exponential(value=min_dist, min_val=self.distance_threshold, max_val=np.inf)  # e.g., 4.1
+
+    def _get_min_nitrile_distance(self, mol: Mol) -> float | None:
+        """
+        Helper: Generates 3D conformer and finds the minimum distance between any two nitrile nitrogens.
+        Returns None if < 2 nitriles or conformer generation fails.
+        """
+        matches = mol.GetSubstructMatches(self.nitrile_pattern)
+        if len(matches) < 2:
+            return None
+
+        # Check for existing conformer, else compute one
+        if mol.GetNumConformers() == 0:
+            mol_3d = compute_conformer(mol)
+            if mol_3d is None or mol_3d.GetNumConformers() == 0:
+                return None
+            conformer = mol_3d.GetConformer(0)
+        else:
+            conformer = mol.GetConformer(0)
+
+        nitrogen_indices = [match[0] for match in matches]
+
+        min_distance = float("inf")
+        found_pair = False
+
+        # Check all pairs to find the "worst case" (closest) distance
+        for idx1, idx2 in combinations(nitrogen_indices, 2):
+            pos1 = np.array(conformer.GetAtomPosition(idx1))
+            pos2 = np.array(conformer.GetAtomPosition(idx2))
+            dist = np.linalg.norm(pos1 - pos2)
+
+            if dist < min_distance:
+                min_distance = dist
+            found_pair = True
+
+        return min_distance if found_pair else None
+
+    def filter_from_property(self, properties: dict) -> bool:
+        """
+        Reads properties from a dictionary (database) and decides whether to filter the molecule.
+        """
+        # Logic: if score is 1 -> keep molecule (no steric hindrance)
+        # if score < 1 -> filter out
+
+        steric_hindrance_score = properties.get("steric_hindrance", None)
+
+        return steric_hindrance_score is not None and steric_hindrance_score >= 0.999  # Keep only if no steric hindrance detected

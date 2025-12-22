@@ -1,0 +1,7 @@
+name = "REINVENT-node-chembl35-rl"
+molecule_type = "node"
+prior_type = "chembl35"
+recipe = "rl"
+
+[rl]
+known_smiles_path = "data/raw/node/ctf_train_chembl35.smi"

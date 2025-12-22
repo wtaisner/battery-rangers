@@ -1,0 +1,16 @@
+name = "REINVENT-node-chembl35-ft-rl-seed-molecules"
+molecule_type = "node"
+prior_type = "chembl35"
+recipe = "ft_rl_inception"
+
+[tl]
+smiles_file = "data/raw/node/ctf_train_chembl35.smi"
+validation_smiles_file = "data/raw/node/ctf_test_chembl35.smi"
+
+[rl]
+known_smiles_path = "data/raw/node/ctf_train_chembl35.smi"
+
+[rl.inception]
+smiles_file = "data/raw/node/ctf_train_chembl35.smi"
+memory_size = 100
+sample_size = 10

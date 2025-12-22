@@ -1,21 +1,28 @@
-# Use the official miniconda3 image
-FROM continuumio/miniconda3
+# Use the stable full Debian base image
+FROM ghcr.io/astral-sh/uv:debian
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the environment.yml file to the container
-COPY environment.yaml .
-
-# Create the conda environment
-RUN conda env create -f environment.yaml
-
-# Activate the conda environment
-SHELL ["conda", "run", "-n", "battery", "/bin/bash", "-c"]
-
-# Copy the rest of the application code to the container
-COPY . .
+# Set the PYTHONPATH so Python can find your modules
 ENV PYTHONPATH=/app
-# Run the tests
-CMD ["conda", "run", "-n", "battery", "pytest", "modules", "test"]
-CMD ["conda", "run", "-n", "battery", "pylint", "modules"]
+
+## Force scientific libraries to run single-threaded. This prevents race
+## conditions and reduces memory pressure, which are common causes of segfaults.
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
+
+COPY pyproject.toml .
+COPY modules/REINVENT4 modules/REINVENT4
+
+RUN ls -lR /app
+
+RUN uv sync --all-extras --dev
+
+COPY . .
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv run pylint modules --rcfile=.pylintrc
+
+RUN uv run pytest tests/ --ignore modules/REINVENT4 -v -s

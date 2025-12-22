@@ -1,0 +1,14 @@
+name = "REINVENT-node-chembl35-rl-seed-molecules"
+molecule_type = "node"
+prior_type = "chembl35"
+recipe = "rl_inception"
+
+[rl]
+# Path to known SMILES for the scoring function
+known_smiles_path = "data/raw/node/ctf_train_chembl35.smi"
+
+[rl.inception]
+# Path to seed molecules
+smiles_file = "data/raw/node/ctf_train_chembl35.smi"
+memory_size = 100
+sample_size = 10

@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 
 from modules.core.features.symmetries import analyse_symmetry_point_group
-from modules.core.features.utils import get_pymatgen_molecule_from_smiles
+from modules.core.features.utils import mol2pymatgen
 from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific to this module
@@ -20,12 +20,16 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
     Args:
         translation_table_path (str): Path to the translation table for symmetry analysis. Defaults to "data/symmetries/symmetry_translation.csv".
         allowed_symmetries (set[str], optional): Set of allowed symmetries. If not set, defaults to predefined symmetries.
+        num_conformers (int): Number of conformers to generate for each molecule. Defaults to 20.
+        max_attempts (int): Maximum number of attempts to generate a conformation. Defaults to 1.
     """
 
     def __init__(
         self,
         translation_table_path: str = "data/symmetries/symmetry_translation.csv",
         allowed_symmetries: set[str] | None = None,
+        num_conformers: int = 100,
+        max_attempts: int = 10,
     ):
         super().__init__()
         self.translation_table_path = translation_table_path
@@ -47,6 +51,9 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
             }
         else:
             self.allowed_symmetries = allowed_symmetries
+
+        self.num_conformers = num_conformers
+        self.max_attempts = max_attempts
 
     # pylint: disable=arguments-differ
     def apply(self, molecules: list[Mol], return_point_group_symmetry: bool = False) -> tuple[Any, list[Mol]] | list[Mol]:
@@ -70,7 +77,7 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         pymatgen_molecules = []
         for sml, mol in smiles_dict.items():
             try:
-                pymatgen_molecules.append(get_pymatgen_molecule_from_smiles(sml))
+                pymatgen_molecules.append(mol2pymatgen(sml, num_conformers=self.num_conformers, max_attempts=self.max_attempts))
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error(f"Error converting SMILES to pymatgen molecule: {sml}, Error: {str(e)}")
                 smiles_dict[sml] = None
@@ -128,15 +135,3 @@ class PointGroupSymmetryFilter(GenericMoleculeFilter):
         if return_point_group_symmetry:
             return symmetry_groups, pointgroup_symmetrical
         return pointgroup_symmetrical
-
-
-if __name__ == "__main__":
-    # Example usage
-    pgsf = PointGroupSymmetryFilter()
-    molecules = [
-        Chem.MolFromSmiles(
-            "N#Cc1ccc(/C=C/C(/C=C/c2ccc(C#N)cc2)/C=C/c2ccc(-c3nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)nc(-c4ccc(/C=C/C(/C=C/c5ccc(C#N)cc5)/C=C/c5ccc(C#N)cc5)cc4)n3)cc2)cc1"
-        )
-    ]
-    filtered_molecules = pgsf.apply(molecules)
-    print(filtered_molecules)
