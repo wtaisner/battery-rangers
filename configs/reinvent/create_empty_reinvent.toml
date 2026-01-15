@@ -8,8 +8,8 @@
 # run this with
 # modules/REINVENT4/reinvent/runmodes/create_model/create_reinvent.py
 [io]
-smiles_file = "data/chembl_35_sqlite/chembl_35.smi" # created using modules/REINVENT4/reinvent/datapipeline/preprocess.py and preprocess.toml config
-model_file = "outputs/reinvent_empty_model_chembl_35.model"
+smiles_file = "data/discovered/substrate_discovered_smarts.smi" # created using modules/REINVENT4/reinvent/datapipeline/preprocess.py and preprocess.toml config
+model_file = "models/reinvent/reinvent_empty_model_discovered_smarts.model"
 
 
 [network]  # hyper-parameters
@@ -21,5 +21,5 @@ standardize = false  # should be true to ensure data consistency, should be fals
 
 
 [metadata]  # metadata for the model, information about the data source
-data_source = "ChEMBL 35"
-comment = "This is a test"
+data_source = "Discovered Substrate SMARTS"
+comment = "Model created from discovered substrate SMARTS dataset."
