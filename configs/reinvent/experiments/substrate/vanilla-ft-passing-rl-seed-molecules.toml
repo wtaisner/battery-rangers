@@ -1,0 +1,16 @@
+name = "REINVENT-substrate-vanilla-ft-passing-rl-seed-molecules"
+molecule_type = "substrate"
+prior_type = "vanilla"
+recipe = "ft_rl_inception"
+
+[tl]
+smiles_file = "data/discovered/molecules_passing_filters_substrate_vanilla_train.smi"
+validation_smiles_file = "data/discovered/molecules_passing_filters_substrate_vanilla_test.smi"
+
+[rl]
+known_smiles_path = "data/discovered/molecules_passing_filters_substrate_vanilla_train.smi"
+
+[rl.inception]
+smiles_file = "data/discovered/molecules_passing_filters_substrate_vanilla_train.smi"
+memory_size = 100
+sample_size = 10
