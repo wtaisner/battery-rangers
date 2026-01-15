@@ -1,5 +1,3 @@
-# run_molair_custom.py
-
 """
 Wrapper to run flexible Mol-AIR experiments.
 
