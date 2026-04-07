@@ -1,9 +1,10 @@
+import itertools
 from functools import partial
 
 import numpy as np
 import skfp
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdDepictor, rdMolDescriptors, rdmolops
 from tqdm import tqdm
 
 from modules.core.features.csm_runner import CSMRunner
@@ -12,12 +13,12 @@ from modules.predictor.features.feature_factory import FeatureFactory
 
 
 @FeatureFactory.register("descriptor")
-def descriptor(all_features: bool = False) -> object:
+def descriptor(flatness: bool = False, symmetry: bool = False) -> object:
     """
     Generate custom molecular descriptors.
     :return: CustomDescriptor object.
     """
-    return CustomDescriptor(all_features=all_features)
+    return CustomDescriptor(flatness=flatness, symmetry=symmetry)
 
 
 class CustomDescriptor:
@@ -37,27 +38,33 @@ class CustomDescriptor:
             Get feature names for custom descriptors.
     """
 
-    def __init__(self, all_features: bool = False):
+    def __init__(self, flatness: bool = False, symmetry: bool = False):
         self.csm_runner = CSMRunner()
 
         self.desc = {
-            "radius": skfp.descriptors.radius,
+            # "radius": skfp.descriptors.radius,
             "diameter": skfp.descriptors.diameter,
+            "diameter_filtered": self.calculate_diameter_endings,
             "num_heteroatoms": rdMolDescriptors.CalcNumHeteroatoms,
             "num_rotatable_bonds": rdMolDescriptors.CalcNumRotatableBonds,
-            "num_h_acceptors": rdMolDescriptors.CalcNumLipinskiHBA,
-            "num_h_donors": rdMolDescriptors.CalcNumLipinskiHBD,
-            "tpsa": rdMolDescriptors.CalcTPSA,
+            # "num_h_acceptors": rdMolDescriptors.CalcNumLipinskiHBA,
+            # "num_h_donors": rdMolDescriptors.CalcNumLipinskiHBD,
+            # "tpsa": rdMolDescriptors.CalcTPSA,
             "mol_wt": rdMolDescriptors.CalcExactMolWt,
             "o%": partial(self.calculate_percentage, idx=8),
             "n%": partial(self.calculate_percentage, idx=7),
             "c%": partial(self.calculate_percentage, idx=6),
         }
-        if all_features:
+        if flatness:
             self.desc.update(
                 {
-                    "flatness": get_flatness_mol,
-                    # "symmetry": partial(self.calculate_symmetry, point_group=["c2", "c3", "c4"]),
+                    "flatness": partial(get_flatness_mol, max_attempts=5000),
+                }
+            )
+        if symmetry:
+            self.desc.update(
+                {
+                    "symmetry": partial(self.calculate_symmetry, point_group=["c2", "c3", "c4"]),
                 }
             )
 
@@ -81,7 +88,49 @@ class CustomDescriptor:
         :return: symmetry score.
         """
         csm_result = self.csm_runner.analyze_molecule(mol, point_groups=point_group, exact=False)
-        return csm_result.lowest_csm[1] if csm_result and csm_result.lowest_csm else 0.0
+        return csm_result.lowest_csm[1] / mol.GetNumAtoms() if csm_result and csm_result.lowest_csm else 0.0
+
+    def calculate_diameter_endings(self, mol: Chem.Mol) -> int:
+        """
+        Finds the maximum distance between atoms of the same pattern,
+        highlights the path, and returns an SVG image.
+        """
+        regular_diameter = skfp.descriptors.diameter(mol)
+
+        patterns = [
+            "O=*",
+            "C#N",
+            "Cl-*",
+            "Br-*",
+            "[NH2]",
+            "[HO]",
+        ]
+        if mol is None:
+            return 0
+
+        rdDepictor.Compute2DCoords(mol)
+        dist_matrix = rdmolops.GetDistanceMatrix(mol)
+
+        max_dist = -1
+
+        for pattern_str in patterns:
+            pattern = Chem.MolFromSmarts(pattern_str)
+            matches = mol.GetSubstructMatches(pattern)
+            if len(matches) < 2:
+                continue
+
+            for m1, m2 in itertools.combinations(matches, 2):
+                heavy1 = [i for i in m1 if mol.GetAtomWithIdx(i).GetAtomicNum() > 1]
+                heavy2 = [i for i in m2 if mol.GetAtomWithIdx(i).GetAtomicNum() > 1]
+                for i in heavy1:
+                    for j in heavy2:
+                        d = dist_matrix[i][j]
+                        if d > max_dist:
+                            max_dist = d
+
+        if max_dist < 0:
+            return regular_diameter
+        return max_dist
 
     def fit_transform(self, smiles: list) -> np.ndarray:
         """
@@ -95,7 +144,8 @@ class CustomDescriptor:
             if mol is None:
                 continue
             for j, (name, func) in enumerate(self.desc.items()):
-                descriptors[i, j] = func(mol)
+                moll = Chem.MolFromSmiles(s)
+                descriptors[i, j] = func(moll)
         return descriptors
 
     def get_feature_names_out(self) -> list:

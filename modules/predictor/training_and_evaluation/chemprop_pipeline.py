@@ -179,7 +179,7 @@ class ChempropTrainingPipeline(ModelTrainingPipeline):
             y_test_numpy = y_test.to_numpy().flatten()
             y_pred_eval = self.eval_model(y_pred, y_test_numpy)
 
-            baseline = np.median(y_train[y_train.columns[0]].to_numpy()) * np.ones_like(y_test_numpy)
+            baseline = np.median(y_train_all[y_train_all.columns[0]].to_numpy()) * np.ones_like(y_test_numpy)
             baselines = self.eval_model(baseline, y_test_numpy)
 
             self.update_scores(y_pred_eval, baselines, f_imp)

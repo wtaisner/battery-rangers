@@ -50,7 +50,7 @@ class CustomPatterns:
                     if not self.count:
                         descriptors[i, j] = 1
                     else:
-                        matches = mol.GetSubstructMatch(patt_mol)
+                        matches = mol.GetSubstructMatches(patt_mol)
                         descriptors[i, j] = len(matches)
         return descriptors
 

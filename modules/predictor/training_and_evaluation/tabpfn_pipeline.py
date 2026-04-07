@@ -129,3 +129,25 @@ class TabPFNTrainingPipeline(ModelTrainingPipeline):
                 max_evals=2 * len(X_test.columns) + 100,
             )
         return method, shap_values
+
+    def train_and_save_model(self, model_name: str, model_path: str | None = None) -> object:
+        """
+        Train the model on the entire dataset and save it.
+        :param model_name: name of the model.
+        :param model_path: path to saved model.
+        :return: trained model.
+        """
+        X, y = copy.deepcopy(self.X), copy.deepcopy(self.y)
+        custom_space = TabPFNSearchSpace.get_classifier_space(n_ensemble_range=(2, 8))
+        if len(self.X.columns) > 500:
+            custom_space["ignore_pretraining_limits"] = [True]
+        proper_model_name = "TabPFN Regressor"
+        model = TunedTabPFNRegressor(random_state=42, n_validation_size=0.3, device="cuda", n_trials=100, search_space=custom_space, metric="rmse")
+
+        model.fit(X.to_numpy(), y[y.columns[0]].to_numpy())
+        model = model.best_model_
+        model.fit(X.to_numpy(), y[y.columns[0]].to_numpy())
+
+        self.save_model(model, fold_num="final")
+
+        return model

@@ -44,6 +44,9 @@ def compute_conformer(molecule: str | Mol, num_conformers: int = 20, max_attempt
 
         rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=0, useRandomCoords=random_coords)
 
+    if rdkit_mol.GetNumConformers() < 1:
+        rdDistGeom.EmbedMultipleConfs(rdkit_mol, numConfs=num_conformers, maxAttempts=max_attempts, randomSeed=23, numThreads=0, useRandomCoords=True)
+
     if save_file:
         if not filename:
             # Generate a default filename from the molecule's name, sanitizing it for file systems.

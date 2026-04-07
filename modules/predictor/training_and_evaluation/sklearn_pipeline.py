@@ -9,8 +9,10 @@ import pandas as pd
 import shap
 from sklearn.metrics import root_mean_squared_error
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from tabpfn_extensions.interpretability import shapiq
 
 from modules.predictor.data.utils import custom_data_split
+from modules.predictor.training_and_evaluation.evaluation_metrics import EvalMetrics
 from modules.predictor.training_and_evaluation.model_factory import Models
 from modules.predictor.training_and_evaluation.training_pipeline import ModelTrainingPipeline
 
@@ -236,7 +238,7 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
             features = X_train.columns
 
             features = list(features) + ["intercept"]
-            coef_df = pd.DataFrame({"feature": features, "coefficient": coefficients})
+            coef_df = {"feature": features, "coefficient": coefficients}
             return method, coef_df
         return None, None
 
@@ -254,11 +256,15 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
 
         X_prepared = self._data_preparation(self.X, self.X)
 
+        standard_scaler = StandardScaler()
+        numerical_features = [f for f in self.feature_types["numerical"] if f in self.X.columns]
+        standard_scaler.fit(self.X[numerical_features].values)
         model = self.tune_model(self.X, self.y, model, param_grid)
 
         model.fit(X_prepared.to_numpy(), self.y[self.y.columns[0]].to_numpy())
 
         if len(self.save_dir) > 0:
+            self.save_model(standard_scaler, fold_num="scaler_final")
             self.save_model(model, fold_num="final")
 
         return model

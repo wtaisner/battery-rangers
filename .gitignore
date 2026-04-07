@@ -166,7 +166,7 @@ sh_tmp/
 tmp/
 /.reinvent_venv/
 /outputs/
-/results/
+/before_results/
 
 # exclude all chembl related files
 /chembl_35/

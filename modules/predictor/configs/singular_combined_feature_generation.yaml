@@ -4,25 +4,30 @@ feature_generation:
     params:
       descriptor:
         flatness: False
-  - types: [ "ecfp", "descriptor"]
+        symmetry: False
+  - types: ["ecfp"]
     params:
       ecfp:
         radius: 2
         size: 1024
         count: True
-      descriptor:
-        flatness: False
-  - types: [ "ecfp", "descriptor", "custom_pattern" ]
+  - types: ["estate"]
     params:
-      ecfp:
-        radius: 2
-        size: 1024
-        count: True
-      descriptor:
-        flatness: False
+      estate:
+        variant: 'sum'
+  - types: ['custom_pattern']
+    params:
       custom_pattern:
-            count: True
-  - types: [ "ecfp", "estate", "descriptor" ]
+        count: True
+  - types: ['maccs']
+    params:
+      maccs:
+        count: True
+  - types: ['functional_groups']
+    params:
+      functional_groups:
+        count: True
+  - types: [ "ecfp", "estate"]
     params:
       ecfp:
         radius: 2
@@ -30,66 +35,24 @@ feature_generation:
         count: True
       estate:
         variant: 'sum'
+  - types: ['ecfp', 'descriptor']
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
       descriptor:
         flatness: False
-  - types: ["ecfp", "physiochemical", "descriptor"]
+        symmetry: False
+  - types: [ "ecfp", "custom_pattern"]
     params:
       ecfp:
         radius: 2
         size: 1024
         count: True
-      physiochemical:
-        count: True
-        size: 1024
-      descriptor:
-        flatness: False
-
-
-
-  - types: ['descriptor']
-    params:
-      descriptor:
-        flatness: True
-  - types: [ "ecfp", "descriptor"]
-    params:
-      ecfp:
-        radius: 2
-        size: 1024
-        count: True
-      descriptor:
-        flatness: True
-  - types: [ "ecfp", "descriptor", "custom_pattern" ]
-    params:
-      ecfp:
-        radius: 2
-        size: 1024
-        count: True
-      descriptor:
-        flatness: True
       custom_pattern:
-            count: True
-  - types: [ "ecfp", "estate", "descriptor" ]
-    params:
-      ecfp:
-        radius: 2
-        size: 1024
         count: True
-      estate:
-        variant: 'sum'
-      descriptor:
-        flatness: True
-  - types: ["ecfp", "physiochemical", "descriptor"]
-    params:
-      ecfp:
-        radius: 2
-        size: 1024
-        count: True
-      physiochemical:
-        count: True
-        size: 1024
-      descriptor:
-        flatness: True
-  - types: [ "ecfp", "estate", "descriptor", "custom_pattern" ]
+  - types: ['ecfp', 'estate', 'descriptor']
     params:
       ecfp:
         radius: 2
@@ -99,5 +62,38 @@ feature_generation:
         variant: 'sum'
       descriptor:
         flatness: False
+        symmetry: False
+  - types: ['ecfp', 'estate', 'custom_pattern']
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      estate:
+        variant: 'sum'
+      custom_pattern:
+        count: True
+  - types: ['ecfp', 'descriptor', 'custom_pattern']
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      descriptor:
+        flatness: False
+        symmetry: False
+      custom_pattern:
+        count: True
+  - types: ['ecfp', 'estate', 'descriptor', 'custom_pattern']
+    params:
+      ecfp:
+        radius: 2
+        size: 1024
+        count: True
+      estate:
+        variant: 'sum'
+      descriptor:
+        flatness: False
+        symmetry: False
       custom_pattern:
         count: True
