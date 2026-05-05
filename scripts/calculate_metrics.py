@@ -10,9 +10,9 @@ import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import wandb
 from upsetplot import plot
 
-import wandb
 from modules.core.enums import MoleculeType
 from modules.generation.evaluation import MoleculeGenerationEvaluator
 
@@ -128,6 +128,7 @@ if __name__ == "__main__":
         print("=" * 50)
         print(results_df.round(3).to_string())
 
+        # TODO: add SMILES to the upset plot data, such that we can aggregate which molecules failed which filters
         records = []
         for smiles, filter_outcomes in all_upset_results.items():
             # Invert the boolean: True if the molecule failed (result is False)
@@ -189,7 +190,7 @@ if __name__ == "__main__":
                 plot(
                     upset_data,
                     fig=fig,
-                    show_percentages=True,
+                    # show_percentages=True, # TODO: probably some conflicting packages versions broke this option
                     sort_by="cardinality",
                     # min_subset_size="1%"
                 )

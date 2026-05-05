@@ -37,17 +37,17 @@ class PropertyEvaluator:
     def __init__(
         self,
         molecule_type: MoleculeType = MoleculeType.SUBSTRATE,
-        # reference_smiles: str | None = None,
         csm_threshold: float = 0.2,
         flatness_threshold: float = 4.0,
         db_file: str = "modules/bionemo/data/mol_db/substrate_properties.db",
+        num_criteria: int = 6,
     ):
         if molecule_type not in [MoleculeType.SUBSTRATE, MoleculeType.NODE]:
             raise ValueError(f"Invalid molecule type: {molecule_type}. Must be either MoleculeType.SUBSTRATE or MoleculeType.NODE.")
 
         # generic
         self.molecule_type = molecule_type
-        self.num_criteria = 5 if molecule_type == MoleculeType.NODE else 6
+        self.num_criteria = num_criteria
         self.db_file = db_file if molecule_type == MoleculeType.SUBSTRATE else "modules/bionemo/data/mol_db/node_properties.db"
         print(f"Using database file: {self.db_file}")
         self.database = MoleculeDB(self.db_file)
@@ -177,11 +177,9 @@ class PropertyEvaluator:
 
         similarity_score = properties["similarity"] if properties["similarity"] > 0 else 1e-10
 
-        if self.molecule_type == MoleculeType.SUBSTRATE:
-            smarts_score = properties.get("smarts_filter", 1e-10)
-            total_score = smarts_score + conjugation_score + flatness_score + similarity_score + steric_hindrance_score + symmetry_score
-        else:  # MoleculeType.NODE
-            total_score = conjugation_score + symmetry_score + flatness_score + similarity_score + steric_hindrance_score
+        smarts_score = properties.get("smarts_filter", 1e-10)
+
+        total_score = smarts_score + conjugation_score + flatness_score + similarity_score + steric_hindrance_score + symmetry_score
 
         if total_score < 0 or math.isnan(total_score):
             logger.debug(f"Total score for '{properties['canon_smiles']}' is invalid, returning 1e-10.")
@@ -210,7 +208,7 @@ class PropertyEvaluator:
 
 
 if __name__ == "__main__":
-    evaluator = PropertyEvaluator(reference_smiles="data/raw/node/ctf_train.smi", molecule_type=MoleculeType.NODE)
+    evaluator = PropertyEvaluator(molecule_type=MoleculeType.NODE)
     # evaluator.evaluate(
     #     "Cc1ccc(C=Cc2c(O)n(-c3ccccc3)c(=Nc3ccc(S(N)(=O)=O)cc3)n2-c2ccccc2)cc1"
     # )

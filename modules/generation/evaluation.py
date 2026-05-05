@@ -11,6 +11,7 @@ import multiprocessing as mp
 from itertools import combinations
 
 import numpy as np
+import wandb
 from fcd_torch import FCD
 from rdkit import Chem, DataStructs
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
@@ -18,7 +19,6 @@ from rdkit.rdBase import DisableLog
 from rdkit.SimDivFilters import LeaderPicker
 from tqdm.auto import tqdm
 
-import wandb
 from modules.core.enums import MoleculeType
 from modules.core.molecule_filter import MoleculeFilter
 
@@ -85,7 +85,9 @@ class MoleculeGenerationEvaluator:
         self.batch_size: int = batch_size
 
         self._fcd_calculator: FCD | None = None
-        self.molecule_filter = MoleculeFilter(filters=None, molecule_type=kwargs.get("molecule_type", MoleculeType.SUBSTRATE))
+        self.molecule_filter = MoleculeFilter(
+            filters=None, molecule_type=kwargs.get("molecule_type", MoleculeType.SUBSTRATE), db_file=kwargs.get("db_file", "modules/bionemo/data/mol_db/substrate_properties.db")
+        )
 
         # --- Preprocess SMILES ---
         # This step validates and canonicalizes SMILES, preparing them for metric calculation.
