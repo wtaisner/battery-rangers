@@ -1,4 +1,5 @@
 """Functions for generating fingerprints."""
+
 from typing import Callable, Literal
 
 import pandas as pd
@@ -15,16 +16,13 @@ from skfp.fingerprints import (
 
 
 class Fingerprints:
-    """
-    Class for generating fingerprints.
-    """
+    """Class for generating fingerprints."""
 
     _fingerprints: dict[str, Callable] = {}
 
     @classmethod
     def register(cls, name: str) -> Callable:
-        """
-        Register a fingerprint function with a given name.
+        """Register a fingerprint function with a given name.
 
         This method is used as a decorator to register a fingerprint function
         under a specified name. The registered function can later be retrieved
@@ -41,8 +39,7 @@ class Fingerprints:
         return decorator
 
     def apply(self, name, smiles, **kwargs) -> tuple:
-        """
-        Apply the fingerprint function with the given name.
+        """Apply the fingerprint function with the given name.
         :param name: name of the fingerprint function.
         :param smiles: list of SMILES strings.
         :param kwargs: additional arguments for the fingerprint function.
@@ -58,8 +55,7 @@ class Fingerprints:
 
 @Fingerprints.register("ecfp")
 def ecfp_fingerprint(size: int = 1024, radius: int = 2, count: bool = False) -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate ECFP fingerprints.
+    """Generate ECFP fingerprints.
     :param size: size of the fingerprint.
     :param radius: radius of neighbors to consider.
     :param count: whether to include counts or to use binary values.
@@ -70,8 +66,7 @@ def ecfp_fingerprint(size: int = 1024, radius: int = 2, count: bool = False) -> 
 
 @Fingerprints.register("maccs")
 def maccs_fingerprint(count: bool = False) -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate MACCS fingerprints.
+    """Generate MACCS fingerprints.
     :param count: whether to include counts or to use binary values.
     :return: Maccs fingerprint.
     """
@@ -79,9 +74,10 @@ def maccs_fingerprint(count: bool = False) -> skfp.bases.BaseFingerprintTransfor
 
 
 @Fingerprints.register("functional_groups")
-def functional_groups_fingerprint(count: bool = False) -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate functional groups fingerprints.
+def functional_groups_fingerprint(
+    count: bool = False,
+) -> skfp.bases.BaseFingerprintTransformer:
+    """Generate functional groups fingerprints.
     :param count: whether to include counts or to use binary values.
     :return: functional groups fingerprint.
     """
@@ -89,9 +85,10 @@ def functional_groups_fingerprint(count: bool = False) -> skfp.bases.BaseFingerp
 
 
 @Fingerprints.register("estate")
-def estate_fingerprint(variant: Literal["bit", "count", "sum"] = "sum") -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate estate fingerprints.
+def estate_fingerprint(
+    variant: Literal["bit", "count", "sum"] = "sum",
+) -> skfp.bases.BaseFingerprintTransformer:
+    """Generate estate fingerprints.
     :param variant: type of estate fingerprint.
     :return: estate fingerprint.
     """
@@ -100,8 +97,7 @@ def estate_fingerprint(variant: Literal["bit", "count", "sum"] = "sum") -> skfp.
 
 @Fingerprints.register("layered")
 def layered_fingerprint(size: int = 1024, linear_paths_only: bool = False) -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate layered fingerprints.
+    """Generate layered fingerprints.
     :param size: size of the fingerprint.
     :param linear_paths_only: whether to consider only linear paths.
     :return: layered fingerprint.
@@ -111,8 +107,7 @@ def layered_fingerprint(size: int = 1024, linear_paths_only: bool = False) -> sk
 
 @Fingerprints.register("pattern")
 def pattern_fingerprint(size: int = 1024, tautomers: bool = False) -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate pattern fingerprints.
+    """Generate pattern fingerprints.
     :param size: size of the fingerprint.
     :param tautomers: whether to consider tautomers.
     :return: pattern fingerprint.
@@ -122,21 +117,37 @@ def pattern_fingerprint(size: int = 1024, tautomers: bool = False) -> skfp.bases
 
 @Fingerprints.register("topological")
 def topological_fingerprint(size: int = 1024, torsion_atoms: int = 4, count: bool = False) -> skfp.bases.BaseFingerprintTransformer:
-    """
-    Generate topological fingerprints.
+    """Generate topological fingerprints.
     :param size: size of the fingerprint.
     :param torsion_atoms: how many atoms to consider in torsion.
     :param count: whether to include counts or to use binary values.
     :return: topological torsion fingerprint.
     """
-    return TopologicalTorsionFingerprint(fp_size=size, torsion_atom_count=torsion_atoms, include_chirality=True, count=count)
+    return TopologicalTorsionFingerprint(
+        fp_size=size,
+        torsion_atom_count=torsion_atoms,
+        include_chirality=True,
+        count=count,
+    )
 
 
 def fingerprints_dataset(
-    df: pd.DataFrame, smiles_col: str, target_col: str, fingerprint_type: Literal["ecfp", "maccs", "functional_groups", "estate", "layered", "pattern", "rdf", "topological"], **kwargs
+    df: pd.DataFrame,
+    smiles_col: str,
+    target_col: str,
+    fingerprint_type: Literal[
+        "ecfp",
+        "maccs",
+        "functional_groups",
+        "estate",
+        "layered",
+        "pattern",
+        "rdf",
+        "topological",
+    ],
+    **kwargs,
 ) -> pd.DataFrame:
-    """
-    Generates fingerprints for the given dataset.
+    """Generates fingerprints for the given dataset.
     :param df: dataframe with SMILES and target columns.
     :param smiles_col: name of the column with SMILES.
     :param target_col: name of the target column.

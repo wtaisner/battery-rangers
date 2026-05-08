@@ -1,4 +1,5 @@
 """Property evaluator class, used to evaluate a set of defined properties for a given molecule(s)."""
+
 import logging
 import math
 import os
@@ -30,9 +31,7 @@ logger.addHandler(console_handler)
 
 
 class PropertyEvaluator:
-    """
-    Property evaluator class, correctly using a database as a write-through cache.
-    """
+    """Property evaluator class, correctly using a database as a write-through cache."""
 
     def __init__(
         self,
@@ -70,6 +69,7 @@ class PropertyEvaluator:
         elif reference_smiles.endswith(".csv"):
             self.reference_smiles = pd.read_csv(reference_smiles)
 
+        assert self.reference_smiles is not None
         self.reference_smiles.columns = ["canon_smiles"]
         try:
             self.reference_smiles["fingerprint"] = self.reference_smiles["canon_smiles"].apply(lambda x: self.fingerprint_generator.GetFingerprint(Chem.MolFromSmiles(x)))
@@ -87,8 +87,7 @@ class PropertyEvaluator:
             logger.info(f"Molecule type set to NODE. Adjusted csm_threshold to {self.csm_threshold} and flatness_threshold to {self.flatness_threshold}.")
 
     def _fetch_or_compute_properties(self, smiles: str) -> dict | None:
-        """
-        Internal helper: canonicalizes SMILES, checks DB, computes on miss,
+        """Internal helper: canonicalizes SMILES, checks DB, computes on miss,
         writes to DB, and returns the properties dictionary.
         Returns None if SMILES is invalid or computation fails.
         """
@@ -132,13 +131,14 @@ class PropertyEvaluator:
             return raw_properties
 
         except Exception as e:
-            logger.error(f"Failed to evaluate or add '{canon_smiles}' to database: {e}", exc_info=True)
+            logger.error(
+                f"Failed to evaluate or add '{canon_smiles}' to database: {e}",
+                exc_info=True,
+            )
             return None
 
     def evaluate(self, smiles: str) -> float:
-        """
-        Evaluate properties for a molecule and return a numeric score.
-        """
+        """Evaluate properties for a molecule and return a numeric score."""
         # Call the helper
         properties = self._fetch_or_compute_properties(smiles)
 
@@ -150,9 +150,7 @@ class PropertyEvaluator:
         return self._calculate_score_from_properties(properties)
 
     def get_properties_and_cache(self, smiles: str) -> dict:
-        """
-        Retrieves properties from DB or calculates them, returning the full dictionary.
-        """
+        """Retrieves properties from DB or calculates them, returning the full dictionary."""
         # Call the helper
         properties = self._fetch_or_compute_properties(smiles)
 
@@ -163,8 +161,7 @@ class PropertyEvaluator:
         return properties
 
     def _calculate_score_from_properties(self, properties: dict) -> float:
-        """
-        Calculates the final score from a dictionary of RAW properties.
+        """Calculates the final score from a dictionary of RAW properties.
         This function is now the single source of truth for scoring.
         """
         # Apply scoring functions to RAW values from the properties dict

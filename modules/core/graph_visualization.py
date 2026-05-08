@@ -1,7 +1,7 @@
 """A set of utility functions to visualize a graph"""
 
 import math
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -21,8 +21,7 @@ def plot_nx_graphs(
     filename: str | None = None,
     show_plot: bool = True,
 ) -> None:
-    """
-    Plots one or more NetworkX graphs using Matplotlib, arranging multiple
+    """Plots one or more NetworkX graphs using Matplotlib, arranging multiple
     graphs in a grid. Uses Kamada-Kawai layout by default if positions are not provided.
     Supports passing pre-calculated positions and specific node/edge colors for highlighting.
 
@@ -44,11 +43,12 @@ def plot_nx_graphs(
         label_options: Default dictionary of args for nx.draw_networkx_labels().
         filename: If provided, saves the plot to this file.
         show_plot: If True, calls plt.show().
+
     """
     # --- Input Handling ---
     single_graph_input = not isinstance(graphs, (list, tuple))
     if single_graph_input:
-        graphs = [graphs]
+        graphs = [cast(nx.Graph, graphs)]
         if isinstance(titles, str):
             titles = [titles]
         elif titles is not None and not isinstance(titles, (list, tuple)):
@@ -56,11 +56,11 @@ def plot_nx_graphs(
             titles = None
         # Handle single pos dict, color list etc. if needed, but typically list expected
         if pos_list is not None and isinstance(pos_list, dict):
-            pos_list = [pos_list]
+            pos_list = [cast(dict[Any, tuple[float, float]], pos_list)]
         if node_color_list is not None and not isinstance(node_color_list[0], (list, tuple)):
-            node_color_list = [node_color_list]  # Wrap single list/str
+            node_color_list = [cast(Sequence[str] | str, node_color_list)]
         if edge_color_list is not None and not isinstance(edge_color_list[0], (list, tuple)):
-            edge_color_list = [edge_color_list]  # Wrap single list/str
+            edge_color_list = [cast(Sequence[str] | str, edge_color_list)]
 
     num_graphs = len(graphs)
     if num_graphs == 0:
@@ -151,11 +151,17 @@ def plot_nx_graphs(
 
         # --- Drawing ---
         # Draw nodes, passing specific colors if available
-        node_draw_opts = {**merged_node_opts, "node_color": current_node_colors}  # Start with merged defaults
+        node_draw_opts = {
+            **merged_node_opts,
+            "node_color": current_node_colors,
+        }  # Start with merged defaults
         nx.draw_networkx_nodes(g, pos, ax=ax, **node_draw_opts)
 
         # Draw edges, passing specific colors if available
-        edge_draw_opts = {**merged_edge_opts, "edge_color": current_edge_colors}  # Start with merged defaults
+        edge_draw_opts = {
+            **merged_edge_opts,
+            "edge_color": current_edge_colors,
+        }  # Start with merged defaults
         nx.draw_networkx_edges(g, pos, ax=ax, **edge_draw_opts)
 
         # Draw labels (usually doesn't need color override list)

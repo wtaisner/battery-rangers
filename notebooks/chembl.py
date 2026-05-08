@@ -99,7 +99,10 @@ def _(df, mp, pd, try_encoder):
     if "canonical_smiles" in df.columns:
         num_processes = 12
         chunk_size = (len(df) + num_processes - 1) // num_processes
-        chunks = [df["canonical_smiles"].iloc[i * chunk_size : (i + 1) * chunk_size] for i in range(num_processes)]
+        chunks = [
+            df["canonical_smiles"].iloc[i * chunk_size : (i + 1) * chunk_size]
+            for i in range(num_processes)
+        ]
         with mp.Pool(processes=num_processes) as pool:
             processed_chunks = pool.map(process_chunk, chunks)
         df["selfies"] = pd.concat(processed_chunks)
@@ -113,7 +116,9 @@ def _(df, mp, pd, try_encoder):
 
 @app.cell
 def _(cnx, pd):
-    feature_df = pd.read_sql_query("SELECT * FROM main.compound_properties", cnx)  #  tabela z cechami do pretrenowania ew. modelu.
+    feature_df = pd.read_sql_query(
+        "SELECT * FROM main.compound_properties", cnx
+    )  #  tabela z cechami do pretrenowania ew. modelu.
     feature_df.columns
     return (feature_df,)
 
@@ -169,7 +174,9 @@ def _(df_3, pd, re, tqdm):
     # Create a new column with the token length
     # Note: We are still working with the original df_3 here
     print("Calculating token length for each SELFIES string in df_3...")
-    df_3["selfies_len"] = [count_selfies_tokens(s) for s in tqdm(df_3["selfies"], desc="Counting Tokens")]
+    df_3["selfies_len"] = [
+        count_selfies_tokens(s) for s in tqdm(df_3["selfies"], desc="Counting Tokens")
+    ]
 
     # Perform the actual filtering to create our new, clean DataFrame
     df_filtered = df_3[df_3["selfies_len"] <= MAX_SELFIES_TOKEN_LENGTH].copy()
@@ -180,7 +187,9 @@ def _(df_3, pd, re, tqdm):
     removed_count = original_count - filtered_count
     print(f"\nOriginal dataset size: {original_count}")
     print(f"Filtered dataset size: {filtered_count}")
-    print(f"Molecules removed:     {removed_count} ({removed_count / original_count:.2%})")
+    print(
+        f"Molecules removed:     {removed_count} ({removed_count / original_count:.2%})"
+    )
     return (
         MAX_SELFIES_TOKEN_LENGTH,
         count_selfies_tokens,
@@ -193,7 +202,9 @@ def _(df_3, pd, re, tqdm):
 def _(count_selfies_tokens, pd, try_encoder):
     # see what is the length of substrates
     ctf = pd.read_csv("data/raw/experts_15_09_25_ctf_filtered.csv")
-    ctf["selfies_length"] = ctf["smiles_substrate"].apply(lambda x: count_selfies_tokens(try_encoder(x)))
+    ctf["selfies_length"] = ctf["smiles_substrate"].apply(
+        lambda x: count_selfies_tokens(try_encoder(x))
+    )
     ctf["selfies_length"].describe()
     return
 
@@ -201,18 +212,24 @@ def _(count_selfies_tokens, pd, try_encoder):
 @app.cell
 def _(df_filtered):
     # df_filtered["canonical_smiles"].to_csv("data/chembl_35_sqlite/chembl_35_custom.smi", sep=" ", index=None, header=None)
-    df_filtered["selfies"].to_csv("data/chembl_35_sqlite/chembl_35.slf", sep=" ", index=None, header=None)
+    df_filtered["selfies"].to_csv(
+        "data/chembl_35_sqlite/chembl_35.slf", sep=" ", index=None, header=None
+    )
     return
 
 
 @app.cell
 def _(json, pd, re, tqdm):
-    def create_selfies_config(df: pd.DataFrame, selfies_column: str, max_len: int, output_path: str):
+    def create_selfies_config(
+        df: pd.DataFrame, selfies_column: str, max_len: int, output_path: str
+    ):
         """
         Generates a configuration JSON with SELFIES vocabulary and a defined max string length.
         Vocabulary is derived ONLY from the provided DataFrame (typically the training set).
         """
-        print(f"Generating vocabulary from the '{selfies_column}' column of the training data...")
+        print(
+            f"Generating vocabulary from the '{selfies_column}' column of the training data..."
+        )
 
         # Use the same token pattern as before
         token_pattern = re.compile("(\\[[^\\]]+\\])")
@@ -220,7 +237,9 @@ def _(json, pd, re, tqdm):
         # Use a set for efficient collection of unique tokens
         vocabulary_set = set(["[STOP]"])  # Start with the essential STOP token
 
-        for selfies_string in tqdm(df[selfies_column], desc="Building Vocabulary from Train Set"):
+        for selfies_string in tqdm(
+            df[selfies_column], desc="Building Vocabulary from Train Set"
+        ):
             if pd.isna(selfies_string) or not isinstance(selfies_string, str):
                 continue
             tokens = token_pattern.findall(selfies_string)
@@ -229,7 +248,10 @@ def _(json, pd, re, tqdm):
         # Sort the vocabulary for consistency
         vocabulary_list = sorted(list(vocabulary_set))
 
-        output_data = {"vocabulary": vocabulary_list, "max_str_len": max_len}  # Use the pre-defined max length from filtering
+        output_data = {
+            "vocabulary": vocabulary_list,
+            "max_str_len": max_len,
+        }  # Use the pre-defined max length from filtering
 
         print(f"\nFinal vocabulary size: {len(vocabulary_list)} unique tokens.")
         print(f"Max string length set to: {max_len}")
@@ -276,19 +298,29 @@ def _(
         print(f"Original DataFrame size: {len(df_3)}")
 
         # Step 1: Split into training (70%) and a temporary set (30% for val + test)
-        train_df, temp_df = train_test_split(df_filtered, test_size=(val_prop + test_prop), random_state=random_seed)  # Calculate the size of the non-training part (0.10 + 0.20 = 0.30)
+        train_df, temp_df = train_test_split(
+            df_filtered, test_size=(val_prop + test_prop), random_state=random_seed
+        )  # Calculate the size of the non-training part (0.10 + 0.20 = 0.30)
 
         # Step 2: Split the temporary set (30% of original) into validation (10% of original) and test (20% of original)
         # The test set size relative to the temporary set is test_prop / (val_prop + test_prop)
         # e.g., 0.20 / 0.30 = 2/3
         relative_test_size = test_prop / (val_prop + test_prop)
 
-        val_df, test_df = train_test_split(temp_df, test_size=relative_test_size, random_state=random_seed)  # Use the same random state for deterministic split of the temp set
+        val_df, test_df = train_test_split(
+            temp_df, test_size=relative_test_size, random_state=random_seed
+        )  # Use the same random state for deterministic split of the temp set
 
         # --- Verification ---
-        print(f"Train DataFrame size:      {len(train_df)} ({len(train_df)/len(df_3):.2%})")
-        print(f"Validation DataFrame size: {len(val_df)} ({len(val_df)/len(df_3):.2%})")
-        print(f"Test DataFrame size:       {len(test_df)} ({len(test_df)/len(df_3):.2%})")
+        print(
+            f"Train DataFrame size:      {len(train_df)} ({len(train_df) / len(df_3):.2%})"
+        )
+        print(
+            f"Validation DataFrame size: {len(val_df)} ({len(val_df) / len(df_3):.2%})"
+        )
+        print(
+            f"Test DataFrame size:       {len(test_df)} ({len(test_df) / len(df_3):.2%})"
+        )
         print("-" * 30)
 
         # --- Saving Data ---
@@ -310,17 +342,36 @@ def _(
         # Save only the 'selfies' column to .slf files (space-separated, no index, no header)
         print("Saving Selfies (.slf) files...")
         if "selfies" in train_df.columns:
-            train_df["selfies"].to_csv(os.path.join(output_dir, "chembl_35_train.slf"), sep=" ", index=None, header=None)
-            val_df["selfies"].to_csv(os.path.join(output_dir, "chembl_35_val.slf"), sep=" ", index=None, header=None)
-            test_df["selfies"].to_csv(os.path.join(output_dir, "chembl_35_test.slf"), sep=" ", index=None, header=None)
+            train_df["selfies"].to_csv(
+                os.path.join(output_dir, "chembl_35_train.slf"),
+                sep=" ",
+                index=None,
+                header=None,
+            )
+            val_df["selfies"].to_csv(
+                os.path.join(output_dir, "chembl_35_val.slf"),
+                sep=" ",
+                index=None,
+                header=None,
+            )
+            test_df["selfies"].to_csv(
+                os.path.join(output_dir, "chembl_35_test.slf"),
+                sep=" ",
+                index=None,
+                header=None,
+            )
             print("Selfies saving complete.")
         else:
-            print("Warning: 'selfies' column not found in DataFrame. Skipping .slf file creation.")
+            print(
+                "Warning: 'selfies' column not found in DataFrame. Skipping .slf file creation."
+            )
 
         # IMPORTANT: Generate the vocabulary using ONLY the train_df to prevent data leakage.
         # The max_str_len is already known from our filtering step in Step 1.
         output_file = "data/chembl35_vocab.json"
-        create_selfies_config(train_df, "selfies", MAX_SELFIES_TOKEN_LENGTH, output_file)
+        create_selfies_config(
+            train_df, "selfies", MAX_SELFIES_TOKEN_LENGTH, output_file
+        )
 
         # Assuming you have train_df and val_df from your split
         train_vocab = set()
@@ -365,16 +416,22 @@ def _(pd, train_test_split):
 
         # --- Read Input SMILES File ---
         try:
-            df = pd.read_csv(input_smi_file, sep=" ", header=None, on_bad_lines="warn")  # Read, warn about potential issues
+            df = pd.read_csv(
+                input_smi_file, sep=" ", header=None, on_bad_lines="warn"
+            )  # Read, warn about potential issues
             # Check if read correctly - sometimes SMILES files have extra info like IDs
             if df.shape[1] == 1:
                 df.columns = ["canonical_smiles"]
             elif df.shape[1] > 1:
-                print(f"Warning: Input SMILES file '{input_smi_file}' has {df.shape[1]} columns. Assuming the first column contains SMILES.")
+                print(
+                    f"Warning: Input SMILES file '{input_smi_file}' has {df.shape[1]} columns. Assuming the first column contains SMILES."
+                )
                 df = df.iloc[:, [0]]  # Select only the first column
                 df.columns = ["canonical_smiles"]
             else:
-                raise ValueError("Input SMILES file seems empty or incorrectly formatted.")
+                raise ValueError(
+                    "Input SMILES file seems empty or incorrectly formatted."
+                )
 
             print(f"Read {len(df)} lines from {input_smi_file}")
 
@@ -390,26 +447,47 @@ def _(pd, train_test_split):
         print(f"Original DataFrame size: {len(df)}")
 
         # Step 1: Split into training (70%) and a temporary set (30% for val + test)
-        train_df, temp_df = train_test_split(df, test_size=(val_prop + test_prop), random_state=random_seed)  # 0.10 + 0.20 = 0.30
+        train_df, temp_df = train_test_split(
+            df, test_size=(val_prop + test_prop), random_state=random_seed
+        )  # 0.10 + 0.20 = 0.30
 
         # Step 2: Split the temporary set into validation (10% of original) and test (20% of original)
         relative_test_size = test_prop / (val_prop + test_prop)  # 0.20 / 0.30 = 2/3
 
-        val_df, test_df = train_test_split(temp_df, test_size=relative_test_size, random_state=random_seed)  # Use the same random state
+        val_df, test_df = train_test_split(
+            temp_df, test_size=relative_test_size, random_state=random_seed
+        )  # Use the same random state
 
         # --- Verification ---
-        print(f"Train SMILES count:      {len(train_df)} ({len(train_df)/len(df):.2%})")
-        print(f"Validation SMILES count: {len(val_df)} ({len(val_df)/len(df):.2%})")
-        print(f"Test SMILES count:       {len(test_df)} ({len(test_df)/len(df):.2%})")
+        print(
+            f"Train SMILES count:      {len(train_df)} ({len(train_df) / len(df):.2%})"
+        )
+        print(f"Validation SMILES count: {len(val_df)} ({len(val_df) / len(df):.2%})")
+        print(f"Test SMILES count:       {len(test_df)} ({len(test_df) / len(df):.2%})")
         print("-" * 30)
 
         # --- Saving Data ---
 
         print("Saving SMILES (.smi) files...")
         # Save the 'canonical_smiles' column to .smi files (space-separated, no index, no header)
-        train_df["canonical_smiles"].to_csv(os.path.join(output_dir, "chembl_35_train.smi"), sep=" ", index=None, header=None)
-        val_df["canonical_smiles"].to_csv(os.path.join(output_dir, "chembl_35_val.smi"), sep=" ", index=None, header=None)
-        test_df["canonical_smiles"].to_csv(os.path.join(output_dir, "chembl_35_test.smi"), sep=" ", index=None, header=None)
+        train_df["canonical_smiles"].to_csv(
+            os.path.join(output_dir, "chembl_35_train.smi"),
+            sep=" ",
+            index=None,
+            header=None,
+        )
+        val_df["canonical_smiles"].to_csv(
+            os.path.join(output_dir, "chembl_35_val.smi"),
+            sep=" ",
+            index=None,
+            header=None,
+        )
+        test_df["canonical_smiles"].to_csv(
+            os.path.join(output_dir, "chembl_35_test.smi"),
+            sep=" ",
+            index=None,
+            header=None,
+        )
 
         print("SMILES saving complete.")
         return print("\nAll files saved.")

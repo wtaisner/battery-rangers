@@ -74,7 +74,7 @@ penalty_multiplier = 0.5         # penalty factor for PenalizeSameSmiles
 
 chkpt_file = 'models/reinvent/substrate/chembl_35_pretrained_ft_rl_no_inception_sigma_256_PenalizeSameSmiles_lr_0_00005.model'
 
-termination = "simple"  # termination criterion fot this stage
+termination = "simple"  # termination criterion for this stage
 max_score = 1.0  # terminate if this total score is exceeded
 min_steps = 50  # run for at least this number of steps
 max_steps = 200  # terminate entire run when exceeded

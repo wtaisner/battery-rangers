@@ -1,4 +1,5 @@
 """Utils functions for data."""
+
 from typing import Literal
 
 import numpy as np
@@ -17,8 +18,7 @@ from modules.core.features.preprocessing import (
 
 
 def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"]) -> pd.DataFrame:
-    """
-    preprocessing for the datasets
+    """Preprocessing for the datasets
     :param data_path: path to data
     :param data_type: type of data (expert, ahu, saad, expert2)
     :return: pre-processed data
@@ -40,8 +40,7 @@ def data_preprocessing(data_path: str, data_type: Literal["expert", "zhu", "saad
 
 
 def complex_data_conversion(df: pd.DataFrame, features_list: list) -> tuple:
-    """
-    Converts complex numbers to two columns (one with real part, one with imaginary part)
+    """Converts complex numbers to two columns (one with real part, one with imaginary part)
     :param df: dataframe
     :param features_list: list of features, which contain complex numbers
     :return: dataframe after conversion with dropped original features, new features names
@@ -66,9 +65,13 @@ def complex_data_conversion(df: pd.DataFrame, features_list: list) -> tuple:
     return df, new_features
 
 
-def prepare_data_for_regressors(df_to_transform: pd.DataFrame, dfs: tuple, numerical_features: list, categorical_features: list) -> pd.DataFrame:
-    """
-    Prepares data for regressors (standarization, one-hot encoding)
+def prepare_data_for_regressors(
+    df_to_transform: pd.DataFrame,
+    dfs: tuple,
+    numerical_features: list,
+    categorical_features: list,
+) -> pd.DataFrame:
+    """Prepares data for regressors (standardization, one-hot encoding)
     :param df_to_transform: dataframe with molecules and features to transform.
     :param dfs: dataframes with molecules and features to fit (both to one-hot, first to .
     :param numerical_features: features to standardize (numerical).
@@ -104,8 +107,7 @@ def prepare_data_for_regressors(df_to_transform: pd.DataFrame, dfs: tuple, numer
 
 
 def custom_discretization(y: pd.DataFrame, num_bins: int = 4) -> pd.DataFrame:
-    """
-    Discretization of the continuous target attribute.
+    """Discretization of the continuous target attribute.
     :param y: dataframe with target
     :param num_bins: number of capacity bins to use
     :return: discretized target attribute
@@ -114,9 +116,14 @@ def custom_discretization(y: pd.DataFrame, num_bins: int = 4) -> pd.DataFrame:
     return binned_capacity
 
 
-def custom_data_kfold(X: pd.DataFrame, y: pd.DataFrame, num_splits: int, num_bins: int = 4, random_state: int = 42) -> list:
-    """
-    Performs custom data split on the provided data
+def custom_data_kfold(
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    num_splits: int,
+    num_bins: int = 4,
+    random_state: int = 42,
+) -> list:
+    """Performs custom data split on the provided data
     :param X: dataframe with molecules and generated features
     :param y: dataframe with target
     :param num_splits: number of folds
@@ -126,29 +133,38 @@ def custom_data_kfold(X: pd.DataFrame, y: pd.DataFrame, num_splits: int, num_bin
     """
     binned_capacity = custom_discretization(y, num_bins)
     skf = StratifiedKFold(n_splits=num_splits, shuffle=True, random_state=random_state)
-    kfolds = list(skf.split(X, binned_capacity))
+    kfolds = list(skf.split(x, binned_capacity))
     return kfolds
 
 
-def custom_data_split(X: pd.DataFrame, y: pd.DataFrame, train_size: float, num_bins: int = 4, random_state: int = 42) -> list:
-    """
-
-    :param X: dataframe with features
+def custom_data_split(
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    train_size: float,
+    num_bins: int = 4,
+    random_state: int = 42,
+) -> list:
+    """:param X: dataframe with features
     :param y:dataframe with target
     :param train_size: required train size (percentage
     :param num_bins: number of bins for disretization
     :param random_state: random state (default: 42)
     :return: custom splits (indices)
     """
-    idx = X.index.tolist()
+    idx = x.index.tolist()
     binned_capacity = custom_discretization(y, num_bins)
-    train_ids, test_ids = train_test_split(idx, train_size=train_size, random_state=random_state, shuffle=True, stratify=binned_capacity)
+    train_ids, test_ids = train_test_split(
+        idx,
+        train_size=train_size,
+        random_state=random_state,
+        shuffle=True,
+        stratify=binned_capacity,
+    )
     return [(train_ids, test_ids)]
 
 
 def combine_split(df1: pd.DataFrame, split1: list, df2: pd.DataFrame) -> tuple:
-    """
-    Combines two dataframes into one dataframe, combines splits of these dataframes.
+    """Combines two dataframes into one dataframe, combines splits of these dataframes.
     :param df1: first dataframe.
     :param split1: split of the first dataframe.
     :param df2: second dataframe.
@@ -162,8 +178,14 @@ def combine_split(df1: pd.DataFrame, split1: list, df2: pd.DataFrame) -> tuple:
     df_combined.fillna(0, inplace=True)
     index_mapping = pd.DataFrame({"ids_org": index_original, "ids_new": df_combined.index})
     for train_idx1, test_idx1 in split1:
-        train1 = index_mapping.loc[index_mapping.ids_org.isin(["1_" + str(idx) for idx in train_idx1]), "ids_new"].tolist()
-        test1 = index_mapping.loc[index_mapping.ids_org.isin(["1_" + str(idx) for idx in test_idx1]), "ids_new"].tolist()
+        train1 = index_mapping.loc[
+            index_mapping.ids_org.isin(["1_" + str(idx) for idx in train_idx1]),
+            "ids_new",
+        ].tolist()
+        test1 = index_mapping.loc[
+            index_mapping.ids_org.isin(["1_" + str(idx) for idx in test_idx1]),
+            "ids_new",
+        ].tolist()
         train2 = index_mapping.loc[index_mapping["ids_org"].str.startswith("2_"), "ids_new"].tolist()
         combined_split.append((train1 + train2, test1))
     return combined_split, df_combined

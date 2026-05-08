@@ -1,4 +1,5 @@
 """Filter that leaves molecules without steric hindrance."""
+
 from itertools import combinations
 
 import numpy as np
@@ -11,8 +12,7 @@ from modules.generation.utils import score_value_exponential
 
 
 class StericHindranceFilter(GenericMoleculeFilter):
-    """
-    Filter that leaves molecules without steric hindrance between nitrile groups.
+    """Filter that leaves molecules without steric hindrance between nitrile groups.
 
     Functionality:
     1. Binary Filter: Discards molecules if any pair of nitrile nitrogens is closer than `distance_threshold`.
@@ -23,23 +23,20 @@ class StericHindranceFilter(GenericMoleculeFilter):
         self,
         distance_threshold: float = 4.1,
     ):
-        """
-        Args:
-            distance_threshold (float): The minimum allowed distance (Angstroms).
-                                        This maps to `min_val` in scoring.
+        """Args:
+        distance_threshold (float): The minimum allowed distance (Angstroms).
+                                    This maps to `min_val` in scoring.
+
         """
         self.nitrile_pattern = Chem.MolFromSmarts("N~*")
         self.distance_threshold = distance_threshold
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
-        """
-        Apply the binary filter to a list of RDKit molecules.
-        """
+        """Apply the binary filter to a list of RDKit molecules."""
         return [mol for mol in molecules if self.check_steric_hindrance(mol)]
 
     def check_steric_hindrance(self, mol: Mol) -> bool:
-        """
-        Binary check: Returns True if the molecule passes (NO steric hindrance).
+        """Binary check: Returns True if the molecule passes (NO steric hindrance).
         Returns False if atoms are too close.
         """
         min_dist = self._get_min_nitrile_distance(mol)
@@ -54,9 +51,7 @@ class StericHindranceFilter(GenericMoleculeFilter):
         return min_dist >= self.distance_threshold
 
     def get_reward(self, mol: Mol) -> float:
-        """
-        Calculates a continuous score (0.0 to 1.0) for RL using `score_value_exponential`.
-        """
+        """Calculates a continuous score (0.0 to 1.0) for RL using `score_value_exponential`."""
         if mol is None:
             return 0.0
 
@@ -76,8 +71,7 @@ class StericHindranceFilter(GenericMoleculeFilter):
         return score_value_exponential(value=min_dist, min_val=self.distance_threshold, max_val=np.inf)  # e.g., 4.1
 
     def _get_min_nitrile_distance(self, mol: Mol) -> float | None:
-        """
-        Helper: Generates 3D conformer and finds the minimum distance between any two nitrile nitrogens.
+        """Helper: Generates 3D conformer and finds the minimum distance between any two nitrile nitrogens.
         Returns None if < 2 nitriles or conformer generation fails.
         """
         matches = mol.GetSubstructMatches(self.nitrile_pattern)
@@ -102,18 +96,15 @@ class StericHindranceFilter(GenericMoleculeFilter):
         for idx1, idx2 in combinations(nitrogen_indices, 2):
             pos1 = np.array(conformer.GetAtomPosition(idx1))
             pos2 = np.array(conformer.GetAtomPosition(idx2))
-            dist = np.linalg.norm(pos1 - pos2)
+            dist = float(np.linalg.norm(pos1 - pos2))
 
-            if dist < min_distance:
-                min_distance = dist
+            min_distance = min(min_distance, dist)
             found_pair = True
 
-        return min_distance if found_pair else None
+        return float(min_distance) if found_pair else None
 
     def filter_from_property(self, properties: dict) -> bool:
-        """
-        Reads properties from a dictionary (database) and decides whether to filter the molecule.
-        """
+        """Reads properties from a dictionary (database) and decides whether to filter the molecule."""
         # Logic: if score is 1 -> keep molecule (no steric hindrance)
         # if score < 1 -> filter out
 

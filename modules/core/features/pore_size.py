@@ -1,20 +1,21 @@
 """Pore size calculation functions."""
+
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdDepictor
 
 
 def calculate_repeating_unit_length(smiles: str, random_seed: int = 42) -> float | None:
-    """
-    Calculates the length of the repeating unit for a given molecule as the largest distance between any two atoms.
+    """Calculates the length of the repeating unit for a given molecule as the largest distance between any two atoms.
 
     Args:
         smiles: SMILES string of the molecule
+        random_seed: Random seed for conformer generation
 
     Returns:
         The length of the repeating unit in Angstroms.
-    """
 
+    """
     try:
         molecule = Chem.MolFromSmiles(smiles, sanitize=True)
     except ValueError as e:
@@ -28,7 +29,7 @@ def calculate_repeating_unit_length(smiles: str, random_seed: int = 42) -> float
     AllChem.MMFFOptimizeMolecule(molecule)
 
     conf = molecule.GetConformer()
-    max_distance = 0
+    max_distance = 0.0
 
     for i in range(molecule.GetNumAtoms()):
         for j in range(i + 1, molecule.GetNumAtoms()):
@@ -40,20 +41,19 @@ def calculate_repeating_unit_length(smiles: str, random_seed: int = 42) -> float
 
             max_distance = max(max_distance, distance)
 
-    return max_distance
+    return float(max_distance)
 
 
 def calculate_hexagonal_pore_diameter(smiles: str) -> float | None:
-    """
-    Calculates the diameter of a hexagonal pore given the length of the unit.
+    """Calculates the diameter of a hexagonal pore given the length of the unit.
 
     Args:
         smiles: SMILES string of the molecule
 
     Returns:
         pore_diameter_nm: The diameter of the pore in nanometers.
-    """
 
+    """
     unit_length_pm = calculate_repeating_unit_length(smiles)
     if unit_length_pm is None:
         return None
@@ -63,7 +63,7 @@ def calculate_hexagonal_pore_diameter(smiles: str) -> float | None:
 
     pore_diameter_nm = pore_diameter / 10  # Convert to nanometers
 
-    return pore_diameter_nm
+    return float(pore_diameter_nm)
 
 
 def sanity_check_with_experts() -> None:
@@ -118,7 +118,7 @@ def estimate_pore_size(sml: str) -> float:
     distance = np.linalg.norm(np.array([0, 0, 0]) - pos_j)
     distance = distance * 6 / np.pi / 10
 
-    return distance
+    return float(distance)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ Clone the repository with `git clone --recurse-submodules` in order to also clon
 git submodule update --init --recursive` if you did not clone with submodule. Finally, use `git submodule update` to update the submodules.
 
 #### [REINVENT4](https://github.com/MolecularAI/REINVENT4)
-Requires additional setup, follow the instructions in their README. Everything should be installed as a separate venv (i.e. `.reinvnet_venv`) with `uv`. In general, all command from the README should simply be preceeded by `uv`, i.e. `uv pip install ...`.
+Requires additional setup, follow the instructions in their README. Everything should be installed as a separate venv (i.e. `.reinvnet_venv`) with `uv`. In general, all command from the README should simply be preceded by `uv`, i.e. `uv pip install ...`.
 
 #### [Mol-AIR](https://github.com/wtaisner/Mol-AIR)
 Setup is already done with `uv`.

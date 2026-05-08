@@ -199,14 +199,22 @@ def _(passing_filters, path, prior, re, train_test_split):
     print(f"Total molecules: {len(passing_filters)}")
 
     # 2. Filter using REINVENT4-style tokenization
-    df = passing_filters[passing_filters["canon_smiles"].apply(lambda x: is_valid_reinvent_molecule(x, allowed_tokens))]
+    df = passing_filters[
+        passing_filters["canon_smiles"].apply(
+            lambda x: is_valid_reinvent_molecule(x, allowed_tokens)
+        )
+    ]
     print(f"Molecules after filtering: {len(df)}")
 
     # 3. Split and Save
     if not df.empty:
         train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
-        train_df["canon_smiles"].to_csv(path.replace(".smi", f"_{prior}_train.smi"), index=False, header=False)
-        test_df["canon_smiles"].to_csv(path.replace(".smi", f"_{prior}_test.smi"), index=False, header=False)
+        train_df["canon_smiles"].to_csv(
+            path.replace(".smi", f"_{prior}_train.smi"), index=False, header=False
+        )
+        test_df["canon_smiles"].to_csv(
+            path.replace(".smi", f"_{prior}_test.smi"), index=False, header=False
+        )
         print("Train shape:", train_df.shape)
         print("Test shape:", test_df.shape)
     return

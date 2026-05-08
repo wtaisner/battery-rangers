@@ -1,4 +1,5 @@
 """Scoring module for REINVENT4 RL"""
+
 __all__ = ["BatteryPropertiesSubstrate", "BatteryPropertiesNode"]
 
 from dataclasses import dataclass
@@ -9,7 +10,9 @@ import numpy as np
 from modules.core.enums import MoleculeType
 from modules.generation.property_evaluator import PropertyEvaluator
 from modules.REINVENT4.reinvent_plugins.components.add_tag import add_tag
-from modules.REINVENT4.reinvent_plugins.components.component_results import ComponentResults
+from modules.REINVENT4.reinvent_plugins.components.component_results import (
+    ComponentResults,
+)
 
 
 @add_tag("__parameters")
@@ -42,6 +45,7 @@ class BatteryPropertiesSubstrate:
 
         Returns:
             ComponentResults: The evaluated score for the molecule.
+
         """
         scores = []
         for smile in smiles:
@@ -66,6 +70,7 @@ class BatteryPropertiesNode:
 
         Returns:
             ComponentResults: The evaluated score for the molecule.
+
         """
         scores = []
         for smile in smiles:

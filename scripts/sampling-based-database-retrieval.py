@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def canonicalize_batch(smiles_batch: List[str]) -> List[str]:
-    """
-    Worker function to canonicalize a chunk of SMILES strings.
-    """
+    """Worker function to canonicalize a chunk of SMILES strings."""
     # Silence RDKit logs for workers
     lg = RDLogger.logger()
     lg.setLevel(RDLogger.CRITICAL)
@@ -37,10 +35,14 @@ def canonicalize_batch(smiles_batch: List[str]) -> List[str]:
     return canonical_smiles
 
 
-def main(glob_pattern: str, db_path: str, output_csv: str, table_name: str = "molecules", num_workers: int = None):
-    """
-    Finds CSVs, canonicalizes SMILES, and retrieves properties from the database.
-    """
+def main(
+    glob_pattern: str,
+    db_path: str,
+    output_csv: str,
+    table_name: str = "molecules",
+    num_workers: int = None,
+):
+    """Finds CSVs, canonicalizes SMILES, and retrieves properties from the database."""
     if not os.path.exists(db_path):
         logger.error(f"Database not found: {db_path}")
         return
@@ -82,7 +84,11 @@ def main(glob_pattern: str, db_path: str, output_csv: str, table_name: str = "mo
 
     unique_canon_smiles = set()
     with multiprocessing.Pool(processes=num_workers) as pool:
-        for batch_results in tqdm(pool.imap_unordered(canonicalize_batch, batches), total=len(batches), desc="Canonicalizing"):
+        for batch_results in tqdm(
+            pool.imap_unordered(canonicalize_batch, batches),
+            total=len(batches),
+            desc="Canonicalizing",
+        ):
             unique_canon_smiles.update(batch_results)
 
     logger.info(f"Resulted in {len(unique_canon_smiles)} unique canonical SMILES. Querying database...")
@@ -97,7 +103,10 @@ def main(glob_pattern: str, db_path: str, output_csv: str, table_name: str = "mo
 
         # Insert unique canonical SMILES into the temp table
         smiles_tuples = [(s,) for s in unique_canon_smiles]
-        cursor.executemany("INSERT OR IGNORE INTO temp_query_smiles (canon_smiles) VALUES (?)", smiles_tuples)
+        cursor.executemany(
+            "INSERT OR IGNORE INTO temp_query_smiles (canon_smiles) VALUES (?)",
+            smiles_tuples,
+        )
 
         # Perform an INNER JOIN to quickly grab all properties for matching SMILES
         # Using m.* grabs canon_smiles, smarts_filter, steric_hindrance, and any other columns
@@ -124,12 +133,39 @@ def main(glob_pattern: str, db_path: str, output_csv: str, table_name: str = "mo
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aggregate SMILES from CSVs and query DB for properties.")
-    parser.add_argument("--glob", dest="glob_pattern", required=True, help='Glob pattern for CSV files e.g. "data/sampling/**/*.csv"')
+    parser.add_argument(
+        "--glob",
+        dest="glob_pattern",
+        required=True,
+        help='Glob pattern for CSV files e.g. "data/sampling/**/*.csv"',
+    )
     parser.add_argument("--db", dest="db_path", required=True, help="Path to the SQLite database.")
-    parser.add_argument("--out", dest="output_csv", required=True, help="Path to save the resulting CSV.")
-    parser.add_argument("--table", dest="table_name", default="molecules", help="Table name in DB (default: molecules)")
-    parser.add_argument("--workers", dest="num_workers", type=int, default=None, help="Number of CPU workers for canonicalization.")
+    parser.add_argument(
+        "--out",
+        dest="output_csv",
+        required=True,
+        help="Path to save the resulting CSV.",
+    )
+    parser.add_argument(
+        "--table",
+        dest="table_name",
+        default="molecules",
+        help="Table name in DB (default: molecules)",
+    )
+    parser.add_argument(
+        "--workers",
+        dest="num_workers",
+        type=int,
+        default=None,
+        help="Number of CPU workers for canonicalization.",
+    )
 
     args = parser.parse_args()
 
-    main(glob_pattern=args.glob_pattern, db_path=args.db_path, output_csv=args.output_csv, table_name=args.table_name, num_workers=args.num_workers)
+    main(
+        glob_pattern=args.glob_pattern,
+        db_path=args.db_path,
+        output_csv=args.output_csv,
+        table_name=args.table_name,
+        num_workers=args.num_workers,
+    )

@@ -1,4 +1,5 @@
-""" Script for training models on different datasets and feature sets """
+"""Script for training models on different datasets and feature sets"""
+
 import os
 from datetime import datetime
 
@@ -18,7 +19,11 @@ if __name__ == "__main__":
     root_data_dir = config["root_dir"]
     os.makedirs(config["save_dir"], exist_ok=True)
     save_path = os.path.join(config["save_dir"], f"{config['combo_name']}.csv")
-    num_splits, num_bins, random_state = config["num_splits"], config["num_bins"], config["random_state"]
+    num_splits, num_bins, random_state = (
+        config["num_splits"],
+        config["num_bins"],
+        config["random_state"],
+    )
     target = config["target"]
     dataset_combos = config["dataset_combos"]
     primary_data = config["selected_dict"]["primary"]
@@ -70,7 +75,14 @@ if __name__ == "__main__":
             continue
 
         if len(datasets) > 1:
-            df_rest = pd.concat([df for data_name, df in dfs.items() if data_name != "expert"], ignore_index=True).sort_values(by="smiles").reset_index(drop=True)
+            df_rest = (
+                pd.concat(
+                    [df for data_name, df in dfs.items() if data_name != "expert"],
+                    ignore_index=True,
+                )
+                .sort_values(by="smiles")
+                .reset_index(drop=True)
+            )
         else:
             df_rest = None  # pylint: disable=invalid-name
         df_expert1 = dfs["expert"]
@@ -100,7 +112,19 @@ if __name__ == "__main__":
         X_all = df_all.drop(columns=[target, "smiles"])
         y_all = df_all.loc[:, [target]]
 
-        cv = CrossValidationPipeline(X_all, y_all, num_features, cat_features, folds_all, metrics, SAVE_DIR, DATANAME, (True, "grid_search"), (True, fixed_features), verbose=True)
+        cv = CrossValidationPipeline(
+            X_all,
+            y_all,
+            num_features,
+            cat_features,
+            folds_all,
+            metrics,
+            SAVE_DIR,
+            DATANAME,
+            (True, "grid_search"),
+            (True, fixed_features),
+            verbose=True,
+        )
         results = cv.batch_train_and_eval(models)
 
         for key, value in results.items():

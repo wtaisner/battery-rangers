@@ -4,7 +4,7 @@ num_splits: 4
 num_bins: 4
 random_state: 42
 oversampling: False
-metrics: ["pairwise_accuracy_score", "ndcg_score", "rmse", "mape"]
+metrics: ["pairwise_accuracy_score", "ndcg_score", "rmse", "map"]
 models: ["knn", "lasso", "random_forest", "xgboost"]
 combo_name: 'all_datasets_all_features_sorted_new'
 save_matrix_dir: '../../../results/comparison'

@@ -1,4 +1,5 @@
 """Symmetry analysis functions."""
+
 import logging
 from enum import Enum
 
@@ -21,8 +22,7 @@ class AvailableSymmetry(Enum):
 
 
 def translate_point_group_to_symmetry_description(symmetry_code: str, translation_table_path: str) -> str:
-    """
-    Translates the point group code e.g. D3h to the corresponding description.
+    """Translates the point group code e.g. D3h to the corresponding description.
 
     Args:
         symmetry_code (str): The symmetry code to translate.
@@ -30,27 +30,27 @@ def translate_point_group_to_symmetry_description(symmetry_code: str, translatio
 
     Returns:
         str: The translated symmetry code.
-    """
 
+    """
     table = pd.read_csv(translation_table_path).astype(str)
 
     if symmetry_code in table["Point group"].to_list():
         return table[table["Point group"] == symmetry_code]["Simple description of typical geometry"].to_list()[0]
 
     logging.debug(
-        f'Could not find symmetry code {symmetry_code} in translation table: \
-            {table["Point group"].to_list()}'
+        f"Could not find symmetry code {symmetry_code} in translation table: \
+            {table['Point group'].to_list()}"
     )
     return "Unknown"
 
 
 def analyse_symmetry_point_group(molecule: Molecule, translation_table_path: str, visualize: bool = False) -> tuple:
-    """
-    Analyzes the symmetry of a given crystal structure.
+    """Analyzes the symmetry of a given crystal structure.
 
     Args:
-        molecule (Molecule): Molecule to analyze.
-        visualize (bool, optional): Whether to visualize the structure. Defaults to False.
+        molecule: Molecule to analyze.
+        translation_table_path: Path to the translation table for symmetry codes.
+        visualize: Whether to visualize the structure. Defaults to False.
 
     Returns:
         tuple: A tuple containing the following symmetry analysis results:
@@ -58,8 +58,8 @@ def analyse_symmetry_point_group(molecule: Molecule, translation_table_path: str
              - rotational_symmetry (int): The rotational symmetry number.
              - point_group (str): The point group of the structure.
              - equivalent_atoms (list): List of equivalent atoms.
-    """
 
+    """
     # Get the space group
     pga = PointGroupAnalyzer(molecule)
     symmetry_operations = pga.get_symmetry_operations()
@@ -93,8 +93,7 @@ def analyse_symmetry_point_group(molecule: Molecule, translation_table_path: str
 
 
 def analyse_symmetry_space_group(structure: Structure, visualize: bool = False) -> tuple:
-    """
-    Analyzes the symmetry of a given crystal structure.
+    """Analyzes the symmetry of a given crystal structure.
 
     Args:
         structure (Structure): The crystal structure to analyze.
@@ -108,6 +107,7 @@ def analyse_symmetry_space_group(structure: Structure, visualize: bool = False) 
             - point_group_symbol (str): The point group symbol.
             - point_group_operations (list): List of point group operations.
             - space_group_operations (list): List of space group operations.
+
     """
     logging.debug("Starting analyse_symmetry_space_group")
 

@@ -1,4 +1,5 @@
 """Script for aggregating DFT features."""
+
 import os
 
 import pandas as pd

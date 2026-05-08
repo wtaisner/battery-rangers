@@ -1,4 +1,5 @@
 """Functions for evaluating model performance."""
+
 from typing import Callable
 
 import numpy as np
@@ -7,16 +8,13 @@ import sklearn
 
 
 class EvalMetrics:
-    """
-    Class for evaluation metrics.
-    """
+    """Class for evaluation metrics."""
 
     _eval_metrics: dict[str, Callable] = {}
 
     @classmethod
     def register(cls, name: str) -> Callable:
-        """
-        Register an evaluation metric function with a given name.
+        """Register an evaluation metric function with a given name.
 
         This method is used as a decorator to register an evaluation metric function
         under a specified name. The registered function can later be retrieved
@@ -33,8 +31,7 @@ class EvalMetrics:
         return decorator
 
     def evaluate(self, name: str, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        """
-        Evaluate the model performance using the evaluation metric function with the given name.
+        """Evaluate the model performance using the evaluation metric function with the given name.
         :param name: name of the evaluation metric function.
         :param y_true: Ground truth labels.
         :param y_pred: Predictions.
@@ -47,8 +44,7 @@ class EvalMetrics:
 
 @EvalMetrics.register("pairwise_accuracy_score")
 def average_ranking_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """
-    Calculates average ranking score given predictions and ground truth labels.
+    """Calculates average ranking score given predictions and ground truth labels.
     :param y_true: Ground truth labels.
     :param y_pred: Predictions.
     :return: Average ranking score.
@@ -68,8 +64,7 @@ def average_ranking_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 @EvalMetrics.register("ndcg_score")
 def ndcg_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """
-    Calculates normalized discounted cumulative gain given predictions and ground truth labels.
+    """Calculates normalized discounted cumulative gain given predictions and ground truth labels.
     :param y_true: Ground truth labels.
     :param y_pred: Predictions.
     :return: Normalized discounted cumulative gain.
@@ -96,8 +91,7 @@ def ndcg_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 @EvalMetrics.register("rmse")
 def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """
-    Calculates root mean squared error given predictions and ground truth labels.
+    """Calculates root mean squared error given predictions and ground truth labels.
     :param y_true: Ground truth labels.
     :param y_pred: Predictions.
     :return: Root mean squared error.
@@ -105,10 +99,9 @@ def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return np.sqrt(sklearn.metrics.mean_squared_error(y_true, y_pred))
 
 
-@EvalMetrics.register("mape")
-def mape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """
-    Calculates mean absolute percentage error given predictions and ground truth labels.
+@EvalMetrics.register("map")
+def map(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Calculates mean absolute percentage error given predictions and ground truth labels.
     :param y_true: Ground truth labels.
     :param y_pred: Predictions.
     :return: Mean absolute percentage error.
@@ -118,8 +111,7 @@ def mape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 @EvalMetrics.register("smape")
 def smape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """
-    Calculates symmetric mean absolute percentage error given predictions and ground truth labels.
+    """Calculates symmetric mean absolute percentage error given predictions and ground truth labels.
     :param y_true: Ground truth labels.
     :param y_pred: Predictions.
     :return: Symmetric mean absolute percentage error.

@@ -14,7 +14,11 @@ def _():
     from rdkit.Chem import Draw
     from rdkit.Chem.Draw import MolDraw2DCairo
 
-    def plot_molecule_with_smarts_highlight(smiles_string: str, smarts_patterns: List[str], size: tuple[int, int] = (400, 300)) -> Image.Image | None:
+    def plot_molecule_with_smarts_highlight(
+        smiles_string: str,
+        smarts_patterns: List[str],
+        size: tuple[int, int] = (400, 300),
+    ) -> Image.Image | None:
         """
         Generates a PIL Image of a molecule with multiple SMARTS pattern matches highlighted.
         This version uses a robust method that sets atom properties on the molecule
@@ -57,7 +61,9 @@ def _():
                     continue  # Move to the next pattern in the list
 
                 matches = mol.GetSubstructMatches(pat)
-                print(f"Found {matches} matches for SMARTS '{smarts_str}' in the molecule.")
+                print(
+                    f"Found {matches} matches for SMARTS '{smarts_str}' in the molecule."
+                )
                 if matches:
                     # Add all unique atom indices from these matches to our master set.
                     current_matches_set = {idx for match in matches for idx in match}
@@ -81,7 +87,9 @@ def _():
             try:
                 Chem.rdDepictor.Compute2DCoords(mol)
             except Exception as e:
-                print(f"Warning: Could not generate 2D coordinates: {e}. Drawing may be suboptimal.")
+                print(
+                    f"Warning: Could not generate 2D coordinates: {e}. Drawing may be suboptimal."
+                )
 
             # Use the low-level canvas for stability.
             drawer = MolDraw2DCairo(size[0], size[1])
@@ -98,7 +106,9 @@ def _():
             return Image.open(io.BytesIO(png_data))
 
         except Exception as e:
-            print(f"An unexpected error occurred in plot_molecule_with_smarts_highlight: {e}")
+            print(
+                f"An unexpected error occurred in plot_molecule_with_smarts_highlight: {e}"
+            )
             return None
 
     return Chem, Draw, plot_molecule_with_smarts_highlight
@@ -172,7 +182,13 @@ def _(Chem, Draw):
         conjugated_atoms_list = list(conjugated_atoms)
 
         # Wyświetlanie obrazu (działa najlepiej w środowiskach typu Jupyter Notebook)
-        img = Draw.MolToImage(mol, size=mol_size, highlightAtoms=conjugated_atoms_list, highlightBonds=conjugated_bonds, highlightColor=(0.8, 0.8, 0))  # kolor podświetlenia (żółty)
+        img = Draw.MolToImage(
+            mol,
+            size=mol_size,
+            highlightAtoms=conjugated_atoms_list,
+            highlightBonds=conjugated_bonds,
+            highlightColor=(0.8, 0.8, 0),
+        )  # kolor podświetlenia (żółty)
 
         return img
 

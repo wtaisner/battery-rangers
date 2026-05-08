@@ -17,9 +17,13 @@ def smiles_to_3d(smiles: str) -> tuple | None:
     if mol is None:
         raise ValueError(f"Invalid SMILES: {smiles}")
     mol = Chem.AddHs(mol)  # Add hydrogens
-    a = AllChem.EmbedMolecule(mol, randomSeed=42, maxAttempts=500)  # Generate initial 3D structure
+    a = AllChem.EmbedMolecule(
+        mol, randomSeed=42, maxAttempts=500
+    )  # Generate initial 3D structure
     if a < 0:
-        a = AllChem.EmbedMolecule(mol, randomSeed=42, maxAttempts=500, useRandomCoords=True)
+        a = AllChem.EmbedMolecule(
+            mol, randomSeed=42, maxAttempts=500, useRandomCoords=True
+        )
         if a < 0:
             return None
     AllChem.MMFFOptimizeMolecule(mol)
@@ -73,7 +77,9 @@ def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP") 
     try:
         analysis = mf.analyze(verbose=0)[0]
         atomic_charges = analysis[1]
-        atomic_charges_names = [f"charge_{ia}{mol.atom_symbol(ia)}" for ia in range(mol.natm)]
+        atomic_charges_names = [
+            f"charge_{ia}{mol.atom_symbol(ia)}" for ia in range(mol.natm)
+        ]
         atomic_charges_dict = dict(zip(atomic_charges_names, atomic_charges))
     except Exception:
         atomic_charges_dict = {}
@@ -136,7 +142,9 @@ def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP") 
     }
 
 
-def smiles_to_features_pyscf(smiles: str, target: float, target_col: str, functional: str = "B3LYP") -> dict:
+def smiles_to_features_pyscf(
+    smiles: str, target: float, target_col: str, functional: str = "B3LYP"
+) -> dict:
     """
     generates quantum features using PySCF for a given SMILES.
     :param smiles: SMILES string.
@@ -168,7 +176,9 @@ def smiles_to_features_pyscf(smiles: str, target: float, target_col: str, functi
         }
 
 
-def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, functional: str = "B3LYP") -> pd.DataFrame:
+def df_to_features_pyscf(
+    df: pd.DataFrame, smiles_col: str, target_col: str, functional: str = "B3LYP"
+) -> pd.DataFrame:
     """
     Takes a dataframe with smiles strings and generates quantum features using PySCF.
     :param df: dataframe with smiles and target columns.
@@ -180,7 +190,10 @@ def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, fun
     smiles_list = df[smiles_col].tolist()
     target_list = df[target_col].tolist()
 
-    feature_list = Parallel(n_jobs=8)(delayed(smiles_to_features_pyscf)(smiles, target, target_col, functional) for smiles, target in zip(smiles_list, target_list))
+    feature_list = Parallel(n_jobs=8)(
+        delayed(smiles_to_features_pyscf)(smiles, target, target_col, functional)
+        for smiles, target in zip(smiles_list, target_list)
+    )
 
     df_features = pd.DataFrame(feature_list)
     return df_features

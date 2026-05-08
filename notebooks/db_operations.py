@@ -72,8 +72,12 @@ def _():
             # 3. Create a temporary table to store Row IDs of matches.
             # We do this so we only execute the Python validation function ONCE per row
             # instead of twice (which would be required if we did standard INSERT + DELETE).
-            print("Evaluating rows using the `selfies` library (this may take a moment)...")
-            cursor.execute("CREATE TEMP TABLE selfies_to_move (row_id INTEGER PRIMARY KEY)")
+            print(
+                "Evaluating rows using the `selfies` library (this may take a moment)..."
+            )
+            cursor.execute(
+                "CREATE TEMP TABLE selfies_to_move (row_id INTEGER PRIMARY KEY)"
+            )
 
             # Scan the database and save the IDs of mistakenly placed SELFIES
             cursor.execute(
@@ -87,7 +91,9 @@ def _():
             cursor.execute("SELECT COUNT(*) FROM selfies_to_move")
             count = cursor.fetchone()[0]
 
-            print(f"Found {count} rows where 'canon_smiles' contains a correct SELFIES string.")
+            print(
+                f"Found {count} rows where 'canon_smiles' contains a correct SELFIES string."
+            )
 
             if count == 0:
                 print("No SELFIES found in the 'canon_smiles' column. Exiting.")
@@ -99,7 +105,9 @@ def _():
             print(f"Moving {count} rows to new table '{new_table_name}'...")
 
             # Spawn the new table by cloning the exact schema of the 'molecules' table
-            cursor.execute(f"CREATE TABLE IF NOT EXISTS {new_table_name} AS SELECT * FROM molecules WHERE 0")
+            cursor.execute(
+                f"CREATE TABLE IF NOT EXISTS {new_table_name} AS SELECT * FROM molecules WHERE 0"
+            )
 
             # Copy the mismatched rows into the new table using our Temp Table IDs
             cursor.execute(
@@ -117,7 +125,7 @@ def _():
             )
 
             conn.commit()
-            print(f"Successfully moved rows and cleaned up the 'molecules' table.")
+            print("Successfully moved rows and cleaned up the 'molecules' table.")
 
             # Reclaim unused physical hard-drive space freed up by the DELETE statement
             print("Vacuuming database to optimize and reclaim unused space...")

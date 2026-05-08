@@ -1,4 +1,5 @@
 """Script for generating comparison matrix."""
+
 import os
 from datetime import datetime
 
@@ -87,7 +88,13 @@ if __name__ == "__main__":
             df_rest = None
             print(df_expert1[df_expert1.isnull().any(axis=1)])
 
-            folds_experts1 = custom_data_kfold(df_expert1, df_expert1.loc[:, [target]], num_splits, num_bins, random_state)
+            folds_experts1 = custom_data_kfold(
+                df_expert1,
+                df_expert1.loc[:, [target]],
+                num_splits,
+                num_bins,
+                random_state,
+            )
             if df_rest is not None:
                 folds_all, df_all = combine_split(df_expert1, folds_experts1, df_rest)
             else:
@@ -113,7 +120,21 @@ if __name__ == "__main__":
             X_all = df_all.drop(columns=[target, "smiles"])
             y_all = df_all.loc[:, [target]]
 
-            cv = CrossValidationPipeline(X_all, y_all, num_features, cat_features, folds_all, metrics, SAVE_DIR, DATANAME, oversampling, False, (True, "grid_search"), feature_selection, verbose=True)
+            cv = CrossValidationPipeline(
+                X_all,
+                y_all,
+                num_features,
+                cat_features,
+                folds_all,
+                metrics,
+                SAVE_DIR,
+                DATANAME,
+                oversampling,
+                False,
+                (True, "grid_search"),
+                feature_selection,
+                verbose=True,
+            )
             results = cv.batch_train_and_eval(models)
             for key, value in results.items():
                 results_model = value

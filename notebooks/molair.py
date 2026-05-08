@@ -64,7 +64,12 @@ def _(lengths, lp):
 
 @app.cell
 def _(pd, vanilla_vocab_compliant):
-    pd.DataFrame(vanilla_vocab_compliant).to_csv("data/raw/substrate/train_substrate_vanilla_vocab_compliant.slf", sep=" ", index=None, header=None)
+    pd.DataFrame(vanilla_vocab_compliant).to_csv(
+        "data/raw/substrate/train_substrate_vanilla_vocab_compliant.slf",
+        sep=" ",
+        index=None,
+        header=None,
+    )
     return
 
 
@@ -76,7 +81,9 @@ def _(mo):
 
 @app.cell
 def _(config, pd, re):
-    chembl_selfies = pd.read_csv("data/chembl_35_sqlite/chembl_35_selfies.txt", sep=" ", header=None)
+    chembl_selfies = pd.read_csv(
+        "data/chembl_35_sqlite/chembl_35_selfies.txt", sep=" ", header=None
+    )
     chembl_selfies.columns = ["selfies"]
     print(chembl_selfies.shape)
 
@@ -97,13 +104,17 @@ def _(config, pd, re):
         # Check if all tokens are in the vocabulary
         return all(token in vocab for token in tokens)
 
-    chembl_selfies["vocab_compliant"] = chembl_selfies["selfies"].apply(lambda x: check_vocab_compliance(x, config["vocabulary"]))
+    chembl_selfies["vocab_compliant"] = chembl_selfies["selfies"].apply(
+        lambda x: check_vocab_compliance(x, config["vocabulary"])
+    )
     return (chembl_selfies,)
 
 
 @app.cell
 def _(chembl_selfies, re):
-    chembl_selfies["num_tokens"] = chembl_selfies["selfies"].apply(lambda x: len(re.findall(r"\[[^\]]+\]", x)))
+    chembl_selfies["num_tokens"] = chembl_selfies["selfies"].apply(
+        lambda x: len(re.findall(r"\[[^\]]+\]", x))
+    )
     # describe num_tokens only for vocab compliant selfies
     chembl_selfies[chembl_selfies["vocab_compliant"]]["num_tokens"].describe()
     return
@@ -112,14 +123,31 @@ def _(chembl_selfies, re):
 @app.cell
 def _(chembl_selfies, lp):
     # plot distribution of num_tokens and lengths
-    lp.ggplot({"num_tokens": chembl_selfies[chembl_selfies["vocab_compliant"]]["num_tokens"]}, lp.aes(x="num_tokens")) + lp.geom_histogram()
+    (
+        lp.ggplot(
+            {
+                "num_tokens": chembl_selfies[chembl_selfies["vocab_compliant"]][
+                    "num_tokens"
+                ]
+            },
+            lp.aes(x="num_tokens"),
+        )
+        + lp.geom_histogram()
+    )
     return
 
 
 @app.cell
 def _(chembl_selfies):
     # filter lengths <= 311
-    chembl_selfies[chembl_selfies["vocab_compliant"] & (chembl_selfies["num_tokens"] <= 311)].to_csv("data/chembl_35_sqlite/chembl_35_selfies_voc_compliant.txt", sep=" ", index=None, header=None)
+    chembl_selfies[
+        chembl_selfies["vocab_compliant"] & (chembl_selfies["num_tokens"] <= 311)
+    ].to_csv(
+        "data/chembl_35_sqlite/chembl_35_selfies_voc_compliant.txt",
+        sep=" ",
+        index=None,
+        header=None,
+    )
     return
 
 

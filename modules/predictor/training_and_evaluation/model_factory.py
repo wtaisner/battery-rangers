@@ -1,4 +1,5 @@
 """Definitions of models and models' parameters."""
+
 import pickle
 from typing import Callable
 
@@ -9,16 +10,13 @@ from xgboost import XGBRegressor
 
 
 class Models:
-    """
-    Class for ML models.
-    """
+    """Class for ML models."""
 
     _models: dict[str, Callable] = {}
 
     @classmethod
     def register(cls, name: str) -> Callable:
-        """
-        Register an ML model with a given name.
+        """Register an ML model with a given name.
 
         This method is used as a decorator to register an ML model
         under a specified name. The registered function can later be retrieved
@@ -35,8 +33,7 @@ class Models:
         return decorator
 
     def get_model(self, name: str, model_path: str | None = None) -> tuple:
-        """
-        Loads a selected model.
+        """Loads a selected model.
         :param name: name of the model, registered in the class.
         :param model_path: path to the saved model, if necessary (if this path is given, only a trained model and a name of the model will be returned).
         :return: "proper" model name, model and a parameter grid
@@ -53,9 +50,7 @@ class Models:
 
 @Models.register("knn")
 def _get_knn() -> tuple:
-    """
-    :return: knn model, its parameter grid and name
-    """
+    """:return: knn model, its parameter grid and name"""
     knn = KNeighborsRegressor(n_jobs=-1)
     knn_params = {"n_neighbors": [3, 5]}
     return knn, knn_params, "KNN Regressor"
@@ -63,9 +58,7 @@ def _get_knn() -> tuple:
 
 @Models.register("xgboost")
 def _get_xgboost() -> tuple:
-    """
-    :return: xgboost model, its parameter grid and name
-    """
+    """:return: xgboost model, its parameter grid and name"""
     xgb = XGBRegressor(random_state=42, n_jobs=-1)
     xgb_params = {
         "n_estimators": [10, 15, 25, 40, 50, 75, 100],
@@ -80,27 +73,28 @@ def _get_xgboost() -> tuple:
 
 @Models.register("random_forest")
 def _get_rf() -> tuple:
-    """
-    :return: random forest model, its parameter grid and name
-    """
+    """:return: random forest model, its parameter grid and name"""
     rf = RandomForestRegressor(random_state=42, n_jobs=-1)
-    rf_params = {"n_estimators": [10, 15, 25, 40, 50, 75, 100], "max_depth": [None, 3, 5, 8, 10], "min_samples_split": [2, 3, 4, 5], "min_samples_leaf": [1, 2, 4], "bootstrap": [True, False]}
+    rf_params = {
+        "n_estimators": [10, 15, 25, 40, 50, 75, 100],
+        "max_depth": [None, 3, 5, 8, 10],
+        "min_samples_split": [2, 3, 4, 5],
+        "min_samples_leaf": [1, 2, 4],
+        "bootstrap": [True, False],
+    }
     return rf, rf_params, "Random Forest Regressor"
 
 
 @Models.register("lasso")
 def _get_lasso() -> tuple:
-    """
-    :return: lasso model, its parameter grid and name
-    """
+    """:return: lasso model, its parameter grid and name"""
     lasso = Lasso(random_state=42)
     lasso_params = {"alpha": [0.1, 0.5, 1, 2, 5, 10, 20]}
     return lasso, lasso_params, "Lasso Regressor"
 
 
 def get_trained_model(model_path: str) -> object:
-    """
-    Loads trained model saved as a pickle file.
+    """Loads trained model saved as a pickle file.
     :param model_path: path to the saved model (pickle format)
     :return: trained model
     """

@@ -2,15 +2,15 @@
 
 run_type = "staged_learning"
 device = "{device}"
-seed = {seed}
+seed = "{seed}"
 
 [parameters]
 summary_csv_prefix = "{summary_csv_prefix}"
 use_checkpoint = false
 purge_memories = true
-batch_size = {rl_batch_size}
-unique_sequences = {rl_unique_sequences}
-randomize_smiles = {rl_randomize_smiles}
+batch_size = "{rl_batch_size}"
+unique_sequences = "{rl_unique_sequences}"
+randomize_smiles = "{rl_randomize_smiles}"
 
 # Dynamic paths
 prior_file = "{prior_model_path}"
@@ -18,21 +18,21 @@ agent_file = "{agent_file}"
 
 [learning_strategy]
 type = "{rl_learning_strategy_type}"
-sigma = {rl_learning_strategy_sigma}
-rate = {rl_learning_strategy_rate}
+sigma = "{rl_learning_strategy_sigma}"
+rate = "{rl_learning_strategy_rate}"
 
 [diversity_filter]
 type = "{rl_diversity_filter_type}"
-bucket_size = {rl_diversity_filter_bucket_size}
-minscore = {rl_diversity_filter_minscore}
-penalty_multiplier = {rl_diversity_filter_penalty_multiplier}
+bucket_size = "{rl_diversity_filter_bucket_size}"
+minscore = "{rl_diversity_filter_minscore}"
+penalty_multiplier = "{rl_diversity_filter_penalty_multiplier}"
 
 [[stage]]
 chkpt_file = '{output_model_path}'
 termination = "{rl_stage_termination}"
-max_score = {rl_stage_max_score}
-min_steps = {rl_stage_min_steps}
-max_steps = {rl_stage_max_steps}
+max_score = "{rl_stage_max_score}"
+min_steps = "{rl_stage_min_steps}"
+max_steps = "{rl_stage_max_steps}"
 
 [stage.scoring]
 type = "geometric_mean"
@@ -43,10 +43,10 @@ type = "geometric_mean"
 
 # This line uses the dynamic variable to create the correct component name,
 # e.g., [stage.scoring.component.BatteryPropertiesSubstrate]
-[stage.scoring.component.BatteryProperties{MoleculeTypePascalCase}]
+[stage.scoring.component."BatteryProperties{MoleculeTypePascalCase}"]
 
 # This line ALSO uses the dynamic variable to define the endpoint correctly.
-[[stage.scoring.component.BatteryProperties{MoleculeTypePascalCase}.endpoint]]
+[[stage.scoring.component."BatteryProperties{MoleculeTypePascalCase}".endpoint]]
 known_smiles_path = "{rl_known_smiles_path}"
 
 # Inception block is inserted here by the script if needed

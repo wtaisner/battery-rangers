@@ -1,5 +1,4 @@
-"""
-Wrapper to run flexible Mol-AIR experiments.
+"""Wrapper to run flexible Mol-AIR experiments.
 
 Features:
 - Conditionally runs pre-training if a 'Pretrain' section is in the config.
@@ -8,21 +7,24 @@ Features:
 - Performs a specified number of non-deterministic inference runs.
 - **Uses a temporary file to safely pass modified configurations to the factory classes.**
 """
+
 import argparse
 import os
 import tempfile
 
+import wandb
 import yaml
 
-import wandb
-
 # pylint: disable=import-error
-from modules.mol_air.train import MolRLInferenceFactory, MolRLPretrainFactory, MolRLTrainFactory
+from modules.mol_air.train import (
+    MolRLInferenceFactory,
+    MolRLPretrainFactory,
+    MolRLTrainFactory,
+)
 
 
 def run_experiment_stage(config: dict, stage: str, inference_runs: int = 1):
-    """
-    Helper function to run a specific stage (pretrain, train, inference)
+    """Helper function to run a specific stage (pretrain, train, inference)
     by writing the provided config to a temporary file and passing it to the factory.
     """
     # tempfile.NamedTemporaryFile creates a file that is automatically deleted on exit.
@@ -60,8 +62,7 @@ def run_experiment_stage(config: dict, stage: str, inference_runs: int = 1):
 
 
 def run_molair_experiment(config_path: str, init_selfies_path: str | None, inference_runs: int) -> None:
-    """
-    Runs a flexible Mol-AIR experiment sequence.
+    """Runs a flexible Mol-AIR experiment sequence.
     This version correctly handles the configuration dictionary format expected by the factories.
     """
     if not os.path.exists(config_path):
@@ -143,10 +144,23 @@ def run_molair_experiment(config_path: str, init_selfies_path: str | None, infer
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run flexible Mol-AIR experiments (Pre-train, Train, Inference).", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Run flexible Mol-AIR experiments (Pre-train, Train, Inference).",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("config_path", type=str, help="Path to the master YAML configuration file.")
-    parser.add_argument("--init_selfies_path", type=str, default=None, help="Path to a .slf file with initial SELFIES strings, one per line.")
-    parser.add_argument("--inference_runs", type=int, default=10, help="Number of inference runs to perform after RL training.")
+    parser.add_argument(
+        "--init_selfies_path",
+        type=str,
+        default=None,
+        help="Path to a .slf file with initial SELFIES strings, one per line.",
+    )
+    parser.add_argument(
+        "--inference_runs",
+        type=int,
+        default=10,
+        help="Number of inference runs to perform after RL training.",
+    )
     args = parser.parse_args()
 
     run_molair_experiment(args.config_path, args.init_selfies_path, args.inference_runs)

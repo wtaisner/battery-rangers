@@ -1,4 +1,5 @@
 """Utility functions for the features."""
+
 import logging
 
 import networkx as nx
@@ -14,19 +15,26 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 logger.setLevel(logging.INFO)
 
 
-def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_attempts: int = 2000, save_file: bool = False, filename: str = "") -> Chem.Mol | None:
-    """
-    Compute 3D conformer(s) for a given molecule using RDKit's ETKDGv3 algorithm and store in file.
+def compute_conformer(
+    molecule: str | Chem.Mol,
+    num_conformers: int = 1,
+    max_attempts: int = 2000,
+    save_file: bool = False,
+    filename: str = "",
+) -> Chem.Mol | None:
+    """Compute 3D conformer(s) for a given molecule using RDKit's ETKDGv3 algorithm and store in file.
+
     Args:
         molecule: A SMILES string or RDKit molecule.
         num_conformers: Number of conformers to generate.
         max_attempts: Maximum attempts for embedding.
         save_file: Whether to save the generated conformer(s) to an SDF file.
         filename: The filename to save the SDF file. If empty, uses molecule name.
+
     Returns:
         The RDKit molecule with 3D coordinates or None if generation failed.
-    """
 
+    """
     # 1. Standardize Input
     if isinstance(molecule, str):
         mol = Chem.MolFromSmiles(molecule)
@@ -45,7 +53,15 @@ def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_att
         mol_with_hs.SetProp("_Name", Chem.MolToSmiles(mol))
 
     # 5. Generate Conformers
-    conf_ids = rdDistGeom.EmbedMultipleConfs(mol=mol_with_hs, randomSeed=23, numConfs=num_conformers, maxAttempts=max_attempts, useRandomCoords=use_random_coords, numThreads=8, ETversion=2)
+    conf_ids = rdDistGeom.EmbedMultipleConfs(
+        mol=mol_with_hs,
+        randomSeed=23,
+        numConfs=num_conformers,
+        maxAttempts=max_attempts,
+        useRandomCoords=use_random_coords,
+        numThreads=8,
+        ETversion=2,
+    )
 
     if not conf_ids:
         logger.info(f"Failed to generate conformation for: {mol_with_hs.GetProp('_Name')}")
@@ -118,13 +134,14 @@ def compute_conformer(molecule: str | Chem.Mol, num_conformers: int = 1, max_att
 
 
 def mol2graph(molecule: str | Mol) -> nx.Graph:
-    """
-    Get a graph representation of a molecule.
+    """Get a graph representation of a molecule.
 
     Args:
         molecule: A SMILES string or RDKit molecule.
+
     Returns:
         (nx.Graph) The graph representation of the molecule
+
     """
     if isinstance(molecule, str):
         molecule = Chem.MolFromSmiles(molecule)
@@ -137,11 +154,11 @@ def mol2graph(molecule: str | Mol) -> nx.Graph:
 
 
 def get_aromatic_rings(molecule: Mol | str) -> list[tuple[int]]:
-    """
-    Get all aromatic rings in a molecule.
+    """Get all aromatic rings in a molecule.
 
     Args:
         molecule (Mol | str): The molecule to get aromatic rings from.
+
     Returns:
         A list of tuples with the indices of the atoms in the aromatic rings.
 
@@ -154,6 +171,7 @@ def get_aromatic_rings(molecule: Mol | str) -> list[tuple[int]]:
 
             N#CC(=N)C#N
             []
+
     """
     if isinstance(molecule, str):
         mol = Chem.MolFromSmiles(molecule)

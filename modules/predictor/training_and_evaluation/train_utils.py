@@ -1,6 +1,7 @@
 """Functions for model training"""
+
 import pickle
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 from mlxtend.feature_selection import SequentialFeatureSelector
@@ -14,9 +15,14 @@ from modules.predictor.training_and_evaluation.evaluation_metrics import smape
 # pylint: disable=invalid-name
 
 
-def feature_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: float, fixed_features: list) -> list:
-    """
-    Performs feature selection using the provided list of features (optimization of RMSE).
+def feature_search(
+    model: object,
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    train_size: float,
+    fixed_features: list,
+) -> list[Any]:
+    """Performs feature selection using the provided list of features (optimization of RMSE).
     :param model: prediction model.
     :param X: dataframe with features.
     :param y: dataframe with target variable.
@@ -25,20 +31,33 @@ def feature_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: 
     :return: best score and best features.
     """
     scorer = make_scorer(smape, greater_is_better=False)
-    folds = custom_data_split(X, y, train_size=train_size)
-    fixed_features_ids = tuple(X.columns.get_loc(f) for f in fixed_features)
+    folds = custom_data_split(x, y, train_size=train_size)
+    fixed_features_ids = tuple(x.columns.get_loc(f) for f in fixed_features)
 
     sfs = SequentialFeatureSelector(
-        model, k_features=(max(len(fixed_features), 1), len(X.columns)), forward=True, floating=False, scoring=scorer, cv=folds, n_jobs=-1, fixed_features=fixed_features_ids
+        model,
+        k_features=(max(len(fixed_features), 1), len(x.columns)),
+        forward=True,
+        floating=False,
+        scoring=scorer,
+        cv=folds,
+        n_jobs=-1,
+        fixed_features=fixed_features_ids,
     )
-    sfs.fit(X, y[y.columns[0]])
+    sfs.fit(x, y[y.columns[0]])
     print(sfs.k_feature_names_, sfs.k_score_)
-    return sfs.k_feature_names_
+    return list(sfs.k_feature_names_)
 
 
-def param_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: float, param_grid: dict, opt_method: Literal["grid_search", "bayesian_search"]) -> tuple:
-    """
-    Performs hyperparameter optimization using the provided parameter grid (optimization of RMSE).
+def param_search(
+    model: object,
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    train_size: float,
+    param_grid: dict,
+    opt_method: Literal["grid_search", "bayesian_search"],
+) -> tuple:
+    """Performs hyperparameter optimization using the provided parameter grid (optimization of RMSE).
     :param model: prediction model.
     :param X: dataframe with features.
     :param y: dataframe with target variable.
@@ -48,19 +67,40 @@ def param_search(model: object, X: pd.DataFrame, y: pd.DataFrame, train_size: fl
     :return: best score and best parameters.
     """
     scorer = make_scorer(smape, greater_is_better=False)
-    folds = custom_data_split(X, y, train_size=train_size)
+    folds = custom_data_split(x, y, train_size=train_size)
     if opt_method == "grid_search":
-        opt = GridSearchCV(estimator=model, param_grid=param_grid, cv=folds, scoring=scorer, refit=True, n_jobs=-1, return_train_score=True)
+        opt = GridSearchCV(
+            estimator=model,
+            param_grid=param_grid,
+            cv=folds,
+            scoring=scorer,
+            refit=True,
+            n_jobs=-1,
+            return_train_score=True,
+        )
     else:
-        opt = BayesSearchCV(estimator=model, search_spaces=param_grid, cv=folds, scoring=scorer, refit=True, n_jobs=-1, return_train_score=True)
+        opt = BayesSearchCV(
+            estimator=model,
+            search_spaces=param_grid,
+            cv=folds,
+            scoring=scorer,
+            refit=True,
+            n_jobs=-1,
+            return_train_score=True,
+        )
 
-    opt.fit(X.to_numpy(), y[y.columns[0]].to_numpy())
+    opt.fit(x.to_numpy(), y[y.columns[0]].to_numpy())
     return opt.best_score_, opt.best_params_
 
 
-def train_and_save_model(model: object, X: pd.DataFrame, y: pd.DataFrame, model_save_path: str, verbose: bool = False) -> object:
-    """
-    Trains and saves trained model.
+def train_and_save_model(
+    model: object,
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    model_save_path: str,
+    verbose: bool = False,
+) -> object:
+    """Trains and saves trained model.
     :param model: prediction model.
     :param X: data for prediction.
     :param y: list with features' names.
@@ -68,9 +108,9 @@ def train_and_save_model(model: object, X: pd.DataFrame, y: pd.DataFrame, model_
     :param verbose: whether to print model scores after training
     :return: trained model
     """
-    model.fit(X, y[y.columns[0]])
+    model.fit(x, y[y.columns[0]])
     if verbose:
-        print(model.score(X, y[y.columns[0]]))
+        print(model.score(x, y[y.columns[0]]))
     with open(model_save_path, "wb") as f:
         pickle.dump(model, f)
     return model

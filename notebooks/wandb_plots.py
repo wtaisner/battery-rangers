@@ -6,7 +6,6 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    import marimo as mo
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
@@ -36,12 +35,21 @@ def _(pd, wandb):
 
             # .config contains the hyperparameters.
             #  We remove special values that start with _.
-            config_list.append({k: v for k, v in run.config.items() if not k.startswith("_")})
+            config_list.append(
+                {k: v for k, v in run.config.items() if not k.startswith("_")}
+            )
 
             # .name is the human-readable name of the run.
             name_list.append(run.name)
 
-        runs_df = pd.DataFrame({"summary": summary_list, "config": config_list, "name": name_list, "tags": tags})
+        runs_df = pd.DataFrame(
+            {
+                "summary": summary_list,
+                "config": config_list,
+                "name": name_list,
+                "tags": tags,
+            }
+        )
         return runs_df
 
     return (extract_runs,)
@@ -75,7 +83,9 @@ def _(pd, runs_df):
     # unpack summary column into separate columns
     summary_df = runs_df["summary"].apply(pd.Series)
     config_df = runs_df["config"].apply(pd.Series)
-    final_df = pd.concat([runs_df["name"], runs_df["tags"], summary_df, config_df], axis=1)
+    final_df = pd.concat(
+        [runs_df["name"], runs_df["tags"], summary_df, config_df], axis=1
+    )
     # make tags to be a single string
     # final_df["tags"] = final_df["tags"].apply(lambda x: " ".join(x))
     # extract new column model_name from first word from name column
@@ -84,7 +94,12 @@ def _(pd, runs_df):
 
     final_df["tags"] = final_df["tags"].str.join(" ")
 
-    final_df["VUCS"] = final_df["validity_mean"] * final_df["uniqueness_mean"] * final_df["percent_passing_filters_mean"] * 100
+    final_df["VUCS"] = (
+        final_df["validity_mean"]
+        * final_df["uniqueness_mean"]
+        * final_df["percent_passing_filters_mean"]
+        * 100
+    )
 
     final_df["model_name"].unique(), final_df["tags"].unique()
     return (final_df,)
@@ -98,9 +113,20 @@ def _(final_df):
 
 @app.cell
 def _(final_df, pd):
-    pct_metrics = ["validity", "uniqueness", "novelty_wrt_reference_set", "novelty_wrt_training_set", "percent_passing_filters", "internal_diversity"]
+    pct_metrics = [
+        "validity",
+        "uniqueness",
+        "novelty_wrt_reference_set",
+        "novelty_wrt_training_set",
+        "percent_passing_filters",
+        "internal_diversity",
+    ]
 
-    metric_bases = [col.replace("_mean", "") for col in final_df.columns if col.endswith("_mean") and col.replace("_mean", "_std") in final_df.columns]
+    metric_bases = [
+        col.replace("_mean", "")
+        for col in final_df.columns
+        if col.endswith("_mean") and col.replace("_mean", "_std") in final_df.columns
+    ]
 
     metadata_cols = ["name", "tags", "molecule_type", "VUCS"]
     output_df = final_df[metadata_cols].copy()
@@ -114,14 +140,38 @@ def _(final_df, pd):
 
         if metric in pct_metrics:
             # PERCENTAGE LOGIC:
-            output_df[metric] = (mean_val * 100).map("{:.1f}".format) + "(" + (std_val * 1000).map("{:.0f}".format) + ")"
+            output_df[metric] = (
+                (mean_val * 100).map("{:.1f}".format)
+                + "("
+                + (std_val * 1000).map("{:.0f}".format)
+                + ")"
+            )
         else:
             # ABSOLUTE LOGIC (FCD, #circles):
-            output_df[metric] = mean_val.map("{:.1f}".format) + "(" + (std_val * 10).map("{:.0f}".format) + ")"
+            output_df[metric] = (
+                mean_val.map("{:.1f}".format)
+                + "("
+                + (std_val * 10).map("{:.0f}".format)
+                + ")"
+            )
 
     output_df.drop(columns=["num_valid_molecules"], inplace=True)
-    # reorder columns to  name, tags, molecule type, validity, uniquness, internal diversity, circles, fcd, novelty_wrt_reference, passing filters
-    output_df = output_df[["name", "tags", "molecule_type", "validity", "uniqueness", "internal_diversity", "#circles", "fcd", "novelty_wrt_reference_set", "percent_passing_filters", "VUCS"]]
+    # reorder columns to  name, tags, molecule type, validity, uniqueness, internal diversity, circles, fcd, novelty_wrt_reference, passing filters
+    output_df = output_df[
+        [
+            "name",
+            "tags",
+            "molecule_type",
+            "validity",
+            "uniqueness",
+            "internal_diversity",
+            "#circles",
+            "fcd",
+            "novelty_wrt_reference_set",
+            "percent_passing_filters",
+            "VUCS",
+        ]
+    ]
     output_df
     return (output_df,)
 
@@ -131,7 +181,9 @@ def _(final_df, output_df, plt, sns):
     # correlation matrix for metrics columns per each molecule_type
     import numpy as np
 
-    metrics_cols = [col for col in final_df.columns if "_mean" in col and "novelty" not in col]
+    metrics_cols = [
+        col for col in final_df.columns if "_mean" in col and "novelty" not in col
+    ]
 
     metrics_cols.remove("num_valid_molecules_mean")
     metrics_cols.append("VUCS")
@@ -153,7 +205,6 @@ def _(final_df):
         import matplotlib.colors as mcolors
         import matplotlib.pyplot as plt
         import numpy as np
-        import pandas as pd
         import seaborn as sns
         from matplotlib.lines import Line2D
         from scipy.stats import pearsonr
@@ -169,19 +220,27 @@ def _(final_df):
         display_name_map = {type_a_raw: "Substrate", type_b_raw: "Lattice node"}
 
         # 2. Define visible Gradients
-        cmap_a = mcolors.LinearSegmentedColormap.from_list("sub_grad", ["#BDC9CE", "#4A6572"])
-        cmap_b = mcolors.LinearSegmentedColormap.from_list("node_grad", ["#EBD7D1", "#A35D47"])
+        cmap_a = mcolors.LinearSegmentedColormap.from_list(
+            "sub_grad", ["#BDC9CE", "#4A6572"]
+        )
+        cmap_b = mcolors.LinearSegmentedColormap.from_list(
+            "node_grad", ["#EBD7D1", "#A35D47"]
+        )
 
         type_cmaps = {type_a_raw: cmap_a, type_b_raw: cmap_b}
         type_base_colors = {type_a_raw: "#4A6572", type_b_raw: "#A35D47"}
 
         num_vars = len(mean_cols)
-        fig, axes = plt.subplots(num_vars, num_vars, figsize=(num_vars * 5.5, num_vars * 5.5))
+        fig, axes = plt.subplots(
+            num_vars, num_vars, figsize=(num_vars * 5.5, num_vars * 5.5)
+        )
 
         # 3. Logarithmic Scaling
         vmin, vmax = 0.001, 0.5
         norm = mcolors.LogNorm(vmin=vmin, vmax=vmax)
-        intensity_cmap = mcolors.LinearSegmentedColormap.from_list("intensity", ["#f0f0f0", "#111111"])
+        intensity_cmap = mcolors.LinearSegmentedColormap.from_list(
+            "intensity", ["#f0f0f0", "#111111"]
+        )
 
         for i in range(num_vars):
             for j in range(num_vars):
@@ -200,15 +259,28 @@ def _(final_df):
                         width=0.5,
                         showfliers=False,
                     )
-                    sns.stripplot(data=final_df, x="molecule_type", y=mean_cols[i], ax=ax, color=".1", size=5, alpha=0.4, dodge=True)
-                    ax.set_xticklabels([display_name_map[type_a_raw], display_name_map[type_b_raw]])
+                    sns.stripplot(
+                        data=final_df,
+                        x="molecule_type",
+                        y=mean_cols[i],
+                        ax=ax,
+                        color=".1",
+                        size=5,
+                        alpha=0.4,
+                        dodge=True,
+                    )
+                    ax.set_xticklabels(
+                        [display_name_map[type_a_raw], display_name_map[type_b_raw]]
+                    )
                     ax.set_xlabel("")
                     ax.set_ylabel("")
                 else:
                     current_type = type_a_raw if i > j else type_b_raw
                     subset = final_df[final_df["molecule_type"] == current_type].copy()
                     f_vals = subset[filter_col].clip(lower=vmin, upper=vmax)
-                    point_colors = [type_cmaps[current_type](norm(val)) for val in f_vals]
+                    point_colors = [
+                        type_cmaps[current_type](norm(val)) for val in f_vals
+                    ]
                     point_sizes = (subset[filter_col] * 600) + 100
 
                     ax.scatter(
@@ -230,28 +302,70 @@ def _(final_df):
                         fontsize=18,
                         fontweight="bold",
                         verticalalignment="top",
-                        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8, edgecolor="none"),
+                        bbox=dict(
+                            boxstyle="round,pad=0.2",
+                            facecolor="white",
+                            alpha=0.8,
+                            edgecolor="none",
+                        ),
                     )
 
                 if j == 0:
-                    ax.set_ylabel(display_names[i], fontweight="bold", fontsize=22, labelpad=15)
+                    ax.set_ylabel(
+                        display_names[i], fontweight="bold", fontsize=22, labelpad=15
+                    )
                 if i == num_vars - 1:
-                    ax.set_xlabel(display_names[j], fontweight="bold", fontsize=22, labelpad=15)
+                    ax.set_xlabel(
+                        display_names[j], fontweight="bold", fontsize=22, labelpad=15
+                    )
 
         # --- REFINED UNIFIED LEGEND ---
         type_handles = [
-            Line2D([0], [0], marker="o", color="w", label="Substrate", markerfacecolor="#4A6572", markersize=14, markeredgecolor="0.2"),
-            Line2D([0], [0], marker="o", color="w", label="Lattice node", markerfacecolor="#A35D47", markersize=14, markeredgecolor="0.2"),
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                label="Substrate",
+                markerfacecolor="#4A6572",
+                markersize=14,
+                markeredgecolor="0.2",
+            ),
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                label="Lattice node",
+                markerfacecolor="#A35D47",
+                markersize=14,
+                markeredgecolor="0.2",
+            ),
         ]
 
         size_values = [0.01, 0.1, 0.5]
         size_and_color_handles = [
-            Line2D([0], [0], marker="o", color="w", markerfacecolor=intensity_cmap(norm(v)), markeredgecolor="0.2", markersize=np.sqrt((v * 600) + 100), label=f"{int(v*100)}%") for v in size_values
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                markerfacecolor=intensity_cmap(norm(v)),
+                markeredgecolor="0.2",
+                markersize=np.sqrt((v * 600) + 100),
+                label=f"{int(v * 100)}%",
+            )
+            for v in size_values
         ]
 
         # CSR header handle
         csr_header = [Line2D([0], [0], color="none", label="CSR")]
-        all_handles = type_handles + [Line2D([0], [0], color="none", label="")] + csr_header + size_and_color_handles
+        all_handles = (
+            type_handles
+            + [Line2D([0], [0], color="none", label="")]
+            + csr_header
+            + size_and_color_handles
+        )
 
         leg = fig.legend(
             handles=all_handles,
@@ -276,7 +390,12 @@ def _(final_df):
                 t.set_position((-35, 0))
 
         plt.tight_layout()
-        plt.savefig("diversity_quality_matrix.svg", format="svg", transparent=True, bbox_inches="tight")
+        plt.savefig(
+            "diversity_quality_matrix.svg",
+            format="svg",
+            transparent=True,
+            bbox_inches="tight",
+        )
         plt.show()
 
     _()
@@ -294,7 +413,9 @@ def _(final_df):
         from matplotlib.ticker import PercentFormatter
         from scipy.stats import gaussian_kde
 
-        def plot_frontier(df: pd.DataFrame, name_col: str | None = None, show_validity: bool = False) -> None:
+        def plot_frontier(
+            df: pd.DataFrame, name_col: str | None = None, show_validity: bool = False
+        ) -> None:
             """
             Discovery Frontier Analysis Visualization:
             - Y-axis label updated to 'Constraint Satisfaction Rate'.
@@ -309,13 +430,35 @@ def _(final_df):
 
             if show_validity:
                 fig_w, fig_h = 24, 22
-                gs = GridSpec(5, 5, hspace=0, wspace=0, height_ratios=[0.3, 5, 0.8, 0.3, 5], width_ratios=[6, 0.4, 0.8, 6, 0.4], right=0.98, top=0.95, bottom=0.1)
+                gs = GridSpec(
+                    5,
+                    5,
+                    hspace=0,
+                    wspace=0,
+                    height_ratios=[0.3, 5, 0.8, 0.3, 5],
+                    width_ratios=[6, 0.4, 0.8, 6, 0.4],
+                    right=0.98,
+                    top=0.95,
+                    bottom=0.1,
+                )
             else:
                 fig_w, fig_h = 24, 11
-                gs = GridSpec(2, 5, hspace=0, wspace=0, height_ratios=[0.3, 5], width_ratios=[6, 0.4, 0.8, 6, 0.4], right=0.98, top=0.95, bottom=0.25)
+                gs = GridSpec(
+                    2,
+                    5,
+                    hspace=0,
+                    wspace=0,
+                    height_ratios=[0.3, 5],
+                    width_ratios=[6, 0.4, 0.8, 6, 0.4],
+                    right=0.98,
+                    top=0.95,
+                    bottom=0.25,
+                )
 
             iso_levels = [1.0, 2.5, 5.0, 10.0, 20.0, 30.0, 40.0]
-            x_mesh, y_mesh = np.meshgrid(np.linspace(0.001, 1.0, 300), np.linspace(0.001, 0.5, 300))
+            x_mesh, y_mesh = np.meshgrid(
+                np.linspace(0.001, 1.0, 300), np.linspace(0.001, 0.5, 300)
+            )
             Z_mesh = (x_mesh * y_mesh) * 100
 
             def to_plain(text) -> str:
@@ -344,13 +487,22 @@ def _(final_df):
                         continue
 
                     if show_validity:
-                        r_rug, r_main = (0 if m_idx == 0 else 3), (1 if m_idx == 0 else 4)
-                        c_main, c_rug = (0 if c_idx == 0 else 3), (1 if c_idx == 0 else 4)
+                        r_rug, r_main = (
+                            (0 if m_idx == 0 else 3),
+                            (1 if m_idx == 0 else 4),
+                        )
+                        c_main, c_rug = (
+                            (0 if c_idx == 0 else 3),
+                            (1 if c_idx == 0 else 4),
+                        )
                         x_var = "uniqueness_mean" if c_idx == 0 else "validity_mean"
                         x_label = "Uniqueness" if c_idx == 0 else "Validity"
                     else:
                         r_rug, r_main = 0, 1
-                        c_main, c_rug = (0 if m_idx == 0 else 3), (1 if m_idx == 0 else 4)
+                        c_main, c_rug = (
+                            (0 if m_idx == 0 else 3),
+                            (1 if m_idx == 0 else 4),
+                        )
                         x_var = "uniqueness_mean"
                         x_label = "Uniqueness"
 
@@ -359,18 +511,59 @@ def _(final_df):
                     ax_rug_y = fig.add_subplot(gs[r_main, c_rug])
 
                     ax_main.tick_params(labelbottom=True, labelsize=20)
-                    ax_main.set_xlabel(x_label, fontsize=28, fontweight="bold", labelpad=25)
+                    ax_main.set_xlabel(
+                        x_label, fontsize=28, fontweight="bold", labelpad=25
+                    )
 
-                    contours = ax_main.contour(x_mesh, y_mesh, Z_mesh, levels=iso_levels, colors="darkgray", alpha=0.4, linestyles="--")
+                    contours = ax_main.contour(
+                        x_mesh,
+                        y_mesh,
+                        Z_mesh,
+                        levels=iso_levels,
+                        colors="darkgray",
+                        alpha=0.4,
+                        linestyles="--",
+                    )
                     fmt = {l: f"{l:.1f}%" for l in iso_levels}
-                    ax_main.clabel(contours, inline=True, fontsize=18, fmt=fmt, colors="black")
+                    ax_main.clabel(
+                        contours, inline=True, fontsize=18, fmt=fmt, colors="black"
+                    )
 
-                    arrow = FancyArrowPatch((0.15, 0.075), (0.82, 0.41), arrowstyle="->,head_width=2.5,head_length=3.0", color="darkgray", alpha=0.15, linewidth=40, zorder=1, mutation_scale=20)
+                    arrow = FancyArrowPatch(
+                        (0.15, 0.075),
+                        (0.82, 0.41),
+                        arrowstyle="->,head_width=2.5,head_length=3.0",
+                        color="darkgray",
+                        alpha=0.15,
+                        linewidth=40,
+                        zorder=1,
+                        mutation_scale=20,
+                    )
                     ax_main.add_patch(arrow)
 
-                    ax_main.text(0.48, 0.24, "VUCS", color="gray", fontsize=28, fontweight="bold", ha="center", va="center", rotation=26.57, alpha=0.6, zorder=2)
+                    ax_main.text(
+                        0.48,
+                        0.24,
+                        "VUCS",
+                        color="gray",
+                        fontsize=28,
+                        fontweight="bold",
+                        ha="center",
+                        va="center",
+                        rotation=26.57,
+                        alpha=0.6,
+                        zorder=2,
+                    )
 
-                    ax_main.scatter(subset[x_var], subset["percent_passing_filters_mean"], color=m_color, s=200, edgecolors="black", linewidths=0.8, zorder=10)
+                    ax_main.scatter(
+                        subset[x_var],
+                        subset["percent_passing_filters_mean"],
+                        color=m_color,
+                        s=200,
+                        edgecolors="black",
+                        linewidths=0.8,
+                        zorder=10,
+                    )
 
                     if name_col:
                         subset["model_fam"] = subset[name_col].apply(get_model_family)
@@ -391,25 +584,43 @@ def _(final_df):
                                 fontweight="bold",
                                 ha=ha,
                                 zorder=12,
-                                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.85),
-                                arrowprops=dict(arrowstyle="->", color="black", alpha=0.3),
+                                bbox=dict(
+                                    boxstyle="round,pad=0.2",
+                                    fc="white",
+                                    ec="gray",
+                                    alpha=0.85,
+                                ),
+                                arrowprops=dict(
+                                    arrowstyle="->", color="black", alpha=0.3
+                                ),
                             )
 
-                    for ax_r, data_vec, orient in [(ax_rug_x, subset[x_var], "h"), (ax_rug_y, subset["percent_passing_filters_mean"], "v")]:
+                    for ax_r, data_vec, orient in [
+                        (ax_rug_x, subset[x_var], "h"),
+                        (ax_rug_y, subset["percent_passing_filters_mean"], "v"),
+                    ]:
                         if len(data_vec.unique()) > 1:
                             kde = gaussian_kde(data_vec)
                             supp = np.linspace(0, 1 if orient == "h" else 0.5, 200)
                             dens = kde(supp)
                             dens /= dens.max()
                             if orient == "h":
-                                ax_r.fill_between(supp, 0, dens, color=m_color, alpha=0.2, lw=0)
+                                ax_r.fill_between(
+                                    supp, 0, dens, color=m_color, alpha=0.2, lw=0
+                                )
                             else:
-                                ax_r.fill_betweenx(supp, 0, dens, color=m_color, alpha=0.2, lw=0)
+                                ax_r.fill_betweenx(
+                                    supp, 0, dens, color=m_color, alpha=0.2, lw=0
+                                )
 
                         if orient == "h":
-                            ax_r.vlines(data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8)
+                            ax_r.vlines(
+                                data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8
+                            )
                         else:
-                            ax_r.hlines(data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8)
+                            ax_r.hlines(
+                                data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8
+                            )
                         ax_r.axis("off")
                         ax_r.set_xlim(0, 1) if orient == "h" else ax_r.set_ylim(0, 0.5)
 
@@ -421,9 +632,14 @@ def _(final_df):
                     ax_main.grid(True, linestyle=":", alpha=0.3)
 
                     if c_idx == 0:
-                        ax_main.set_ylabel("Constraint Satisfaction Rate", fontsize=28, fontweight="bold", labelpad=25)
+                        ax_main.set_ylabel(
+                            "Constraint Satisfaction Rate",
+                            fontsize=28,
+                            fontweight="bold",
+                            labelpad=25,
+                        )
                     else:
-                        plt.setp(ax_main.get_yticklabels(), visible=False)
+                        plt.step(ax_main.get_yticklabels(), visible=False)
 
             filename = "VUCS_frontier" + ("_validity" if show_validity else "") + ".svg"
             plt.savefig(filename, format="svg", transparent=True, bbox_inches="tight")
@@ -446,7 +662,12 @@ def _(final_df):
         from matplotlib.ticker import PercentFormatter
         from scipy.stats import gaussian_kde
 
-        def plot_frontier(df: pd.DataFrame, name_col: str | None = None, show_validity: bool = False, jitter: float = 0.012) -> None:
+        def plot_frontier(
+            df: pd.DataFrame,
+            name_col: str | None = None,
+            show_validity: bool = False,
+            jitter: float = 0.012,
+        ) -> None:
             """
             Discovery Frontier Analysis Visualization:
             - Rug plots aggregated per molecule type using original colors.
@@ -473,13 +694,35 @@ def _(final_df):
 
             if show_validity:
                 fig_w, fig_h = 24, 22
-                gs = GridSpec(5, 5, hspace=0, wspace=0, height_ratios=[0.3, 5, 0.8, 0.3, 5], width_ratios=[6, 0.4, 0.8, 6, 0.4], right=0.98, top=0.95, bottom=bottom_margin)
+                gs = GridSpec(
+                    5,
+                    5,
+                    hspace=0,
+                    wspace=0,
+                    height_ratios=[0.3, 5, 0.8, 0.3, 5],
+                    width_ratios=[6, 0.4, 0.8, 6, 0.4],
+                    right=0.98,
+                    top=0.95,
+                    bottom=bottom_margin,
+                )
             else:
                 fig_w, fig_h = 24, 11
-                gs = GridSpec(2, 5, hspace=0, wspace=0, height_ratios=[0.3, 5], width_ratios=[6, 0.4, 0.8, 6, 0.4], right=0.98, top=0.95, bottom=bottom_margin)
+                gs = GridSpec(
+                    2,
+                    5,
+                    hspace=0,
+                    wspace=0,
+                    height_ratios=[0.3, 5],
+                    width_ratios=[6, 0.4, 0.8, 6, 0.4],
+                    right=0.98,
+                    top=0.95,
+                    bottom=bottom_margin,
+                )
 
             iso_levels = [1.0, 2.5, 5.0, 10.0, 20.0, 30.0, 40.0]
-            x_mesh, y_mesh = np.meshgrid(np.linspace(0.001, 1.0, 300), np.linspace(0.001, 0.5, 300))
+            x_mesh, y_mesh = np.meshgrid(
+                np.linspace(0.001, 1.0, 300), np.linspace(0.001, 0.5, 300)
+            )
             Z_mesh = (x_mesh * y_mesh) * 100
 
             # Reproducible random number generator for jitter
@@ -512,23 +755,40 @@ def _(final_df):
                 # Pre-calculate features from names
                 if name_col:
                     subset["model_fam"] = subset[name_col].apply(get_model_family)
-                    subset["ft"] = subset[name_col].apply(lambda x: "ft" in str(x).lower())
-                    subset["rl"] = subset[name_col].apply(lambda x: "rl" in str(x).lower())
-                    subset["seed"] = subset[name_col].apply(lambda x: "seed" in str(x).lower())
-                    subset["chembl35"] = subset[name_col].apply(lambda x: "chembl35" in str(x).lower())
+                    subset["ft"] = subset[name_col].apply(
+                        lambda x: "ft" in str(x).lower()
+                    )
+                    subset["rl"] = subset[name_col].apply(
+                        lambda x: "rl" in str(x).lower()
+                    )
+                    subset["seed"] = subset[name_col].apply(
+                        lambda x: "seed" in str(x).lower()
+                    )
+                    subset["chembl35"] = subset[name_col].apply(
+                        lambda x: "chembl35" in str(x).lower()
+                    )
 
                 for c_idx in range(2):
                     if not show_validity and m_idx != c_idx:
                         continue
 
                     if show_validity:
-                        r_rug, r_main = (0 if m_idx == 0 else 3), (1 if m_idx == 0 else 4)
-                        c_main, c_rug = (0 if c_idx == 0 else 3), (1 if c_idx == 0 else 4)
+                        r_rug, r_main = (
+                            (0 if m_idx == 0 else 3),
+                            (1 if m_idx == 0 else 4),
+                        )
+                        c_main, c_rug = (
+                            (0 if c_idx == 0 else 3),
+                            (1 if c_idx == 0 else 4),
+                        )
                         x_var = "uniqueness_mean" if c_idx == 0 else "validity_mean"
                         x_label = "Uniqueness" if c_idx == 0 else "Validity"
                     else:
                         r_rug, r_main = 0, 1
-                        c_main, c_rug = (0 if m_idx == 0 else 3), (1 if m_idx == 0 else 4)
+                        c_main, c_rug = (
+                            (0 if m_idx == 0 else 3),
+                            (1 if m_idx == 0 else 4),
+                        )
                         x_var = "uniqueness_mean"
                         x_label = "Uniqueness"
 
@@ -539,7 +799,9 @@ def _(final_df):
 
                         # Clip to bounds slightly inside the axis lines to prevent marker overlap with axes
                         subset["plot_x"] = (subset[x_var] + x_noise).clip(0.015, 0.985)
-                        subset["plot_y"] = (subset["percent_passing_filters_mean"] + y_noise).clip(0.005, 0.495)
+                        subset["plot_y"] = (
+                            subset["percent_passing_filters_mean"] + y_noise
+                        ).clip(0.005, 0.495)
                     else:
                         subset["plot_x"] = subset[x_var]
                         subset["plot_y"] = subset["percent_passing_filters_mean"]
@@ -551,31 +813,80 @@ def _(final_df):
                     ax_rug_y = fig.add_subplot(gs[r_main, c_rug])
 
                     ax_main.tick_params(labelbottom=True, labelsize=20)
-                    ax_main.set_xlabel(x_label, fontsize=28, fontweight="bold", labelpad=25)
+                    ax_main.set_xlabel(
+                        x_label, fontsize=28, fontweight="bold", labelpad=25
+                    )
 
-                    contours = ax_main.contour(x_mesh, y_mesh, Z_mesh, levels=iso_levels, colors="darkgray", alpha=0.4, linestyles="--")
+                    contours = ax_main.contour(
+                        x_mesh,
+                        y_mesh,
+                        Z_mesh,
+                        levels=iso_levels,
+                        colors="darkgray",
+                        alpha=0.4,
+                        linestyles="--",
+                    )
                     fmt = {l: f"{l:.1f}%" for l in iso_levels}
-                    ax_main.clabel(contours, inline=True, fontsize=18, fmt=fmt, colors="black")
+                    ax_main.clabel(
+                        contours, inline=True, fontsize=18, fmt=fmt, colors="black"
+                    )
 
                     # Group by ALL combinatorial features to plot efficiently
-                    for (model, has_ft, has_rl, has_seed, is_c35), group in subset.groupby(["model_fam", "ft", "rl", "seed", "chembl35"]):
+                    for (
+                        model,
+                        has_ft,
+                        has_rl,
+                        has_seed,
+                        is_c35,
+                    ), group in subset.groupby(
+                        ["model_fam", "ft", "rl", "seed", "chembl35"]
+                    ):
                         # Resolve base color
-                        color_val = model_colors.get(model, "#808080") if m_type == "substrate" else mol_colors["node"]
+                        color_val = (
+                            model_colors.get(model, "#808080")
+                            if m_type == "substrate"
+                            else mol_colors["node"]
+                        )
 
                         # Resolve Visual Grammar
                         m_shape = "^" if has_rl else "o"
-                        m_face = color_val if has_ft else "white"  # Solid for FT, Hollow for Base
-                        m_edge = "black" if has_ft else color_val  # Contrast edge for FT, Colored edge for Base
-                        m_ls = "--" if is_c35 else "-"  # Dashed for ChEMBL35, Solid for Vanilla
+                        m_face = (
+                            color_val if has_ft else "white"
+                        )  # Solid for FT, Hollow for Base
+                        m_edge = (
+                            "black" if has_ft else color_val
+                        )  # Contrast edge for FT, Colored edge for Base
+                        m_ls = (
+                            "--" if is_c35 else "-"
+                        )  # Dashed for ChEMBL35, Solid for Vanilla
                         m_lw = 2.5  # Thick enough for dashes to be highly visible
                         m_size = 280 if has_rl else 220
 
                         # 1. Plot Base Geometry
-                        ax_main.scatter(group["plot_x"], group["plot_y"], facecolor=m_face, edgecolor=m_edge, marker=m_shape, s=m_size, linewidth=m_lw, linestyle=m_ls, zorder=10)
+                        ax_main.scatter(
+                            group["plot_x"],
+                            group["plot_y"],
+                            facecolor=m_face,
+                            edgecolor=m_edge,
+                            marker=m_shape,
+                            s=m_size,
+                            linewidth=m_lw,
+                            linestyle=m_ls,
+                            zorder=10,
+                        )
 
                         # 2. Plot Seed Overlay
                         if has_seed:
-                            ax_main.scatter(group["plot_x"], group["plot_y"], color="black", edgecolor="white", linewidth=0.8, marker="*", s=120, zorder=11)
+                            ax_main.scatter(
+                                group["plot_x"],
+                                group["plot_y"],
+                                color="black",
+                                edgecolor="white",
+                                linewidth=0.8,
+                                marker="*",
+                                s=120,
+                                zorder=11,
+                            )
 
                     # Peak Annotations (pointed to the jittered location)
                     if name_col:
@@ -597,12 +908,22 @@ def _(final_df):
                                     fontweight="bold",
                                     ha=ha,
                                     zorder=12,
-                                    bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.85),
-                                    arrowprops=dict(arrowstyle="->", color="black", alpha=0.3),
+                                    bbox=dict(
+                                        boxstyle="round,pad=0.2",
+                                        fc="white",
+                                        ec="gray",
+                                        alpha=0.85,
+                                    ),
+                                    arrowprops=dict(
+                                        arrowstyle="->", color="black", alpha=0.3
+                                    ),
                                 )
 
                     # KDE and Rug Plots aggregated by molecule type
-                    for ax_r, data_col, orient in [(ax_rug_x, x_var, "h"), (ax_rug_y, "percent_passing_filters_mean", "v")]:
+                    for ax_r, data_col, orient in [
+                        (ax_rug_x, x_var, "h"),
+                        (ax_rug_y, "percent_passing_filters_mean", "v"),
+                    ]:
                         data_vec = subset[data_col]
 
                         if len(data_vec.unique()) > 1:
@@ -611,14 +932,22 @@ def _(final_df):
                             dens = kde(supp)
                             dens /= dens.max()
                             if orient == "h":
-                                ax_r.fill_between(supp, 0, dens, color=m_color, alpha=0.2, lw=0)
+                                ax_r.fill_between(
+                                    supp, 0, dens, color=m_color, alpha=0.2, lw=0
+                                )
                             else:
-                                ax_r.fill_betweenx(supp, 0, dens, color=m_color, alpha=0.2, lw=0)
+                                ax_r.fill_betweenx(
+                                    supp, 0, dens, color=m_color, alpha=0.2, lw=0
+                                )
 
                         if orient == "h":
-                            ax_r.vlines(data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8)
+                            ax_r.vlines(
+                                data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8
+                            )
                         else:
-                            ax_r.hlines(data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8)
+                            ax_r.hlines(
+                                data_vec, 0, 1, color=m_color, lw=1.5, alpha=0.8
+                            )
 
                         ax_r.axis("off")
                         ax_r.set_xlim(0, 1) if orient == "h" else ax_r.set_ylim(0, 0.5)
@@ -631,36 +960,139 @@ def _(final_df):
                     ax_main.grid(True, linestyle=":", alpha=0.3)
 
                     if c_idx == 0:
-                        ax_main.set_ylabel("Constraint Satisfaction Rate", fontsize=28, fontweight="bold", labelpad=25)
+                        ax_main.set_ylabel(
+                            "Constraint Satisfaction Rate",
+                            fontsize=28,
+                            fontweight="bold",
+                            labelpad=25,
+                        )
                     else:
-                        plt.setp(ax_main.get_yticklabels(), visible=False)
+                        plt.step(ax_main.get_yticklabels(), visible=False)
 
             # --- Figure-Level Legend Placement ---
             # 1. Model Colors
-            color_handles = [Line2D([0], [0], marker="o", color="w", label=m, markerfacecolor=c, markersize=14, markeredgecolor="black") for m, c in model_colors.items()]
+            color_handles = [
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="w",
+                    label=m,
+                    markerfacecolor=c,
+                    markersize=14,
+                    markeredgecolor="black",
+                )
+                for m, c in model_colors.items()
+            ]
 
             # 2. Pre-training (Cleaned up labels without parentheses)
-            sc_vanilla = last_ax_main.scatter([], [], facecolor="white", edgecolor="black", marker="o", s=150, linewidth=2.5, linestyle="-", label="Vanilla")
-            sc_c35 = last_ax_main.scatter([], [], facecolor="white", edgecolor="black", marker="o", s=150, linewidth=2.5, linestyle="--", label="ChEMBL35")
+            sc_vanilla = last_ax_main.scatter(
+                [],
+                [],
+                facecolor="white",
+                edgecolor="black",
+                marker="o",
+                s=150,
+                linewidth=2.5,
+                linestyle="-",
+                label="Vanilla",
+            )
+            sc_c35 = last_ax_main.scatter(
+                [],
+                [],
+                facecolor="white",
+                edgecolor="black",
+                marker="o",
+                s=150,
+                linewidth=2.5,
+                linestyle="--",
+                label="ChEMBL35",
+            )
             pretrain_handles = [sc_vanilla, sc_c35]
 
             # 3. Combinable Methods
             comp_handles = [
-                Line2D([0], [0], marker="o", color="w", markerfacecolor="white", markeredgecolor="#808080", markeredgewidth=2.5, markersize=14, label="Base (Hollow)"),
-                Line2D([0], [0], marker="o", color="w", markerfacecolor="#808080", markeredgecolor="black", markeredgewidth=1.5, markersize=14, label="+ FT (Solid Fill)"),
-                Line2D([0], [0], marker="^", color="w", markerfacecolor="#808080", markeredgecolor="black", markersize=14, label="+ RL (Triangle Shape)"),
-                Line2D([0], [0], marker="*", color="w", markerfacecolor="black", markeredgecolor="white", markeredgewidth=0.8, markersize=14, label="+ Seed (Inner Star)"),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="w",
+                    markerfacecolor="white",
+                    markeredgecolor="#808080",
+                    markeredgewidth=2.5,
+                    markersize=14,
+                    label="Base (Hollow)",
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="w",
+                    markerfacecolor="#808080",
+                    markeredgecolor="black",
+                    markeredgewidth=1.5,
+                    markersize=14,
+                    label="+ FT (Solid Fill)",
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="^",
+                    color="w",
+                    markerfacecolor="#808080",
+                    markeredgecolor="black",
+                    markersize=14,
+                    label="+ RL (Triangle Shape)",
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="*",
+                    color="w",
+                    markerfacecolor="black",
+                    markeredgecolor="white",
+                    markeredgewidth=0.8,
+                    markersize=14,
+                    label="+ Seed (Inner Star)",
+                ),
             ]
 
             # Draw Legends on the overall figure, separated into two rows
 
             # Row 1 (Top Row of Legend): Model Colors & Pre-training
-            fig.legend(handles=color_handles, title="Model Colors", loc="lower center", bbox_to_anchor=(0.33, 0.12), ncol=3, fontsize=16, title_fontsize=18, framealpha=0.9)
+            fig.legend(
+                handles=color_handles,
+                title="Model Colors",
+                loc="lower center",
+                bbox_to_anchor=(0.33, 0.12),
+                ncol=3,
+                fontsize=16,
+                title_fontsize=18,
+                framealpha=0.9,
+            )
 
-            fig.legend(handles=pretrain_handles, title="Pre-training", loc="lower center", bbox_to_anchor=(0.67, 0.12), ncol=2, fontsize=16, title_fontsize=18, framealpha=0.9)
+            fig.legend(
+                handles=pretrain_handles,
+                title="Pre-training",
+                loc="lower center",
+                bbox_to_anchor=(0.67, 0.12),
+                ncol=2,
+                fontsize=16,
+                title_fontsize=18,
+                framealpha=0.9,
+            )
 
             # Row 2 (Bottom Row of Legend): Combinable Methods
-            fig.legend(handles=comp_handles, title="Combinable Methods", loc="lower center", bbox_to_anchor=(0.50, 0.02), ncol=4, fontsize=16, title_fontsize=18, framealpha=0.9)
+            fig.legend(
+                handles=comp_handles,
+                title="Combinable Methods",
+                loc="lower center",
+                bbox_to_anchor=(0.50, 0.02),
+                ncol=4,
+                fontsize=16,
+                title_fontsize=18,
+                framealpha=0.9,
+            )
 
             filename = "VUCS_frontier" + ("_validity" if show_validity else "") + ".svg"
             plt.savefig(filename, format="svg", transparent=True, bbox_inches="tight")
@@ -700,8 +1132,20 @@ def _(final_df, np):
         # This ensures 'vanilla' is ALWAYS the same shape across different models
         unique_tags = sorted(df_plot["tags_clean"].unique())
         # Plotly symbols: circle, diamond, square, x, cross, triangle-up, pentagon, etc.
-        symbols_list = ["circle", "diamond", "square", "x", "cross", "triangle-up", "star", "hexagram"]
-        symbol_map = {tag: symbols_list[i % len(symbols_list)] for i, tag in enumerate(unique_tags)}
+        symbols_list = [
+            "circle",
+            "diamond",
+            "square",
+            "x",
+            "cross",
+            "triangle-up",
+            "star",
+            "hexagram",
+        ]
+        symbol_map = {
+            tag: symbols_list[i % len(symbols_list)]
+            for i, tag in enumerate(unique_tags)
+        }
 
         # 3. Add Jitter for the stripplot effect
         df_plot["jitter"] = np.random.uniform(-0.15, 0.15, len(df_plot))
@@ -729,9 +1173,18 @@ def _(final_df, np):
                 symbol_map=symbol_map,  # FORCES consistency across models
                 facet_col="molecule_type",
                 hover_name="run_name",
-                hover_data={"jitter": False, "model_name": True, "tags_clean": True, metric: ":.4f"},
+                hover_data={
+                    "jitter": False,
+                    "model_name": True,
+                    "tags_clean": True,
+                    metric: ":.4f",
+                },
                 title=f"{clean_label} Distribution",
-                labels={metric: clean_label, "model_name": "Model", "tags_clean": "Tag"},
+                labels={
+                    metric: clean_label,
+                    "model_name": "Model",
+                    "tags_clean": "Tag",
+                },
                 template="plotly_white",
             )
 
@@ -757,13 +1210,24 @@ def _(final_df, np):
                 )
 
             # 6. Styling Polish
-            fig.update_traces(marker=dict(size=10, opacity=0.8, line=dict(width=0.5, color="white")))
+            fig.update_traces(
+                marker=dict(size=10, opacity=0.8, line=dict(width=0.5, color="white"))
+            )
 
             # Clean up facet headers
-            fig.for_each_annotation(lambda a: a.update(text=f"<b>{a.text.split('=')[-1]}</b>"))
+            fig.for_each_annotation(
+                lambda a: a.update(text=f"<b>{a.text.split('=')[-1]}</b>")
+            )
 
             # Move legend to the side and format
-            fig.update_layout(legend_title_text="<b>Model, Tag</b>", xaxis_showticklabels=False, xaxis_title=None, xaxis2_showticklabels=False, xaxis2_title=None, margin=dict(l=50, r=50, t=80, b=50))
+            fig.update_layout(
+                legend_title_text="<b>Model, Tag</b>",
+                xaxis_showticklabels=False,
+                xaxis_title=None,
+                xaxis2_showticklabels=False,
+                xaxis2_title=None,
+                margin=dict(l=50, r=50, t=80, b=50),
+            )
 
             fig.show()
 
