@@ -18,7 +18,6 @@ dependencies = [
     "numpy>=2.2.2",
     "openpyxl>=3.1.5",
     "pre-commit>=4.1.0",
-    "pylint>=3.3.3",
     "pymatgen>=2025.1.23",
     "pyscf>=2.8.0",
     "pytest>=8.3.4",
@@ -57,40 +56,35 @@ explicit = true
 reinvent = { path = "modules/REINVENT4", editable = true }
 
 [tool.ruff]
-# Increased to accomodate intentionally long SMILES / example strings used in tests/examples.
-line-length = 300
-target-version = "py311"
+line-length = 180
+target-version = "py312"
 
 exclude = [
     "apps/simpleDAS",
     "*.ipynb",
     "notebooks/",
-    "tests/"
+    "tests/",
+    "modules/REINVENT4/",
+    "modules/mol_air/",
+    "modules/bionemo/",
 ]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "PL", "N", "D"]
 ignore = [
-    "D100", "D104", # Missing docstrings in modules/packages
-    "D105", # Missing docstring in magic method
-    "D401", # First line should be in imperative mood
-    "D400", # First line should end with a period
-    "D415", # First line should end with a period, question mark, or exclamation point
-    "D205", # 1 blank line required between summary line and description
-    "D404", # First word of the docstring should not be "This"
-    "D107", # Missing docstring in `__init__`
-    # General docstring and return/arg formatting rules - noisy for large codebase with many example literals
-    "D101", "D102", "D103", "D105", "D201", "D203", "D301", "D417",
-    "PLR0912", # too-many-branches
-    "PLR0913", # too-many-arguments
-    "PLR0914", # too-many-locals
-    "PLR0915", # too-many-statements
-    "PLR2004", # Magic value used in comparison, consider replacing `2` with a constant variable
-    "PLW0603", # Using the global statement to update `mean_fft_array_shared` is discouraged
-    "PLW2901", # `for` loop variable <> overwritten by assignment target
-    "N812", # Lowercase `functional` imported as non-lowercase `F`
-    "N805", # First argument of a method should be named `self`
-    "N815", # Variable `rangeType` in class scope should not be mixedCase
+    "PLR2004",
+    "PLR0912",
+    "PLR0913",
+    "PLR0914",
+    "PLR0915",
+    "PLW0603",
+    "PLW2901",
+    "N812",
+    "N805",
+    "N815",
+    "D100", "D101", "D102", "D103", "D104", "D105",
+    "D107", "D201", "D203", "D205", "D301", "D400", "D401",
+    "D404", "D415", "D417",
 ]
 
 [tool.ruff.lint.pylint]
@@ -100,23 +94,14 @@ max-branches = 12
 max-returns = 6
 max-statements = 50
 
-# Per-file ignores
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"] # imported but unused
-
-# Very long example data / constant literals and docstring noise: avoid line-length / docstring formatting failures.
-"modules/core/filters/symmetry_filter.py" = ["E501", "D205", "D400", "D401", "D404", "D415", "PLR0911"]
-"modules/core/filters/point_group_symmetry_filter.py" = ["E501", "D205"]
-"scripts/reinvent_run_experiments.py" = ["E501", "D205"]
+"__init__.py" = ["F401"]
 
 [tool.pydoclint]
 style = 'google'
-# Increase to match ruff's new allowance (examples and long literal strings)
-max-line-length = 300
+max-line-length = 180
 check-type-hint = true
 check-arg-order = true
-# Extended exclude: skip notebooks, tests, and the large filter modules and scripts that contain
-# intentionally long sample data and examples that would otherwise trigger many docstring warnings.
 exclude = '^(apps/simpleDAS/|notebooks/|tests/|modules/core/|modules/predictor/|modules/generation/|scripts/|apps/processing_pipeline/src/modules/detect_anomaly\.py|apps/processing_pipeline/mp_processing_test\.py|.*\.ipynb$)'
 check-class-attributes = false
 check-return-types = true

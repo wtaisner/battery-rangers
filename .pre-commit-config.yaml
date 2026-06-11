@@ -9,7 +9,6 @@ repos:
       - id: check-toml
         exclude: '^(configs/reinvent/templates/).*'
       - id: check-yaml
-        files: '^(?!tests//).*(\.yaml)$'
 
   - repo: https://github.com/crate-ci/typos
     rev: v1.43.3
