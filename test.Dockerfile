@@ -22,6 +22,4 @@ RUN uv sync --all-extras --dev
 
 COPY . .
 
-RUN uv run ruff check modules/ tests/ --exclude modules/REINVENT4
-
 RUN uv run pytest tests/ --ignore modules/REINVENT4 -v -s

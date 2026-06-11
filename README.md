@@ -1,6 +1,4 @@
-# Battery Rangers
-
-![Battery rangers](static/battery_rangers.jpeg)
+# From drugs to materials: Improving knowledge transfer methods for data-scarce materials discovery
 
 Repository for the paper **"From drugs to materials: Improving knowledge transfer methods for data-scarce materials discovery"** — a benchmark of knowledge transfer strategies (pre-training, fine-tuning, reinforcement learning) across three generative AI architectures (REINVENT4, MolMIM+MOLRL, Mol-AIR) for discovering covalent triazine framework (CTF) substrates for supercapacitor electrodes.
 
