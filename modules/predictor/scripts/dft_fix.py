@@ -1,4 +1,5 @@
 """Script for processing SMILES that earlier resulted in errors"""
+
 import os
 
 import pandas as pd
@@ -23,7 +24,14 @@ if __name__ == "__main__":
         for i in nan_rows_ids:
             smiles = df.loc[i, ["smiles"]].tolist()[0]
             capacity_max = df.loc[i, ["capacity_max"]].tolist()[0]
-            dft_features = smiles_to_features_pyscf(smiles, capacity_max, "capacity_max", functional=config["functional"], dft_type=config["dft_type"], spin=config["spin"])
+            dft_features = smiles_to_features_pyscf(
+                smiles,
+                capacity_max,
+                "capacity_max",
+                functional=config["functional"],
+                dft_type=config["dft_type"],
+                spin=config["spin"],
+            )
             print(file_to_fix)
             print(dft_features)
             df.loc[i] = dft_features

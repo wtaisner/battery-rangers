@@ -1,5 +1,4 @@
-"""
-Provides a high-level interface to run Continuous Symmetry Measure (CSM) calculations.
+"""Provides a high-level interface to run Continuous Symmetry Measure (CSM) calculations.
 
 See: https://github.com/continuous-symmetry-measure/csm?tab=readme-ov-file for details.
 
@@ -18,8 +17,8 @@ import uuid
 from dataclasses import dataclass, field
 
 import docker
+import docker.models.containers
 from docker.errors import ImageNotFound, NotFound
-from docker.models.containers import Container
 from rdkit import Chem
 from rdkit.Chem import Mol
 
@@ -28,8 +27,7 @@ from modules.core.features.utils import compute_conformer
 
 @dataclass
 class MoleculeCSMResult:
-    """
-    Holds the complete CSM analysis for a molecule across various point groups.
+    """Holds the complete CSM analysis for a molecule across various point groups.
 
     This dataclass acts as a structured container for all data generated during
     the analysis of a single SMILES string.
@@ -43,6 +41,7 @@ class MoleculeCSMResult:
             corresponding output directory created by the CSM tool.
         error_messages: A dictionary capturing any errors that occurred during
             the calculation for a specific point group.
+
     """
 
     smiles: str
@@ -53,13 +52,13 @@ class MoleculeCSMResult:
 
     @property
     def lowest_csm_normalized(self) -> tuple[str, float] | None:
-        """
-        Normalizes the lowest CSM value by the number of atoms in the molecule.
+        """Normalizes the lowest CSM value by the number of atoms in the molecule.
 
         Returns:
             A tuple containing the point group name (str) and its corresponding
             normalized CSM value (float) for the best fit, or None if no successful
             results are available.
+
         """
         if not self.csm_results:
             return None
@@ -69,13 +68,16 @@ class MoleculeCSMResult:
         if mol is None:
             return None
 
-        normalized_lowest_csm = self.lowest_csm[1] / mol.GetNumAtoms()
-        return self.lowest_csm[0], normalized_lowest_csm
+        lowest_csm = self.lowest_csm
+        if lowest_csm is None:
+            return None
+
+        normalized_lowest_csm = lowest_csm[1] / mol.GetNumAtoms()
+        return lowest_csm[0], normalized_lowest_csm
 
     @property
     def lowest_csm(self) -> tuple[str, float] | None:
-        """
-        Finds the point group with the minimum CSM value.
+        """Finds the point group with the minimum CSM value.
 
         This property provides a convenient way to identify the symmetry group
         that the molecule most closely matches, based on the principle that a
@@ -86,6 +88,7 @@ class MoleculeCSMResult:
             CSM value (float) for the best fit, or None if no successful
 
             results are available.
+
         """
         if not self.csm_results:
             return None
@@ -127,7 +130,10 @@ class CSMRunner:
 
             # Check for stale mounts (if the directory path changed)
             mounts = container.attrs.get("Mounts", [])
-            mounted_host_path = next((m["Source"] for m in mounts if m["Destination"] == self.container_internal_data_dir), None)
+            mounted_host_path = next(
+                (m["Source"] for m in mounts if m["Destination"] == self.container_internal_data_dir),
+                None,
+            )
 
             if mounted_host_path and os.path.abspath(mounted_host_path) != os.path.abspath(self.host_workspace):
                 container.remove(force=True)
@@ -144,11 +150,23 @@ class CSMRunner:
                 detach=True,
                 tty=True,
                 # Mount the HOST path to /data
-                volumes={self.host_workspace: {"bind": self.container_internal_data_dir, "mode": "rw"}},
+                volumes={
+                    self.host_workspace: {
+                        "bind": self.container_internal_data_dir,
+                        "mode": "rw",
+                    }
+                },
             )
 
     def analyze_molecule(
-        self, molecule: Mol | str, point_groups: list[str], pull_image: bool = False, exact: bool = True, max_conformer_attempts: int = 5000, num_conformers: int = 1, cleanup_on_exit: bool = True
+        self,
+        molecule: Mol | str,
+        point_groups: list[str],
+        pull_image: bool = False,
+        exact: bool = True,
+        max_conformer_attempts: int = 5000,
+        num_conformers: int = 1,
+        cleanup_on_exit: bool = True,
     ) -> MoleculeCSMResult | None:
         container = self._get_or_start_container(pull_image)
         run_id = uuid.uuid4().hex
@@ -159,10 +177,17 @@ class CSMRunner:
         paths_to_clean = [local_input_path]
 
         try:
-            molecule = compute_conformer(molecule=molecule, save_file=True, max_attempts=max_conformer_attempts, num_conformers=num_conformers, filename=local_input_path)
+            generated_molecule = compute_conformer(
+                molecule=molecule,
+                save_file=True,
+                max_attempts=max_conformer_attempts,
+                num_conformers=num_conformers,
+                filename=local_input_path,
+            )
 
-            if molecule is None or not os.path.exists(local_input_path):
+            if generated_molecule is None or not os.path.exists(local_input_path):
                 return None
+            molecule = generated_molecule
 
             # FIX 2: Ensure file is world-readable so Container User can read it
             try:
@@ -215,7 +240,7 @@ class CSMRunner:
 
                 try:
                     csm_txt_path = os.path.join(local_output_path, "csm.txt")
-                    with open(csm_txt_path, "r") as f:
+                    with open(csm_txt_path, "r") as f:  # type: ignore[invalid-context-manager]
                         data_line = next(line for line in f if not line.startswith("#"))
                         csm_value = float(data_line.strip().split()[-1])
                     analysis.csm_results[pg] = csm_value

@@ -1,4 +1,5 @@
 """Cross-validation pipeline."""
+
 import copy
 import os
 from datetime import datetime
@@ -12,20 +13,22 @@ from modules.predictor.data.utils import prepare_data_for_regressors
 from modules.predictor.training_and_evaluation.evaluation_metrics import EvalMetrics
 from modules.predictor.training_and_evaluation.explanations import explain_model
 from modules.predictor.training_and_evaluation.model_factory import Models
-from modules.predictor.training_and_evaluation.train_utils import feature_search, param_search, train_and_save_model
+from modules.predictor.training_and_evaluation.train_utils import (
+    feature_search,
+    param_search,
+    train_and_save_model,
+)
 
 # pylint: disable=invalid-name
 # pylint: disable=too-many-instance-attributes
 
 
 class CrossValidationPipeline:
-    """
-    Cross-validation pipeline class.
-    """
+    """Cross-validation pipeline class."""
 
     def __init__(
         self,
-        X: pd.DataFrame,
+        x: pd.DataFrame,
         y: pd.DataFrame,
         numerical_features: list,
         categorical_features: list,
@@ -39,28 +42,18 @@ class CrossValidationPipeline:
         feature_selection: tuple[bool, list] | None = None,
         verbose: bool = False,
     ):
-        """
-        Initialize the cross-validation pipeline.
-        :param X: dataframe with features.
-        :param y: dataframe with target variable.
-        :param numerical_features: list with numerical features.
-        :param categorical_features: list with categorical features.
-        :param folds: list with cross-validation folds.
-        :param metrics: list with metrics to evaluate.
-        :param save_scores_path: path to save scores.
-        :param data_name: name of the dataset.
-        :param oversampling: whether to perform oversampling.
-        :param hyperparam_opt: tuple of type of hyperparameter optimization and parameter grid, None if none optimization should be performed.
-        :param feature_selection: tuple with boolean value whether to perform feature selection and list of features to keep.
-        :param verbose: whether to print model scores.
-        """
         self.categorical_features = categorical_features
         self.numerical_features = numerical_features
         if oversampling:
-            self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features)
+            self.X, _ = self.preprocess_data(x, None, num_features=self.numerical_features)
         else:
-            self.X, _ = self.preprocess_data(X, None, num_features=self.numerical_features, cat_features=self.categorical_features)
-        self.X = X
+            self.X, _ = self.preprocess_data(
+                x,
+                None,
+                num_features=self.numerical_features,
+                cat_features=self.categorical_features,
+            )
+        self.X = x
         self.oversampling = oversampling
         self.y = y
         self.folds = folds
@@ -71,56 +64,78 @@ class CrossValidationPipeline:
         self.verbose = verbose
         self.metrics = metrics
         self.explainability = explainability
-        self.scores = None
-        self.shap_values = None
+        self.scores: dict[str, list[Any]] = {}
+        self.shap_values: list[Any] = []
 
-    def preprocess_data(self, X_train: pd.DataFrame | None, X_test: pd.DataFrame | None, cat_features: list | None = None, num_features: list | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Preprocess the data.
+    def preprocess_data(
+        self,
+        x_train: pd.DataFrame | None,
+        x_test: pd.DataFrame | None,
+        cat_features: list | None = None,
+        num_features: list | None = None,
+    ) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+        """Preprocess the data.
         :param num_features: numerical features.
         :param cat_features: categorical features
         :param X_train: training data.
         :param X_test: test data.
         :return: preprocessed data.
         """
-        if X_train is not None and "smiles" in X_train.columns:
-            X_train.drop(columns=["smiles"], inplace=True)
+        if x_train is not None and "smiles" in x_train.columns:
+            x_train.drop(columns=["smiles"], inplace=True)
 
-        if X_test is not None and "smiles" in X_test.columns:
-            X_test.drop(columns=["smiles"], inplace=True)
+        if x_test is not None and "smiles" in x_test.columns:
+            x_test.drop(columns=["smiles"], inplace=True)
 
         cat_features = cat_features if cat_features is not None else []
         num_features = num_features if num_features is not None else []
 
         if len(cat_features) > 0 or len(num_features) > 0:
-            if X_test is not None and X_train is not None:
-                X_test_copy = copy.deepcopy(X_test)
-                X_test = prepare_data_for_regressors(X_test, (X_train, X_test_copy), numerical_features=num_features, categorical_features=cat_features)
-                X_train = prepare_data_for_regressors(X_train, (X_train, X_test_copy), num_features, cat_features)
-            elif X_train is not None:
-                X_train = prepare_data_for_regressors(X_train, (X_train, X_train), num_features, cat_features)
-        return X_train, X_test
+            if x_test is not None and x_train is not None:
+                x_test_copy = copy.deepcopy(x_test)
+                x_test = prepare_data_for_regressors(
+                    x_test,
+                    (x_train, x_test_copy),
+                    numerical_features=num_features,
+                    categorical_features=cat_features,
+                )
+                x_train = prepare_data_for_regressors(x_train, (x_train, x_test_copy), num_features, cat_features)
+            elif x_train is not None:
+                x_train = prepare_data_for_regressors(x_train, (x_train, x_train), num_features, cat_features)
+        return x_train, x_test
 
-    def oversampler(self, X_train: pd.DataFrame, y_train: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Perform oversampling.
+    def oversampler(self, x_train: pd.DataFrame, y_train: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Perform oversampling.
         :param X_train: training data.
         :param y_train: target variable data.
         :return: oversampled data.
         """
         if self.oversampling:
             try:
-                numeric_cols = [i for i, col in enumerate(X_train.columns) if col in self.numerical_features]
-                X_train_oversampled, y_train_oversampled = smoter(X_train.values, y_train.values.flatten(), te=0.5, o=300, k=5, numeric_cols=numeric_cols, oversampling_type="SMOTER")
-                X_train = pd.DataFrame(X_train_oversampled, columns=X_train.columns)
+                numeric_cols = [i for i, col in enumerate(x_train.columns) if col in self.numerical_features]
+                x_train_oversampled, y_train_oversampled = smoter(
+                    x_train.values,
+                    y_train.values.flatten(),
+                    te=0.5,
+                    o=300,
+                    k=5,
+                    numeric_cols=numeric_cols,
+                    oversampling_type="SMOTER",
+                )
+                x_train = pd.DataFrame(x_train_oversampled, columns=x_train.columns)
                 y_train = pd.DataFrame(y_train_oversampled, columns=y_train.columns)
             except ValueError:
                 print("Oversampling failed")
-        return X_train, y_train
+        return x_train, y_train
 
-    def select_features(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, model: object) -> tuple:
-        """
-        Perform feature selection.
+    def select_features(
+        self,
+        x_train: pd.DataFrame,
+        y_train: pd.DataFrame,
+        x_test: pd.DataFrame,
+        model: object,
+    ) -> tuple:
+        """Perform feature selection.
         :param X_train: training data.
         :param y_train: target variable data.
         :param X_test: test data.
@@ -128,17 +143,22 @@ class CrossValidationPipeline:
         """
         if self.feature_selection is not None and self.feature_selection[0]:
             fixed_features = self.feature_selection[1]
-            selected_features = feature_search(model, X_train, y_train, 0.6, fixed_features)
-            X_train = X_train.loc[:, selected_features]
-            X_test = X_test.loc[:, selected_features]
+            selected_features = feature_search(model, x_train, y_train, 0.6, fixed_features)
+            x_train = x_train.loc[:, selected_features]
+            x_test = x_test.loc[:, selected_features]
             selected_features = [f for f in selected_features if f not in fixed_features]
         else:
             selected_features = None
-        return X_train, X_test, selected_features
+        return x_train, x_test, selected_features
 
-    def tune_model(self, X_train: pd.DataFrame, y_train: pd.DataFrame, model: object, param_grid: dict | None) -> object:
-        """
-        Perform model tuning.
+    def tune_model(
+        self,
+        x_train: pd.DataFrame,
+        y_train: pd.DataFrame,
+        model: object,
+        param_grid: dict | None,
+    ) -> object:
+        """Perform model tuning.
         :param X_train: training data.
         :param y_train: target variable data.
         :param model: prediction model.
@@ -148,15 +168,14 @@ class CrossValidationPipeline:
         if self.hyperparam_opt is not None:
             perform_opt, type_opt = self.hyperparam_opt
             if perform_opt and param_grid is not None:
-                best_score, best_params = param_search(model, X_train, y_train, 0.6, param_grid, type_opt)
+                best_score, best_params = param_search(model, x_train, y_train, 0.6, param_grid, type_opt)
                 model.set_params(**best_params)
                 if self.verbose:
                     print(f"Best score: {best_score}\n Best params: {best_params}")
         return model
 
     def eval_model(self, y_pred: np.array, y_test: np.array) -> dict:
-        """
-        Evaluate the model.
+        """Evaluate the model.
         :param y_pred: predicted values.
         :param y_test: true values.
         :return: dictionary with evaluation metrics.
@@ -167,9 +186,7 @@ class CrossValidationPipeline:
         return partial_scores
 
     def init_scores(self):
-        """
-        Initialize scores dictionary.
-        """
+        """Initialize scores dictionary."""
         scores = {}
         for metric in self.metrics:
             scores[metric] = []
@@ -181,9 +198,14 @@ class CrossValidationPipeline:
         self.scores = scores
         self.shap_values = []
 
-    def update_scores(self, model_scores: dict, baseline_mean_scores: dict, baseline_median_scores: dict, selected_features: list | None = None):
-        """
-        Update scores dictionary.
+    def update_scores(
+        self,
+        model_scores: dict,
+        baseline_mean_scores: dict,
+        baseline_median_scores: dict,
+        selected_features: list | None = None,
+    ):
+        """Update scores dictionary.
         :param model_scores: dictionary with model scores.
         :param baseline_mean_scores: dictionary with baseline mean scores.
         :param baseline_median_scores: dictionary with baseline median scores.
@@ -193,13 +215,12 @@ class CrossValidationPipeline:
             self.scores[metric].append(model_scores[metric])
             self.scores[f"baseline_mean_{metric}"].append(baseline_mean_scores[metric])
             self.scores[f"baseline_median_{metric}"].append(baseline_median_scores[metric])
-        if self.feature_selection is not None:
+        if self.feature_selection is not None and selected_features is not None:
             selected_features = "(" + ",".join(sorted(selected_features)) + ")"
             self.scores["selected_features"].append(selected_features)
 
     def aggregate_scores(self):
-        """
-        Aggregate scores.
+        """Aggregate scores.
         :return: aggregated scores.
         """
         results = {}
@@ -211,14 +232,13 @@ class CrossValidationPipeline:
             results[f"baseline_mean_{metric}"] = round(sum(baseline_mean) / len(baseline_mean), 4)
             results[f"baseline_median_{metric}"] = round(sum(baseline_median) / len(baseline_median), 4)
         if self.feature_selection is not None:
-            results["selected_features"] = "-".join(self.scores["selected_features"])
+            results["selected_features"] = "-".join(self.scores.get("selected_features", []))
         else:
             results["selected_features"] = "all"
         return results
 
     def save_results(self, results: dict, model_name: str, model_params: Any):
-        """
-        Save results to a file.
+        """Save results to a file.
         :param results: dictionary with results.
         :param model_name: name of the model.
         :param model_params: model parameters.
@@ -228,20 +248,19 @@ class CrossValidationPipeline:
         lines = [
             "\n******************************************************\n",
             f"{datetime.now().strftime('%d-%m-%Y %H:%M:%S')}\n",
-            f"{model_name}\n" f"Model parameters: {model_params}\n",
+            f"{model_name}\nModel parameters: {model_params}\n",
             f"Training data: {self.data_name}\n",
             *metric_lines,
             "******************************************************\n",
         ]
         if self.verbose:
-            for l in lines:
-                print(l)
+            for line in lines:
+                print(line)
         with open(save_scores_path, "a", encoding="utf-8") as f:
             f.writelines(lines)
 
     def train_pipeline(self, model_name: str, model_path: str | None = None) -> dict:
-        """
-        Train the model.
+        """Train the model.
         :param model_name: name of the model.
         :param model_path: path to saved model.
         :return: dictionary with results.
@@ -256,39 +275,39 @@ class CrossValidationPipeline:
             train_idx, test_idx = fold
 
             # train-test split
-            X_train = copy.deepcopy(self.X.loc[train_idx, :]).reset_index(drop=True)  # pylint: disable=invalid-name
+            x_train = copy.deepcopy(self.X.loc[train_idx, :]).reset_index(drop=True)
             y_train = copy.deepcopy(self.y.loc[train_idx, :]).reset_index(drop=True)
-            X_test = copy.deepcopy(self.X.loc[test_idx, :]).reset_index(drop=True)  # pylint: disable=invalid-name
+            x_test = copy.deepcopy(self.X.loc[test_idx, :]).reset_index(drop=True)
             y_test = copy.deepcopy(self.y.loc[test_idx, :]).reset_index(drop=True)
 
             # data preprocessing
             if self.oversampling:
-                X_train, X_test = self.preprocess_data(X_train, X_test, cat_features=self.categorical_features)
+                x_train, x_test = self.preprocess_data(x_train, x_test, cat_features=self.categorical_features)
 
             # feature selection
-            X_train, X_test, selected_features = self.select_features(X_train, y_train, X_test, model)
+            x_train, x_test, selected_features = self.select_features(x_train, y_train, x_test, model)
 
             # model tuning
-            model = self.tune_model(X_train, y_train, model, param_grid)
+            model = self.tune_model(x_train, y_train, model, param_grid)
 
             if self.oversampling:
-                X_train = copy.deepcopy(self.X.loc[train_idx, :]).reset_index(drop=True)  # pylint: disable=invalid-name
+                x_train = copy.deepcopy(self.X.loc[train_idx, :]).reset_index(drop=True)
                 y_train = copy.deepcopy(self.y.loc[train_idx, :]).reset_index(drop=True)
-                X_test = copy.deepcopy(self.X.loc[test_idx, :]).reset_index(drop=True)  # pylint: disable=invalid-name
+                x_test = copy.deepcopy(self.X.loc[test_idx, :]).reset_index(drop=True)
                 y_test = copy.deepcopy(self.y.loc[test_idx, :]).reset_index(drop=True)
-                X_train, y_train = self.oversampler(X_train, y_train)
-                X_train, X_test = self.preprocess_data(X_train, X_test, cat_features=self.categorical_features)
-                X_train = X_train.astype(float)
-                X_test = X_test.astype(float)
+                x_train, y_train = self.oversampler(x_train, y_train)
+                x_train, x_test = self.preprocess_data(x_train, x_test, cat_features=self.categorical_features)
+                x_train = x_train.astype(float)
+                x_test = x_test.astype(float)
 
             # model training
-            model.fit(X_train, y_train[y_train.columns[0]])
+            model.fit(x_train, y_train[y_train.columns[0]])
 
             if self.explainability:
-                shap_values = explain_model(model, X_test)
+                shap_values = explain_model(model, x_test)
                 self.shap_values.append((shap_values, test_idx))
 
-            y_pred = model.predict(X_test).flatten()
+            y_pred = model.predict(x_test).flatten()
 
             # model eval
             y_test_numpy = y_test.to_numpy().flatten()
@@ -308,8 +327,7 @@ class CrossValidationPipeline:
         return results
 
     def batch_train_and_eval(self, models: list) -> dict:
-        """
-        Train and evaluate models.
+        """Train and evaluate models.
         :param models: list with models' names.
         :return: models' results.
         """
@@ -318,16 +336,22 @@ class CrossValidationPipeline:
             results = self.train_pipeline(model_name)
             model_results[model_name] = results
 
-            X = copy.deepcopy(self.X)
+            x = copy.deepcopy(self.X)
             y = copy.deepcopy(self.y)
             date = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 
             _, model, param_grid = Models().get_model(model_name)
 
             if self.oversampling:
-                X, _ = self.preprocess_data(X, None, cat_features=self.categorical_features)
+                x, _ = self.preprocess_data(x, None, cat_features=self.categorical_features)
 
-            model = self.tune_model(X, y, model, param_grid)
-            train_and_save_model(model, X, y, os.path.join(self.save_dir, f"{model_name}_{date}.pkl"), verbose=self.verbose)
+            model = self.tune_model(x, y, model, param_grid)
+            train_and_save_model(
+                model,
+                x,
+                y,
+                os.path.join(self.save_dir, f"{model_name}_{date}.pkl"),
+                verbose=self.verbose,
+            )
             print("=======================================================================")
         return model_results

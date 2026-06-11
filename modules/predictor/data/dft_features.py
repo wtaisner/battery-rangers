@@ -1,4 +1,5 @@
 """Functions for calculating dft features."""
+
 import re
 from typing import Literal
 
@@ -13,9 +14,14 @@ from modules.core.features.utils import smiles_to_3d
 # pylint: disable=broad-exception-caught
 
 
-def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP", dft_type: Literal["RKS", "UKS"] = "RKS", spin: int | None = 0) -> dict:  # pylint: disable=too-many-statements
-    """
-    Perform DFT calculations using PySCF and extract quantum features.
+def run_pyscf_dft(
+    symbols: list,
+    coords: np.ndarray,
+    functional: str = "B3LYP",
+    dft_type: Literal["RKS", "UKS"] = "RKS",
+    spin: int | None = 0,
+) -> dict:  # pylint: disable=too-many-statements
+    """Perform DFT calculations using PySCF and extract quantum features.
     :param symbols: list of symbols.
     :param coords: list of atom coordinates.
     :param functional: Exchange-correlation functional (default: "B3LYP").
@@ -37,7 +43,6 @@ def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP", 
     except Exception:
         energy = None
 
-    #
     try:
         mo_energy = mf.mo_energy
         mo_occ = mf.mo_occ
@@ -129,9 +134,15 @@ def run_pyscf_dft(symbols: list, coords: np.ndarray, functional: str = "B3LYP", 
     }
 
 
-def smiles_to_features_pyscf(smiles: str, target: float, target_col: str, functional: str = "B3LYP", dft_type: Literal["RKS", "UKS"] = "RKS", spin: int | None = 0) -> dict:
-    """
-    generates quantum features using PySCF for a given SMILES.
+def smiles_to_features_pyscf(
+    smiles: str,
+    target: float,
+    target_col: str,
+    functional: str = "B3LYP",
+    dft_type: Literal["RKS", "UKS"] = "RKS",
+    spin: int | None = 0,
+) -> dict:
+    """Generates quantum features using PySCF for a given SMILES.
     :param smiles: SMILES string.
     :param target: value of the target for the given SMILES.
     :param target_col: name of the target column.
@@ -163,9 +174,14 @@ def smiles_to_features_pyscf(smiles: str, target: float, target_col: str, functi
         }
 
 
-def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, functional: str = "B3LYP", n_jobs: int = 8) -> pd.DataFrame:
-    """
-    Takes a dataframe with smiles strings and generates quantum features using PySCF.
+def df_to_features_pyscf(
+    df: pd.DataFrame,
+    smiles_col: str,
+    target_col: str,
+    functional: str = "B3LYP",
+    n_jobs: int = 8,
+) -> pd.DataFrame:
+    """Takes a dataframe with smiles strings and generates quantum features using PySCF.
     :param df: dataframe with smiles and target columns.
     :param smiles_col: name of the column with smiles.
     :param target_col: name of the target column.
@@ -183,13 +199,21 @@ def df_to_features_pyscf(df: pd.DataFrame, smiles_col: str, target_col: str, fun
 
 
 def aggregate_and_drop_dft(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregate DFT features.
+    """Aggregate DFT features.
     :param df: dataframe with DFT features.
     :return: dataframe with aggregated DFT features.
     """
     col_names = df.columns.tolist()
-    df.drop(columns=["vibrational_frequencies_min", "vibrational_frequencies_max", "vibrational_frequencies_mean", "internal_energy_0K", "internal_energy_298K"], inplace=True)
+    df.drop(
+        columns=[
+            "vibrational_frequencies_min",
+            "vibrational_frequencies_max",
+            "vibrational_frequencies_mean",
+            "internal_energy_0K",
+            "internal_energy_298K",
+        ],
+        inplace=True,
+    )
 
     stats = {
         "mean": np.mean,

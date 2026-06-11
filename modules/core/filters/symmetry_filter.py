@@ -1,4 +1,5 @@
 """Module for filtering molecules based on symmetry properties."""
+
 import logging
 from collections import defaultdict
 from typing import Any
@@ -21,23 +22,31 @@ logger.setLevel(logging.INFO)
 class SymmetryFilter(GenericMoleculeFilter):
     """Check if any of the defined symmetries are present in the molecule."""
 
-    def __init__(self, min_isomorphic_nodes: int = 8, types_to_check: list[AvailableSymmetry] | None = None):
-        """
-        Args:
-            min_isomorphic_nodes (int): The minimum number of nodes an isomorphic
-                component must have to be counted/considered a valid symmetry.
-                Defaults to 3 (ignores single atoms and diatomic fragments).
-            types_to_check (list[AvailableSymmetry]): List of symmetry types to check. If None, defaults to AvailableSymmetry.WHOLE_RING, EDGE, NODE and RING_NODES
+    def __init__(
+        self,
+        min_isomorphic_nodes: int = 8,
+        types_to_check: list[AvailableSymmetry] | None = None,
+    ):
+        """Args:
+        min_isomorphic_nodes (int): The minimum number of nodes an isomorphic
+            component must have to be counted/considered a valid symmetry.
+            Defaults to 3 (ignores single atoms and diatomic fragments).
+        types_to_check (list[AvailableSymmetry]): List of symmetry types to check. If None, defaults to AvailableSymmetry.WHOLE_RING, EDGE, NODE and RING_NODES
+
         """
         self.min_isomorphic_nodes = min_isomorphic_nodes
         if types_to_check is None:
-            self.types_to_check = [AvailableSymmetry.WHOLE_RING, AvailableSymmetry.EDGE, AvailableSymmetry.RING_NODES, AvailableSymmetry.NODE]
+            self.types_to_check = [
+                AvailableSymmetry.WHOLE_RING,
+                AvailableSymmetry.EDGE,
+                AvailableSymmetry.RING_NODES,
+                AvailableSymmetry.NODE,
+            ]
         else:
             self.types_to_check = types_to_check
 
-    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol] | tuple[list[Mol], list[dict]]:
-        """
-        Filters molecules based on specified symmetry types and threshold.
+    def apply(self, molecules: list[Mol], **kwargs) -> list[Mol] | tuple[list[Mol], list[dict]]:  # type: ignore[override]
+        """Filters molecules based on specified symmetry types and threshold.
         Optionally returns detailed branch counts per molecule.
 
         Args:
@@ -54,6 +63,7 @@ class SymmetryFilter(GenericMoleculeFilter):
                     - List of symmetric Mol objects.
                     - List of dictionaries, one for each input molecule, detailing the
                       counts of distinct isomorphic branches found above the threshold.
+
         """
         mol_graphs: list[tuple[nx.Graph, Mol]] = []
         # Basic conversion and filtering of empty graphs
@@ -83,7 +93,10 @@ class SymmetryFilter(GenericMoleculeFilter):
             all_valid_symmetric_origins: list[tuple[int, AvailableSymmetry, Any, int, int]] = []
 
             if not self.types_to_check:
-                logger.warning("No symmetry types configured for %s. Skipping analysis.", mol_identifier)
+                logger.warning(
+                    "No symmetry types configured for %s. Skipping analysis.",
+                    mol_identifier,
+                )
                 molecule_branch_summaries.append({})  # Add empty summary for this mol
                 continue
 
@@ -100,12 +113,21 @@ class SymmetryFilter(GenericMoleculeFilter):
                     if symmetrical:
                         break
                 except ValueError as e:
-                    logger.error("Error in _check_symmetry for %s, type %s: %s", mol_identifier, symmetry_type_enum.name, e, exc_info=True)
+                    logger.error(
+                        "Error in _check_symmetry for %s, type %s: %s",
+                        mol_identifier,
+                        symmetry_type_enum.name,
+                        e,
+                        exc_info=True,
+                    )
 
             # --- Summarize and Store results for the current molecule ---
             molecule_summary = {}  # Summary dict for *this* molecule
             if not all_valid_symmetric_origins:
-                logger.debug("Result for %s: No valid symmetric cuts found (above threshold).", mol_identifier)
+                logger.debug(
+                    "Result for %s: No valid symmetric cuts found (above threshold).",
+                    mol_identifier,
+                )
             else:
                 _, sym_type_enum, cut_obj, num_in_group, total_comps = all_valid_symmetric_origins[0]
 
@@ -127,16 +149,17 @@ class SymmetryFilter(GenericMoleculeFilter):
         return symmetrical_molecules_list
 
     def _find_or_add_distinct_representative(self, subgraph_to_check: nx.Graph, distinct_rep_list: list[nx.Graph]) -> int:
-        """
-        Checks if subgraph_to_check is isomorphic to any graph in distinct_rep_list.
+        """Checks if subgraph_to_check is isomorphic to any graph in distinct_rep_list.
 
         Args:
             subgraph_to_check (nx.Graph): The subgraph to check for isomorphism.
             distinct_rep_list (list[nx.Graph]): List of distinct representative graphs.
+
         Returns:
             int: Index of the distinct representative graph in the list.
                     If yes, returns the index of the first match.
                     If no, appends subgraph_to_check to the list and returns its new index.
+
         """
         for i, stored_graph in enumerate(distinct_rep_list):
             if self.check_isomorphism(subgraph_to_check, stored_graph):
@@ -146,8 +169,7 @@ class SymmetryFilter(GenericMoleculeFilter):
         return len(distinct_rep_list) - 1  # Return its new index
 
     def check_isomorphism(self, graph1: nx.Graph, graph2: nx.Graph) -> bool:
-        """
-        Check whether two graphs are isomorphic using networkx GraphMatcher.
+        """Check whether two graphs are isomorphic using networkx GraphMatcher.
 
         Args:
             graph1 (nx.Graph): The first graph to compare.
@@ -155,6 +177,7 @@ class SymmetryFilter(GenericMoleculeFilter):
 
         Returns:
             bool: True if the graphs are isomorphic, False otherwise.
+
         """
         if graph1.number_of_nodes() != graph2.number_of_nodes():
             return False
@@ -179,14 +202,15 @@ class SymmetryFilter(GenericMoleculeFilter):
 
     @staticmethod
     def find_all_cycles_of_len(graph: nx.Graph, length: int = 6) -> list:
-        """
-        Find all cycles of a given length in a graph.
+        """Find all cycles of a given length in a graph.
 
         Args:
             graph (nx.Graph): The input graph.
             length (int): The length of cycles to find. Default is 6.
+
         Returns:
             list: A list of cycles found in the graph.
+
         """
         # Find all cycles of length in the graph
         cycles = list(simple_cycles(graph))
@@ -210,8 +234,10 @@ class SymmetryFilter(GenericMoleculeFilter):
         Args:
             symmetry_type (AvailableSymmetry): The type of symmetry to check for.
             graph (nx.Graph): The input graph.
+
         Returns:
             set: A set of candidates for the specified symmetry type.
+
         """
         nodes = set(graph.nodes())
         edges = set(graph.edges())
@@ -222,7 +248,10 @@ class SymmetryFilter(GenericMoleculeFilter):
         elif symmetry_type == AvailableSymmetry.EDGE:
             for u, v in edges:
                 candidates.add(tuple(sorted((u, v))))
-        elif symmetry_type in (AvailableSymmetry.RING_NODES, AvailableSymmetry.WHOLE_RING):
+        elif symmetry_type in (
+            AvailableSymmetry.RING_NODES,
+            AvailableSymmetry.WHOLE_RING,
+        ):
             all_cycles = self.find_all_cycles_of_len(graph)
             if symmetry_type == AvailableSymmetry.RING_NODES:
                 even_cycles = [c for c in all_cycles if len(c) > 3 and len(c) % 2 == 0]
@@ -245,8 +274,7 @@ class SymmetryFilter(GenericMoleculeFilter):
         plot_checks: bool = False,
         mol_identifier: str = "",
     ) -> bool:
-        """
-        Checks cuts for a symmetry type. If a valid isomorphic group (above
+        """Checks cuts for a symmetry type. If a valid isomorphic group (above
         threshold) is found, records details, optionally plots, and returns True.
 
         Args:
@@ -259,6 +287,7 @@ class SymmetryFilter(GenericMoleculeFilter):
 
         Returns:
             True if a valid symmetry was found for this type, False otherwise.
+
         """
         try:
             candidates = self._generate_candidate_set(symmetry_type, graph)
@@ -321,7 +350,13 @@ class SymmetryFilter(GenericMoleculeFilter):
 
         return False
 
-    def _get_layout(self, graph: nx.Graph, plot_checks: bool, mol_identifier: str, symmetry_type: AvailableSymmetry) -> dict[Any, tuple[float, float]] | None:
+    def _get_layout(
+        self,
+        graph: nx.Graph,
+        plot_checks: bool,
+        mol_identifier: str,
+        symmetry_type: AvailableSymmetry,
+    ) -> dict[Any, tuple[float, float]] | None:
         """Calculates graph layout if plotting is enabled and possible."""
         pos_original = None
         if plot_checks:
@@ -331,17 +366,22 @@ class SymmetryFilter(GenericMoleculeFilter):
                 else:
                     pos_original = {}  # Empty layout for empty graph
             except ValueError as e:
-                logger.warning("Layout failed for %s (%s): %s. Disabling plots for this check.", mol_identifier, symmetry_type.name, e)
+                logger.warning(
+                    "Layout failed for %s (%s): %s. Disabling plots for this check.",
+                    mol_identifier,
+                    symmetry_type.name,
+                    e,
+                )
         return pos_original
 
     # pylint: disable=too-many-return-statements, too-many-branches
     def _perform_cut(self, graph: nx.Graph, symmetry_type: AvailableSymmetry, obj: Any) -> dict | None:
-        """
-        Performs the cut operation on a copy of the graph based on symmetry type.
+        """Performs the cut operation on a copy of the graph based on symmetry type.
 
         Returns:
             A dictionary containing {'graph_copy', 'nodes_cut', 'edges_cut'} if successful,
             None otherwise.
+
         """
         graph_copy = graph.copy()
         nodes_cut: set[Any] = set()
@@ -382,15 +422,28 @@ class SymmetryFilter(GenericMoleculeFilter):
                 logger.error("Unhandled symmetry type in _perform_cut: %s", symmetry_type)
                 return None  # Unknown type
 
-            return {"graph_copy": graph_copy, "nodes_cut": nodes_cut, "edges_cut": edges_cut}
+            return {
+                "graph_copy": graph_copy,
+                "nodes_cut": nodes_cut,
+                "edges_cut": edges_cut,
+            }
 
         except (nx.NetworkXError, KeyError) as e:
-            logger.debug("Skipping candidate %s (%s): cannot modify graph. %s", obj, symmetry_type.name, e)
+            logger.debug(
+                "Skipping candidate %s (%s): cannot modify graph. %s",
+                obj,
+                symmetry_type.name,
+                e,
+            )
             return None
 
-    def _analyze_components(self, original_graph: nx.Graph, graph_after_cut: nx.Graph, distinct_rep_list: list[nx.Graph]) -> dict[str, Any]:
-        """
-        Analyzes components of the graph after a cut, checks for isomorphism,
+    def _analyze_components(
+        self,
+        original_graph: nx.Graph,
+        graph_after_cut: nx.Graph,
+        distinct_rep_list: list[nx.Graph],
+    ) -> dict[str, Any]:
+        """Analyzes components of the graph after a cut, checks for isomorphism,
         and applies the node threshold.
 
         Returns:
@@ -401,6 +454,7 @@ class SymmetryFilter(GenericMoleculeFilter):
             'any_iso_group_found': Boolean indicating if any group size > 1 exists.
             'valid_iso_group_found': Boolean indicating if any group size > 1 meets threshold.
             'valid_iso_details': List of tuples for valid groups: [(rep_idx, num_in_group), ...]
+
         """
         all_components_nodes = sorted(list(nx.connected_components(graph_after_cut)), key=len, reverse=True)
         total_components_found = len(all_components_nodes)
@@ -439,11 +493,20 @@ class SymmetryFilter(GenericMoleculeFilter):
                         result["valid_iso_details"].append((rep_idx, num_components_in_group))
                     # else: group is below threshold (do nothing extra here)
                 else:
-                    logger.error("Logic Error: Invalid representative index %d in _analyze_components.", rep_idx)
+                    logger.error(
+                        "Logic Error: Invalid representative index %d in _analyze_components.",
+                        rep_idx,
+                    )
 
         return result
 
-    def _record_valid_symmetry(self, all_origins_details_list: list, analysis_result: dict, symmetry_type: AvailableSymmetry, cut_obj: Any) -> None:
+    def _record_valid_symmetry(
+        self,
+        all_origins_details_list: list,
+        analysis_result: dict,
+        symmetry_type: AvailableSymmetry,
+        cut_obj: Any,
+    ) -> None:
         """Adds details of valid isomorphic groups found to the main list."""
         total_components = analysis_result["total_components_found"]
         for rep_idx, num_in_group in analysis_result["valid_iso_details"]:
@@ -451,7 +514,16 @@ class SymmetryFilter(GenericMoleculeFilter):
 
     # pylint: disable=too-many-branches
     def _plot_symmetry_cut(
-        self, graph: nx.Graph, pos_original: dict, symmetry_type: AvailableSymmetry, cut_obj: Any, nodes_cut: set, edges_cut: set, analysis_result: dict, mol_identifier: str, plot_suffix: str
+        self,
+        graph: nx.Graph,
+        pos_original: dict,
+        symmetry_type: AvailableSymmetry,
+        cut_obj: Any,
+        nodes_cut: set,
+        edges_cut: set,
+        analysis_result: dict,
+        mol_identifier: str,
+        plot_suffix: str,
     ) -> None:
         """Handles the plotting logic for a given cut.
 
@@ -465,6 +537,7 @@ class SymmetryFilter(GenericMoleculeFilter):
             analysis_result (dict): Analysis results from _analyze_components.
             mol_identifier (str): Identifier for logging/plotting.
             plot_suffix (str): Suffix for the plot title.
+
         """
         color_subgraph1 = "mediumseagreen"
         color_subgraph2 = "cornflowerblue"
@@ -514,12 +587,7 @@ class SymmetryFilter(GenericMoleculeFilter):
         elif isinstance(cut_obj, tuple) and len(cut_obj) > 0 and isinstance(cut_obj[0], tuple):
             obj_str = f"({cut_obj[0]},{cut_obj[1]})"
 
-        plot_title = (
-            f"{symmetry_type.name} Check on {mol_identifier} - Cut: {obj_str}\n"
-            f"Total Comps:{total_components_found} | C1(G):{len(comp1_nodes)} C2(B):{len(comp2_nodes)}"
-            f"{f' C3+(O):{len(comp3plus_nodes)}' if comp3plus_nodes else ''} Cut(R)"
-            f" - ({plot_suffix})"
-        )
+        plot_title = f"{symmetry_type.name} Check on {mol_identifier} - Cut: {obj_str}\nTotal Comps:{total_components_found} | C1(G):{len(comp1_nodes)} C2(B):{len(comp2_nodes)}{f' C3+(O):{len(comp3plus_nodes)}' if comp3plus_nodes else ''} Cut(R) - ({plot_suffix})"
 
         try:
             plot_nx_graphs(

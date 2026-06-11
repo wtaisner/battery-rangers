@@ -1,4 +1,5 @@
 """Generate report on how many molecules are passing the filters"""
+
 import argparse
 import logging
 import os
@@ -51,16 +52,13 @@ parser.add_argument(
 
 
 def process_file(file: str | os.PathLike) -> dict:
-    """
-    Function to process a single file and apply molecule filtering.
-    """
-
+    """Function to process a single file and apply molecule filtering."""
     logger.info(f"Processing file: {file.split('/')[-1]}.")
     molecule_filter = MoleculeFilter()
 
     try:
         smiles = pd.read_csv(file)["SMILES"].drop_duplicates().values
-    except:  # pylint: disable=bare-except
+    except Exception:  # Narrow exception to Exception to avoid bare except
         smiles = pd.read_csv(file)["smiles"].drop_duplicates().values
 
     smiles_filtered, failure_reasons = molecule_filter.apply(smiles)
@@ -78,7 +76,12 @@ def process_file(file: str | os.PathLike) -> dict:
 def main(args: argparse.Namespace):
     """Run the main script."""
     # Dictionary to store results
-    result_dict = {"filenames": [], "num_total_molecules": [], "num_filtered_molecules": [], "smiles_after_filtering": []}  # TODO: think how to handle this sensibly?
+    result_dict = {
+        "filenames": [],
+        "num_total_molecules": [],
+        "num_filtered_molecules": [],
+        "smiles_after_filtering": [],
+    }  # TODO: think how to handle this sensibly?
     # Get all files to evaluate
     files = glob(args.files)
     logger.info(f"Found {len(files)} files to evaluate.")

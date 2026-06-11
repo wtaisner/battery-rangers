@@ -1,5 +1,4 @@
-"""
-This script orchestrates the execution of REINVENT4 experiments based on configurations defined in TOML files.
+"""This script orchestrates the execution of REINVENT4 experiments based on configurations defined in TOML files.
 It supports filtering experiments by name, molecule type, prior type, and recipe, and can force re-running of stages.
 It generates configuration files for each stage, runs REINVENT commands, saves final configurations, updates a manifest, and calculates metrics.
 
@@ -21,6 +20,7 @@ To run a very specific combination (the most powerful feature):
     # Run only the fine-tuning recipe, for substrates, starting from the vanilla prior.
     python scripts/reinvent_run_experiments.py --molecule-type substrate --prior-type vanilla --recipe ft
 """
+
 import argparse
 import glob
 import json
@@ -62,14 +62,20 @@ def deep_merge(source: dict, destination: dict) -> dict:
 
 
 def run_command(command):
-    """
-    Executes a command and streams its output in real-time.
+    """Executes a command and streams its output in real-time.
     Handles failures cleanly.
     """
     print(f"Executing: {' '.join(map(str, command))}")
 
     # Use Popen to start the process and get control over its output streams
-    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, encoding="utf-8") as proc:  # Redirect stderr to stdout  # Line-buffered
+    with subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        encoding="utf-8",
+    ) as proc:  # Redirect stderr to stdout  # Line-buffered
         # Read and print output line by line, in real-time
         for line in proc.stdout:
             print(line, end="")  # The 'end' prevents extra newlines
@@ -88,7 +94,10 @@ def save_config_and_update_manifest(manifest_path, record):
     config_to_save = record["config"]
     config_save_path = Path(record["config_save_path"])
 
-    config_to_save["meta"] = {"experiment_name": record["name"], "generation_date": timestamp}
+    config_to_save["meta"] = {
+        "experiment_name": record["name"],
+        "generation_date": timestamp,
+    }
     config_save_path.parent.mkdir(parents=True, exist_ok=True)
     with open(config_save_path, "w", encoding="utf-8") as f:
         toml.dump(config_to_save, f)
@@ -147,12 +156,43 @@ def flatten_dict(d, parent_key="", sep="_"):
 def main():
     """Main function to discover, filter, configure, and run experiments."""
     parser = argparse.ArgumentParser(description="Run REINVENT4 experiments. Should be run from the 'battery-rangers' project root.")
-    parser.add_argument("-n", "--name", type=str, help="Run only the experiment with this specific name.")
-    parser.add_argument("-m", "--molecule-type", type=str, choices=[e.value for e in MoleculeType], help="Filter by molecule type.")
-    parser.add_argument("-p", "--prior-type", type=str, choices=[e.value for e in PriorType], help="Filter by prior type.")
-    parser.add_argument("-r", "--recipe", type=str, choices=[e.value for e in Recipe], help="Filter by recipe.")
-    parser.add_argument("--force-rerun", action="store_true", help="Force re-running of training stages even if models already exist.")
-    parser.add_argument("--log_wandb", action="store_true", help="Enable logging of the aggregated report to Weights & Biases.")
+    parser.add_argument(
+        "-n",
+        "--name",
+        type=str,
+        help="Run only the experiment with this specific name.",
+    )
+    parser.add_argument(
+        "-m",
+        "--molecule-type",
+        type=str,
+        choices=[e.value for e in MoleculeType],
+        help="Filter by molecule type.",
+    )
+    parser.add_argument(
+        "-p",
+        "--prior-type",
+        type=str,
+        choices=[e.value for e in PriorType],
+        help="Filter by prior type.",
+    )
+    parser.add_argument(
+        "-r",
+        "--recipe",
+        type=str,
+        choices=[e.value for e in Recipe],
+        help="Filter by recipe.",
+    )
+    parser.add_argument(
+        "--force-rerun",
+        action="store_true",
+        help="Force re-running of training stages even if models already exist.",
+    )
+    parser.add_argument(
+        "--log_wandb",
+        action="store_true",
+        help="Enable logging of the aggregated report to Weights & Biases.",
+    )
     args = parser.parse_args()
 
     # Load templates
@@ -246,7 +286,12 @@ def main():
             current_prior_path = ft_model_path
 
         # --- RL Stage ---
-        if recipe in [Recipe.RL, Recipe.RL_INCEPTION, Recipe.FT_RL, Recipe.FT_RL_INCEPTION]:
+        if recipe in [
+            Recipe.RL,
+            Recipe.RL_INCEPTION,
+            Recipe.FT_RL,
+            Recipe.FT_RL_INCEPTION,
+        ]:
             print("\n--- Stage: Reinforcement Learning ---")
             if not rl_model_path.exists() or args.force_rerun:
                 inception_block = ""
@@ -279,7 +324,12 @@ def main():
                 print(f"Skipping Reinforcement Learning: Model '{rl_model_path}' already exists.")
 
         # --- Determine Final Model to Sample ---
-        if recipe in [Recipe.RL, Recipe.RL_INCEPTION, Recipe.FT_RL, Recipe.FT_RL_INCEPTION]:
+        if recipe in [
+            Recipe.RL,
+            Recipe.RL_INCEPTION,
+            Recipe.FT_RL,
+            Recipe.FT_RL_INCEPTION,
+        ]:
             model_to_sample_path = rl_model_path
         elif recipe == Recipe.FT:
             model_to_sample_path = ft_model_path
@@ -293,7 +343,13 @@ def main():
         for i in range(1, config["sampling"]["num_files"] + 1):
             output_file_path = sampling_dir / f"{exp_name}_{i}.csv"
             format_params = flatten_dict(prepare_format_dict(config))
-            format_params.update({"model_file": str(model_to_sample_path), "output_file": str(output_file_path), "device": config["device"]})
+            format_params.update(
+                {
+                    "model_file": str(model_to_sample_path),
+                    "output_file": str(output_file_path),
+                    "device": config["device"],
+                }
+            )
             sampling_config_content = sampling_template.format(**format_params)
 
             generated_sampling_config_path = GENERATED_CONFIG_DIR / f"{exp_name}_sampling_{i}_{timestamp}.toml"

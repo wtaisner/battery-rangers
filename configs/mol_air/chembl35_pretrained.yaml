@@ -1,40 +1,56 @@
-molair_chembl35_pretrained_new_data_FAST_196:
+#    num_envs: Increases the diversity of experiences collected in parallel.
+#    n_steps: Increases the length of each experience chunk,
+#       which is crucial for the agent to learn the long-term consequences of its actions (improves credit assignment).
+#    epoch: Increases the number of times the agent learns from each batch of experience.
+#       Since this happens on the GPU, it's computationally "cheaper" than collecting more data.
+
+# RUN WITH:
+# python scripts/mol_air_wrapper.py <path to config file> --init_selfies_path <path to .slf file with seed molecules>
+# --init_selfies_path is optional
+
+# Comment out the pretraining section if you have already pretrained the model.
+
+# TODO: pick experiment name
+#Mol-AIR-ChEMBL35-rl-seed-molecules-new-reward:
+Mol-AIR-ChEMBL35-rl-new-reward:
   Pretrain:
-    dataset_path: data/chembl_35_sqlite/chembl_35.slf
-    train_dataset_path: data/chembl_35_sqlite/chembl_35_train.slf
-    val_dataset_path: data/chembl_35_sqlite/chembl_35_val.slf
-    epoch: 10
-    batch_size: 1024
-    lr: 1.0e-3
-    device: cuda
-    seed: 23
-    save_agent: True
-  Env:
-    custom_property_coef: 1.0
-    max_str_len: 196
+     train_dataset_path: data/chembl_35_sqlite/chembl_35_train.slf
+     val_dataset_path: data/chembl_35_sqlite/chembl_35_val.slf
+     epoch: 30
+     batch_size: 8192
+     lr: 1.0e-4
+     device: cuda
+     seed: 23
+     save_agent: True
   Agent:
     type: RND
-    n_steps: 256
-    epoch: 6
-    seq_mini_batch_size: 128
-    seq_len: 196
-    gamma: 1.0
-    nonepi_adv_coef: 1.0
+    n_steps: 64
+    epoch: 3
+    seq_len: 35            # MUST match max_str_len.
+    seq_mini_batch_size: 256 # Reduced to increase the number of updates per epoch.
+    gamma: 0.99             # Standard discount factor for episodic rewards.
+    nonepi_adv_coef: 1.0    # RND intrinsic reward multiplier.
+    entropy_coef: 0.001     # Increase slightly to encourage more exploration early on.
   CountIntReward:
-    crwd_coef: 0.05
+    crwd_coef: 0.1 # increase to improve exploration
   Train:
-    num_envs: 64
-    num_inference_envs: 64
+    num_envs: 2
     seed: 2137
     total_time_steps: 250000
-    summary_freq: 12800
-    agent_save_freq: 102400
-    n_inference_episodes: 250
+    summary_freq: 2500
+    agent_save_freq: 12500
+    num_inference_envs: 1
+    n_inference_episodes: 1000
     lr: 1.0e-4
+    grad_clip_max_norm: 5.0
     device: cuda
+    pretrained_path: outputs/molair_chembl35_pretrained/pretrained_models/best.pt
   Inference:
-    num_envs: 64
+    num_envs: 4
     n_episodes: 10000
-    seed: 23
     device: cuda
     ckpt: best
+  Env:
+    custom_property_coef: 1.0
+    max_str_len: 35
+    vocab_path: outputs/molair_chembl35_pretrained/vocab.json

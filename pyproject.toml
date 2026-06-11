@@ -12,14 +12,12 @@ dependencies = [
     "fcd-torch>=1.0.7",
     "jupyter>=1.1.1",
     "lets-plot>=4.6.2",
-    "marimo[lsp]>=0.13.1",
     "mlxtend>=0.23.4",
     "molscore>=1.9.3",
     "networkx>=3.4.2",
     "numpy>=2.2.2",
     "openpyxl>=3.1.5",
     "pre-commit>=4.1.0",
-    "pylint>=3.3.3",
     "pymatgen>=2025.1.23",
     "pyscf>=2.8.0",
     "pytest>=8.3.4",
@@ -35,14 +33,19 @@ dependencies = [
     "toml>=0.10.2",
     "torch>=2.8.0",
     "torchvision>=0.23.0",
-    "upsetplot>=0.9.0",
     "vtk>=9.4.1",
-    "wandb>=0.19.8",
     "xgboost>=2.1.3",
     "reinvent",
     "anndata>=0.12.3",
     "more-itertools>=10.8.0",
-    "msgspec>=0.19.0",
+    "wandb>=0.23.0",
+    "upsetplot>=0.9.0",
+    "polars>=1.36.1",
+    "marimo>=0.19.2",
+    "gymnasium>=1.2.3",
+    "tyro>=1.0.8",
+    "ty>=0.0.34",
+    "ruff>=0.9.0",
 ]
 
 [[tool.uv.index]]
@@ -53,6 +56,84 @@ explicit = true
 [tool.uv.sources]
 reinvent = { path = "modules/REINVENT4", editable = true }
 
+[tool.ruff]
+line-length = 180
+target-version = "py312"
+
+exclude = [
+    "apps/simpleDAS",
+    "*.ipynb",
+    "notebooks/",
+    "tests/",
+    "modules/REINVENT4/",
+    "modules/mol_air/",
+    "modules/bionemo/",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "PL", "N", "D"]
+ignore = [
+    "PLR2004",
+    "PLR0912",
+    "PLR0913",
+    "PLR0914",
+    "PLR0915",
+    "PLW0603",
+    "PLW2901",
+    "N812",
+    "N805",
+    "N815",
+    "D100", "D101", "D102", "D103", "D104", "D105",
+    "D107", "D201", "D203", "D205", "D301", "D400", "D401",
+    "D404", "D415", "D417",
+]
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-bool-expr = 5
+max-branches = 12
+max-returns = 6
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.pydoclint]
+style = 'google'
+max-line-length = 180
+check-type-hint = true
+check-arg-order = true
+exclude = '^(apps/simpleDAS/|notebooks/|tests/|modules/core/|modules/predictor/|modules/generation/|scripts/|apps/processing_pipeline/src/modules/detect_anomaly\.py|apps/processing_pipeline/mp_processing_test\.py|.*\.ipynb$)'
+check-class-attributes = false
+check-return-types = true
+
+[tool.ty.src]
+# Define which directories are part of your source code
+include = [
+    "modules/core",
+    "modules/generation",
+    "modules/predictor",
+    "modules/reinforcement_learning"
+]
+
+# Define what to skip (Ty finally supports this inside the src table)
+exclude = [
+    "modules/bionemo",
+    "modules/REINVENT4",
+    "modules/mol_air",
+    "notebooks",
+    "tests",
+    "**/*.ipynb"
+]
+
+[tool.ty.analysis]
+respect-type-ignore-comments = true
+
 [tool.ty.rules]
+possibly-missing-attribute = "ignore"
+invalid-type-form = "ignore"
 unresolved-import = "ignore"
+invalid-argument-type = "ignore"
+not-iterable = "ignore"
 unresolved-attribute = "ignore"
+no-matching-overload = "ignore"

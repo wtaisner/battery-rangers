@@ -22,7 +22,7 @@ def _(mo):
 
     For instance, I am looking for conjugated covalent triazine frameworks (CTFs) and use ChEMBL to perform substructure searches. CTFs are a class of porous organic materials built from aromatic 1,3,5-triazine rings, known for their exceptional stability and semiconducting properties. These characteristics make them promising candidates for applications as supercapacitors. By querying ChEMBL for molecules containing the triazine core and specific connectivity patterns, a researcher could identify potential building blocks or fragments for designing new CTFs with tailored properties.
 
-    Furthermore, ChEMBL is publicly available via https://www.ebi.ac.uk/chembl/visualise/ . For the sake of computational efficiency, a reasonable subset of 100k molecules is used to make computations feasible, with random seed fixed for reproducibility. Lastly, custom implementation of substructure search (SMARTSFilter) and conjugation estimation (ConjugationFilter) are employed to identify relevant molecules and are available via: implementations of both filters are available via: https://github.com/wtaisner/battery-rangers/tree/main/modules/core/filters. For the sake of readabilty, implementation is not included.
+    Furthermore, ChEMBL is publicly available via https://www.ebi.ac.uk/chembl/visualise/ . For the sake of computational efficiency, a reasonable subset of 100k molecules is used to make computations feasible, with random seed fixed for reproducibility. Lastly, custom implementation of substructure search (SMARTSFilter) and conjugation estimation (ConjugationFilter) are employed to identify relevant molecules and are available via: implementations of both filters are available via: https://github.com/wtaisner/battery-rangers/tree/main/modules/core/filters. For the sake of readability, implementation is not included.
 
     The report has been generated as Marimo nodebook and apart from resulting HTML, .py source file is provided as well. In order to run it:
     ```python
@@ -39,7 +39,6 @@ def _(mo):
 def _():
     import marimo as mo
     import matplotlib.pyplot as plt
-    import numpy as np
     import pandas as pd
     import seaborn as sns
     from rdkit import Chem
@@ -65,7 +64,9 @@ def _():
 
 @app.cell
 def _(pd):
-    df = pd.read_parquet("data/chembl_35_sqlite/chembl_35.parquet").sample(100000, random_state=42)
+    df = pd.read_parquet("data/chembl_35_sqlite/chembl_35.parquet").sample(
+        100000, random_state=42
+    )
     df.rename(columns={"smiles": "canonical_smiles"}, inplace=True)
     return (df,)
 
@@ -73,8 +74,12 @@ def _(pd):
 @app.cell
 def _(Chem, conjugation_filter, ctf_filter, df):
     df["molecule"] = df["canonical_smiles"].apply(Chem.MolFromSmiles)
-    df["CTF"] = df["molecule"].apply(lambda x: True if len(ctf_filter.apply([x])) > 0 else False)
-    df["conjugated"] = df["molecule"].apply(lambda x: True if len(conjugation_filter.apply([x])) > 0 else False)
+    df["CTF"] = df["molecule"].apply(
+        lambda x: True if len(ctf_filter.apply([x])) > 0 else False
+    )
+    df["conjugated"] = df["molecule"].apply(
+        lambda x: True if len(conjugation_filter.apply([x])) > 0 else False
+    )
     return
 
 
@@ -82,7 +87,16 @@ def _(Chem, conjugation_filter, ctf_filter, df):
 def _(df):
     # we can discard unnecessary columns to make the dataframe cleaner.
     df.drop(
-        columns=["molregno", "molfile", "standard_inchi", "standard_inchi_key", "selfies", "molecule", "cx_most_apka", "cx_most_bpka"],
+        columns=[
+            "molregno",
+            "molfile",
+            "standard_inchi",
+            "standard_inchi_key",
+            "selfies",
+            "molecule",
+            "cx_most_apka",
+            "cx_most_bpka",
+        ],
         inplace=True,
         errors="ignore",
     )
@@ -130,7 +144,9 @@ def _(AllChem, Chem, Draw, plt):
 
         mol = Chem.AddHs(mol)
 
-        conf_id = AllChem.EmbedMolecule(mol, randomSeed=42)  # Use a seed for reproducibility
+        conf_id = AllChem.EmbedMolecule(
+            mol, randomSeed=42
+        )  # Use a seed for reproducibility
         if conf_id == -1:
             print("Error: Conformer generation failed.")
             return
@@ -170,14 +186,23 @@ def _(AllChem, Chem, Draw, plt):
             x, y, z = positions[i]
             symbol = atom.GetSymbol()
             color = atom_colors.get(symbol, "gray")  # Default to gray
-            ax2.scatter([x], [y], [z], s=150, c=color, alpha=0.9, edgecolors="w", linewidth=0.5)
+            ax2.scatter(
+                [x], [y], [z], s=150, c=color, alpha=0.9, edgecolors="w", linewidth=0.5
+            )
 
         for bond in mol.GetBonds():
             start_atom_idx = bond.GetBeginAtomIdx()
             end_atom_idx = bond.GetEndAtomIdx()
             pos_start = positions[start_atom_idx]
             pos_end = positions[end_atom_idx]
-            ax2.plot([pos_start[0], pos_end[0]], [pos_start[1], pos_end[1]], [pos_start[2], pos_end[2]], color="dimgray", linewidth=2, zorder=-1)
+            ax2.plot(
+                [pos_start[0], pos_end[0]],
+                [pos_start[1], pos_end[1]],
+                [pos_start[2], pos_end[2]],
+                color="dimgray",
+                linewidth=2,
+                zorder=-1,
+            )
 
         ax2.set_title("3D Conformation (Atoms)")
         ax2.set_xlabel("X (Å)")
@@ -194,22 +219,42 @@ def _(AllChem, Chem, Draw, plt):
 @app.cell
 def _(plot_molecule_grid, working_df):
     # plot 3D conformation of a random CTF conjugated molecule
-    random_ctf_smiles = working_df[(working_df["CTF"] & working_df["conjugated"])]["canonical_smiles"].sample(100, random_state=42).values[-1]
-    plot_molecule_grid(random_ctf_smiles, title=f"3D Conformation of {random_ctf_smiles}")
+    random_ctf_smiles = (
+        working_df[(working_df["CTF"] & working_df["conjugated"])]["canonical_smiles"]
+        .sample(100, random_state=42)
+        .values[-1]
+    )
+    plot_molecule_grid(
+        random_ctf_smiles, title=f"3D Conformation of {random_ctf_smiles}"
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
-        r"""Furthermore, we can check for correlation between numeric columns, with some visible high values between properties directly dependend on number of atoms, i.e. molecular weight, etc., which is to be expected."""
+        r"""Furthermore, we can check for correlation between numeric columns, with some visible high values between properties directly dependent on number of atoms, i.e. molecular weight, etc., which is to be expected."""
     )
     return
 
 
 @app.cell
 def _(df):
-    working_df = df[["canonical_smiles", "CTF", "conjugated", "mw_freebase", "alogp", "psa", "molecular_species", "full_mwt", "aromatic_rings", "heavy_atoms", "qed_weighted"]]
+    working_df = df[
+        [
+            "canonical_smiles",
+            "CTF",
+            "conjugated",
+            "mw_freebase",
+            "alogp",
+            "psa",
+            "molecular_species",
+            "full_mwt",
+            "aromatic_rings",
+            "heavy_atoms",
+            "qed_weighted",
+        ]
+    ]
     numeric_cols = working_df.select_dtypes(include=["number"]).columns
     return numeric_cols, working_df
 
@@ -227,13 +272,20 @@ def _(numeric_cols, plt, sns, working_df):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""We want to take a look at how some features correspond directly to conjugation or CTF.""")
+    mo.md(
+        r"""We want to take a look at how some features correspond directly to conjugation or CTF."""
+    )
     return
 
 
 @app.cell
 def _(sns, working_df):
-    sns.jointplot(data=working_df, x="qed_weighted", y="heavy_atoms", hue="conjugated"), sns.jointplot(data=working_df, x="psa", y="alogp", hue="CTF")
+    (
+        sns.jointplot(
+            data=working_df, x="qed_weighted", y="heavy_atoms", hue="conjugated"
+        ),
+        sns.jointplot(data=working_df, x="psa", y="alogp", hue="CTF"),
+    )
     return
 
 
@@ -243,7 +295,9 @@ def _(numeric_cols, plt, sns, working_df):
     from sklearn.model_selection import train_test_split
 
     # we want to make sure that CTF will be represented equally in the sample
-    _, sample_df = train_test_split(working_df, test_size=1000, random_state=23, stratify=working_df["CTF"])
+    _, sample_df = train_test_split(
+        working_df, test_size=1000, random_state=23, stratify=working_df["CTF"]
+    )
     sns.pairplot(sample_df, vars=numeric_cols, hue="CTF")
     plt.show()
     return (sample_df,)
@@ -251,19 +305,37 @@ def _(numeric_cols, plt, sns, working_df):
 
 @app.cell
 def _(sample_df, sns):
-    sns.violinplot(data=sample_df, x="aromatic_rings", y="alogp", hue="CTF", split=True, gap=0.1, inner="quart")
+    sns.violinplot(
+        data=sample_df,
+        x="aromatic_rings",
+        y="alogp",
+        hue="CTF",
+        split=True,
+        gap=0.1,
+        inner="quart",
+    )
     return
 
 
 @app.cell
 def _(sample_df, sns):
-    sns.violinplot(data=sample_df, x="aromatic_rings", y="alogp", hue="conjugated", split=True, gap=0.1, inner="quart")
+    sns.violinplot(
+        data=sample_df,
+        x="aromatic_rings",
+        y="alogp",
+        hue="conjugated",
+        split=True,
+        gap=0.1,
+        inner="quart",
+    )
     return
 
 
 @app.cell
 def _(numeric_cols, plt, sns, working_df):
-    sns.pairplot(working_df.sample(1000, random_state=42), vars=numeric_cols, hue="conjugated")
+    sns.pairplot(
+        working_df.sample(1000, random_state=42), vars=numeric_cols, hue="conjugated"
+    )
     plt.show()
     return
 
@@ -281,8 +353,12 @@ def _(pd, working_df):
     from upsetplot import UpSet, from_indicators
 
     # adjust the data for upset plot
-    molecular_species_dummies = pd.get_dummies(working_df["molecular_species"], prefix="species").astype(bool)
-    upset_df = pd.concat([working_df[["CTF", "conjugated"]], molecular_species_dummies], axis=1)
+    molecular_species_dummies = pd.get_dummies(
+        working_df["molecular_species"], prefix="species"
+    ).astype(bool)
+    upset_df = pd.concat(
+        [working_df[["CTF", "conjugated"]], molecular_species_dummies], axis=1
+    )
 
     upset_data = upset_df.set_index(list(upset_df.columns))
     upset_plot_data = from_indicators(upset_df)

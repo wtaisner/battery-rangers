@@ -4,9 +4,9 @@ run_type = "sampling"
 device = "{device}"
 
 [parameters]
-num_smiles = {sampling_num_smiles}
-unique_molecules = {sampling_unique_molecules}
-randomize_smiles = {sampling_randomize_smiles}
+num_smiles = "{sampling_num_smiles}"
+unique_molecules = "{sampling_unique_molecules}"
+randomize_smiles = "{sampling_randomize_smiles}"
 
 # Dynamic paths
 model_file = "{model_file}"

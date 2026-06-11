@@ -1,16 +1,20 @@
 """Flatness feature calculation."""
+
 import matplotlib.pyplot as plt
 import numpy as np
-from rdkit import Chem
 from rdkit.Chem import Mol
 from sklearn.linear_model import LinearRegression
 
 from modules.core.features.utils import compute_conformer
 
 
-def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, num_conformers: int = 10, **kwargs) -> float | None:
-    """
-    Calculate the flatness of a molecule.
+def get_flatness_mol(
+    molecule: Mol | str,
+    plot_visualization: bool = False,
+    num_conformers: int = 10,
+    **kwargs,
+) -> float | None:
+    """Calculate the flatness of a molecule.
 
     Fit a plane to the molecule's 3D coordinates and calculate the RMSD of the
     molecule's atoms from the plane.
@@ -20,10 +24,11 @@ def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, num_
         plot_visualization: Whether to plot the molecule and the fitted plane.
         num_conformers: Number of conformers to generate for the molecule.
         **kwargs: Additional arguments for the compute_conformer function.
+
     Returns:
         The flatness of the molecule.
-    """
 
+    """
     if isinstance(molecule, str):
         rdkit_mol = compute_conformer(molecule, num_conformers=num_conformers, **kwargs)
     else:
@@ -53,18 +58,19 @@ def get_flatness_mol(molecule: Mol | str, plot_visualization: bool = False, num_
         if plot_visualization:
             __visualize_the_plane(coords, model)
 
-    return np.mean(rmsds)
+    return float(np.mean(rmsds))
 
 
 def __visualize_the_plane(coords: np.ndarray, model: LinearRegression) -> None:
-    """
-    Visualize the plane fitted to the molecule's 3D coordinates.
+    """Visualize the plane fitted to the molecule's 3D coordinates.
 
     Args:
         coords: The molecule's 3D coordinates.
         model: The fitted plane.
+
     Returns:
         None
+
     """
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection="3d")

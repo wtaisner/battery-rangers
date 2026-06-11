@@ -1,4 +1,5 @@
 """A script to generate an Excel file with molecular structures and SMILES strings."""
+
 import argparse
 import os
 import shutil
@@ -12,8 +13,7 @@ from rdkit.Chem import Draw
 
 
 def read_model_data(input_file: str) -> dict:
-    """
-    Function to read SMILES data from a file.
+    """Function to read SMILES data from a file.
     The function should parse the file and return a dictionary
     in the format: {"Model_Name": ["SMILES1", "SMILES2", ...], ...}
 
@@ -22,6 +22,7 @@ def read_model_data(input_file: str) -> dict:
 
     Returns:
         dict: Dictionary of models and their SMILES strings.
+
     """
     data = pd.read_csv(input_file)
     data["smiles_after_filtering"] = data["smiles_after_filtering"].apply(literal_eval)
@@ -31,8 +32,7 @@ def read_model_data(input_file: str) -> dict:
 
 
 def generate_excel(model_data: dict, output_file: str, output_folder: str):
-    """
-    Generates an Excel file with SMILES structures and images.
+    """Generates an Excel file with SMILES structures and images.
 
     Args:
         model_data (dict): Dictionary of models and their SMILES strings.
@@ -41,6 +41,7 @@ def generate_excel(model_data: dict, output_file: str, output_folder: str):
 
     Returns:
         None
+
     """
     # Create a new Excel workbook
     wb = Workbook()
@@ -94,13 +95,21 @@ def generate_excel(model_data: dict, output_file: str, output_folder: str):
 
 
 def main():
-    """
-    Main function to parse arguments and generate the Excel file.
-    """
+    """Main function to parse arguments and generate the Excel file."""
     parser = argparse.ArgumentParser(description="Generate an Excel file with molecular structures and SMILES strings.")
     parser.add_argument("-i", "--input_file", help="Path to the input file containing model data.")
-    parser.add_argument("-o", "--output_file", default="Molecules_with_Models.xlsx", help="Path to save the output Excel file.")
-    parser.add_argument("-t", "--temp_folder", default="temp_images", help="Folder to store temporary images.")
+    parser.add_argument(
+        "-o",
+        "--output_file",
+        default="Molecules_with_Models.xlsx",
+        help="Path to save the output Excel file.",
+    )
+    parser.add_argument(
+        "-t",
+        "--temp_folder",
+        default="temp_images",
+        help="Folder to store temporary images.",
+    )
     args = parser.parse_args()
 
     # Read the data from the input file

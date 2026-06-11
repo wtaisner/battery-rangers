@@ -1,4 +1,5 @@
 """A filter that matches SMARTS patterns with inclusion and exclusion rules and given cardinality."""
+
 from dataclasses import dataclass
 
 from rdkit import Chem
@@ -9,13 +10,13 @@ from modules.core.filters.generic_filter import GenericMoleculeFilter
 
 @dataclass(frozen=True)
 class InclusionRule:
-    """
-    Positive Rule: A molecule is APPROVED if it matches this pattern with specific cardinality.
+    """Positive Rule: A molecule is APPROVED if it matches this pattern with specific cardinality.
 
     Args:
         smarts_pattern (str): The SMARTS pattern to look for.
         min_cardinality (int): The molecule is approved if the pattern
                                appears AT LEAST this number of times.
+
     """
 
     smarts_pattern: str
@@ -24,8 +25,7 @@ class InclusionRule:
 
 @dataclass(frozen=True)
 class ExclusionRule:
-    """
-    Negative Rule: A molecule is DISCARDED if it matches these patterns.
+    """Negative Rule: A molecule is DISCARDED if it matches these patterns.
 
     Args:
         smarts_pattern (str): The SMARTS pattern to look for.
@@ -35,6 +35,7 @@ class ExclusionRule:
         penalty_sensitivity (float): Used for RL scoring. Controls how sharply the
                                      reward drops when the rule is violated.
                                      Default 1.0. Higher = steeper penalty.
+
     """
 
     smarts_pattern: str
@@ -43,8 +44,7 @@ class ExclusionRule:
 
 
 class SMARTSFilter(GenericMoleculeFilter):
-    """
-    Filter that leaves molecules matching a set of expressive SMARTS rules.
+    """Filter that leaves molecules matching a set of expressive SMARTS rules.
 
     A molecule is kept if it satisfies ANY of the provided `Rule` objects.
     A `Rule` is satisfied if the molecule contains at least `min_cardinality`
@@ -56,9 +56,14 @@ class SMARTSFilter(GenericMoleculeFilter):
             pattern must be present at least once.
         exclusion_rules (list[ExclusionRule] | None): A list of ExclusionRule objects.
             If a molecule matches any of these exclusion rules, it is discarded.
+
     """
 
-    def __init__(self, inclusion_rules: list[InclusionRule] | None = None, exclusion_rules: list[ExclusionRule] | None = None):
+    def __init__(
+        self,
+        inclusion_rules: list[InclusionRule] | None = None,
+        exclusion_rules: list[ExclusionRule] | None = None,
+    ):
         if inclusion_rules is None:
             self.inclusion_rules = [
                 # Function 1: CTF pattern
@@ -99,19 +104,20 @@ class SMARTSFilter(GenericMoleculeFilter):
             self._compiled_exclusion_rules.append((pattern, rule.max_cardinality, rule.penalty_sensitivity))
 
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
-        """
-        Apply the filter to a list of RDKit molecules.
+        """Apply the filter to a list of RDKit molecules.
 
         Args:
-            molecules (list[Mol]): The list of RDKit molecules to filter.
+            molecules: The list of RDKit molecules to filter.
+            **kwargs: Additional keyword arguments (for API compatibility, unused).
+
         Returns:
             list[Mol]: The list of RDKit molecules that passed the filter.
+
         """
         return [mol for mol in molecules if self.check_smarts(mol)]
 
     def check_smarts(self, mol: Chem.Mol) -> bool:
-        """
-        Binary check: Does the molecule pass the filter?
+        """Binary check: Does the molecule pass the filter?
 
         Passes if:
         1. It does NOT violate any ExclusionRule.
@@ -119,8 +125,10 @@ class SMARTSFilter(GenericMoleculeFilter):
 
         Args:
             mol (Chem.Mol): The molecule to evaluate.
+
         Returns:
             bool: True if the molecule passes the filter, False otherwise.
+
         """
         if mol is None:
             return False
@@ -140,8 +148,7 @@ class SMARTSFilter(GenericMoleculeFilter):
         return True
 
     def get_reward(self, mol: Chem.Mol) -> float:
-        """
-        Calculates a continuous score (0.0 to 1.0) for RL.
+        """Calculates a continuous score (0.0 to 1.0) for RL.
 
         - 1.0: Perfect match (passes binary filter).
         - < 1.0: Partial match or contains forbidden structures.
@@ -153,8 +160,10 @@ class SMARTSFilter(GenericMoleculeFilter):
 
         Args:
             mol (Chem.Mol): The molecule to evaluate.
+
         Returns:
             float: A score between 0.0 and 1.0.
+
         """
         if mol is None:
             return 0.0
@@ -189,8 +198,6 @@ class SMARTSFilter(GenericMoleculeFilter):
         return sum(scores) / len(scores)
 
     def filter_from_property(self, properties: dict) -> bool:
-        """
-        Reads properties from a dictionary (database) and decides whether to filter the molecule.
-        """
+        """Reads properties from a dictionary (database) and decides whether to filter the molecule."""
         smarts_score = properties.get("smarts_filter", None)
-        return smarts_score is not None and smarts_score >= 0.999  # Keep only if no smarts filter violations detected
+        return isinstance(smarts_score, (int, float)) and smarts_score >= 0.999  # Keep only if no smarts filter violations detected

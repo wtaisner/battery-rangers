@@ -1,4 +1,5 @@
 """A multiprocessing script to update a SQLite database with SMARTS and steric hindrance scores"""
+
 import logging
 import multiprocessing
 import os
@@ -18,9 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def process_batch(batch_data: List[Tuple[int, str]]) -> List[Tuple[float, float, int]]:
-    """
-    Worker function to process a chunk of molecules.
-    """
+    """Worker function to process a chunk of molecules."""
     # --- SILENCE RDKIT LOGS ---
     # We do this inside the worker to ensure every process is silenced.
     lg = RDLogger.logger()
@@ -54,9 +53,7 @@ def process_batch(batch_data: List[Tuple[int, str]]) -> List[Tuple[float, float,
 
 
 def update_db_multiprocess(db_path: str, table_name: str = "molecules", num_workers: int = None):
-    """
-    Orchestrates the multiprocessing update.
-    """
+    """Orchestrates the multiprocessing update."""
     if not os.path.exists(db_path):
         logger.error(f"Database not found: {db_path}")
         return
@@ -97,7 +94,11 @@ def update_db_multiprocess(db_path: str, table_name: str = "molecules", num_work
     with multiprocessing.Pool(processes=num_workers) as pool:
         # imap_unordered is usually slightly faster if order doesn't strictly matter for processing,
         # but we need to collect everything. tqdm wrapper shows progress.
-        for batch_results in tqdm(pool.imap_unordered(process_batch, batches), total=len(batches), desc="Processing Batches"):
+        for batch_results in tqdm(
+            pool.imap_unordered(process_batch, batches),
+            total=len(batches),
+            desc="Processing Batches",
+        ):
             results_to_update.extend(batch_results)
 
     # 4. Batch Write (Main Thread)

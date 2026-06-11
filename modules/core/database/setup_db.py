@@ -1,4 +1,5 @@
 """Module for handling the molecule properties database."""
+
 import datetime
 import os
 import sqlite3
@@ -9,8 +10,7 @@ from typing import Any, Dict, Optional
 
 
 class MoleculeDB:
-    """
-    Class to handle a SQLite database for storing and retrieving molecule properties.
+    """Class to handle a SQLite database for storing and retrieving molecule properties.
 
     Fixes implemented:
     1. Separate database connections for the main thread (Reader) and background thread (Writer).
@@ -60,12 +60,12 @@ class MoleculeDB:
                 selfies TEXT NOT NULL
             )
         """
-        with self.reader_connection:
-            self.reader_connection.execute(create_table_sql)
+        if self.reader_connection is not None:
+            with self.reader_connection:
+                self.reader_connection.execute(create_table_sql)
 
     def _writer_loop(self):
-        """
-        The dedicated writer thread's main loop.
+        """The dedicated writer thread's main loop.
         CRITICAL FIX: This thread opens its OWN connection to the DB.
         """
         # Create a private connection for this thread
@@ -117,15 +117,11 @@ class MoleculeDB:
             print(f"Missing key in properties dict during write: {e}")
 
     def add_molecule(self, **properties):
-        """
-        Public API: Non-blocking add. Puts data into the queue.
-        """
+        """Public API: Non-blocking add. Puts data into the queue."""
         self.write_queue.put(properties)
 
     def get_molecule_properties(self, canon_smiles: str) -> Optional[Dict[str, Any]]:
-        """
-        Robustly fetch molecule properties, handling potential concurrency noise.
-        """
+        """Robustly fetch molecule properties, handling potential concurrency noise."""
         if not self.reader_connection:
             print("Error: No active database connection.")
             return None

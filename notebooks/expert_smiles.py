@@ -9,7 +9,6 @@ def _():
     import math
     import sys
 
-    import lets_plot as lp
     import marimo as mo
     import matplotlib.pyplot as plt
     import numpy as np
@@ -46,15 +45,31 @@ def _(Chem, pd):
         sheet_name="Sheet1",
     )
 
-    df = df[["smiles (substrate)", "SMILES to be used (molecules with a node)", "capacitance_max"]]
-    df.rename(columns={"smiles (substrate)": "smiles_substrate", "SMILES to be used (molecules with a node)": "smiles_node"}, inplace=True)
+    df = df[
+        [
+            "smiles (substrate)",
+            "SMILES to be used (molecules with a node)",
+            "capacitance_max",
+        ]
+    ]
+    df.rename(
+        columns={
+            "smiles (substrate)": "smiles_substrate",
+            "SMILES to be used (molecules with a node)": "smiles_node",
+        },
+        inplace=True,
+    )
 
     def canonicalize_smiles(smiles_string):
         """
         Attempts to canonicalize a SMILES string.
         Returns the canonical SMILES or pd.NA on failure.
         """
-        if pd.isna(smiles_string) or not isinstance(smiles_string, str) or smiles_string.strip() == "":
+        if (
+            pd.isna(smiles_string)
+            or not isinstance(smiles_string, str)
+            or smiles_string.strip() == ""
+        ):
             return pd.NA
 
         try:
@@ -135,11 +150,17 @@ def _(Chem, df, sf):
     df["molecule_substrate"] = df["smiles_substrate"].apply(Chem.MolFromSmiles)
     df["molecule_node"] = df["smiles_node"].apply(Chem.MolFromSmiles)
 
-    df["selfies_substrate"].to_csv("data/raw/substrate/experts_substrate.slf", sep=" ", index=None, header=None)
+    df["selfies_substrate"].to_csv(
+        "data/raw/substrate/experts_substrate.slf", sep=" ", index=None, header=None
+    )
     # df["selfies_node"].to_csv("data/raw/node/experts_node.slf", sep=" ", index=None, header=None)
 
-    df["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/experts_substrate.csv", index=None)
-    df["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/experts_node.csv", index=None, header=1)
+    df["smiles_substrate"].rename("canon_smiles").to_csv(
+        "data/raw/substrate/experts_substrate.csv", index=None
+    )
+    df["smiles_node"].rename("canon_smiles").to_csv(
+        "data/raw/node/experts_node.csv", index=None, header=1
+    )
 
     df.to_csv("data/raw/experts_15_09_25_parsed.csv", index=None)
     return
@@ -147,14 +168,24 @@ def _(Chem, df, sf):
 
 @app.cell
 def _(df, train_test_split):
-    X_train, X_test, _, _ = train_test_split(df, df["capacitance_max"], test_size=0.2, random_state=42)
+    X_train, X_test, _, _ = train_test_split(
+        df, df["capacitance_max"], test_size=0.2, random_state=42
+    )
 
     # save train-test sets
-    X_train["selfies_substrate"].to_csv("data/raw/substrate/train_selfies.slf", sep=" ", index=None, header=None)
-    X_train["selfies_node"].to_csv("data/raw/node/train_selfies.slf", sep=" ", index=None, header=None)
+    X_train["selfies_substrate"].to_csv(
+        "data/raw/substrate/train_selfies.slf", sep=" ", index=None, header=None
+    )
+    X_train["selfies_node"].to_csv(
+        "data/raw/node/train_selfies.slf", sep=" ", index=None, header=None
+    )
 
-    X_test["selfies_substrate"].to_csv("data/raw/substrate/test_selfies.slf", sep=" ", index=None, header=None)
-    X_test["selfies_node"].to_csv("data/raw/node/test_selfies.slf", sep=" ", index=None, header=None)
+    X_test["selfies_substrate"].to_csv(
+        "data/raw/substrate/test_selfies.slf", sep=" ", index=None, header=None
+    )
+    X_test["selfies_node"].to_csv(
+        "data/raw/node/test_selfies.slf", sep=" ", index=None, header=None
+    )
 
     # X_train["smiles_substrate"].to_csv("data/raw/substrate/train_substrate.smi", index=None, sep=" ", header=None)
     # X_test["smiles_substrate"].to_csv("data/raw/substrate/test_substrate.smi", index=None, sep=" ", header=None)
@@ -162,11 +193,19 @@ def _(df, train_test_split):
     # X_train["smiles_node"].to_csv("data/raw/node/chembl35_train_node.smi", index=None, sep=" ", header=None)
     # X_test["smiles_node"].to_csv("data/raw/node/chembl35_test_node.smi", index=None, sep=" ", header=None)
 
-    X_train["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/train.csv", index=None)
-    X_train["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/train.csv", index=None)
+    X_train["smiles_substrate"].rename("canon_smiles").to_csv(
+        "data/raw/substrate/train.csv", index=None
+    )
+    X_train["smiles_node"].rename("canon_smiles").to_csv(
+        "data/raw/node/train.csv", index=None
+    )
 
-    X_test["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/test.csv", index=None)
-    X_test["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/test.csv", index=None)
+    X_test["smiles_substrate"].rename("canon_smiles").to_csv(
+        "data/raw/substrate/test.csv", index=None
+    )
+    X_test["smiles_node"].rename("canon_smiles").to_csv(
+        "data/raw/node/test.csv", index=None
+    )
     return
 
 
@@ -202,10 +241,14 @@ def _(Chem, pd):
     data["all_no"] = data[last_three].apply(lambda x: all(v == "no" for v in x), axis=1)
     print(data["all_no"].value_counts())
 
-    data["passed_smarts"] = data["smiles"].apply(lambda x: smarts_filter.apply([Chem.MolFromSmiles(x)]))
+    data["passed_smarts"] = data["smiles"].apply(
+        lambda x: smarts_filter.apply([Chem.MolFromSmiles(x)])
+    )
 
     # count non empty passed_smarts
-    data["passed_smarts_count"] = data["passed_smarts"].apply(lambda x: len(x) if x is not None else 0)
+    data["passed_smarts_count"] = data["passed_smarts"].apply(
+        lambda x: len(x) if x is not None else 0
+    )
     data["passed_smarts_bool"] = data["passed_smarts_count"] > 0
     data["passed_smarts_bool"].value_counts()
     return (ctf_filter,)
@@ -231,26 +274,52 @@ def _(ctf_filter, df):
 
 @app.cell
 def _(ctfs, train_test_split):
-    X_ctf_train, X_ctf_test, _, _ = train_test_split(ctfs, ctfs["capacitance_max"], test_size=0.2, random_state=42)
+    X_ctf_train, X_ctf_test, _, _ = train_test_split(
+        ctfs, ctfs["capacitance_max"], test_size=0.2, random_state=42
+    )
 
     # save train-test sets
-    X_ctf_train["selfies_substrate"].to_csv("data/raw/substrate/ctf_train_selfies.slf", sep=" ", index=None, header=None)
-    X_ctf_test["selfies_substrate"].to_csv("data/raw/substrate/ctf_test_selfies.slf", sep=" ", index=None, header=None)
-    X_ctf_train["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/ctf_train.csv", index=None)
-    X_ctf_test["smiles_substrate"].rename("canon_smiles").to_csv("data/raw/substrate/ctf_test.csv", index=None)
+    X_ctf_train["selfies_substrate"].to_csv(
+        "data/raw/substrate/ctf_train_selfies.slf", sep=" ", index=None, header=None
+    )
+    X_ctf_test["selfies_substrate"].to_csv(
+        "data/raw/substrate/ctf_test_selfies.slf", sep=" ", index=None, header=None
+    )
+    X_ctf_train["smiles_substrate"].rename("canon_smiles").to_csv(
+        "data/raw/substrate/ctf_train.csv", index=None
+    )
+    X_ctf_test["smiles_substrate"].rename("canon_smiles").to_csv(
+        "data/raw/substrate/ctf_test.csv", index=None
+    )
 
     # save .smi for REINVENT pre-trained on chembl35
-    X_ctf_train["smiles_substrate"].to_csv("data/raw/substrate/ctf_train_chembl35.smi", index=None, sep=" ", header=None)
-    X_ctf_test["smiles_substrate"].to_csv("data/raw/substrate/ctf_test_chembl35.smi", index=None, sep=" ", header=None)
+    X_ctf_train["smiles_substrate"].to_csv(
+        "data/raw/substrate/ctf_train_chembl35.smi", index=None, sep=" ", header=None
+    )
+    X_ctf_test["smiles_substrate"].to_csv(
+        "data/raw/substrate/ctf_test_chembl35.smi", index=None, sep=" ", header=None
+    )
 
-    X_ctf_train["smiles_node"].to_csv("data/raw/node/ctf_train_chembl35.smi", index=None, sep=" ", header=None)
-    X_ctf_test["smiles_node"].to_csv("data/raw/node/ctf_test_chembl35.smi", index=None, sep=" ", header=None)
+    X_ctf_train["smiles_node"].to_csv(
+        "data/raw/node/ctf_train_chembl35.smi", index=None, sep=" ", header=None
+    )
+    X_ctf_test["smiles_node"].to_csv(
+        "data/raw/node/ctf_test_chembl35.smi", index=None, sep=" ", header=None
+    )
 
     # save for nodes
-    X_ctf_train["selfies_node"].to_csv("data/raw/node/ctf_train_selfies.slf", sep=" ", index=None, header=None)
-    X_ctf_test["selfies_node"].to_csv("data/raw/node/ctf_test_selfies.slf", sep=" ", index=None, header=None)
-    X_ctf_train["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/ctf_train.csv", index=None)
-    X_ctf_test["smiles_node"].rename("canon_smiles").to_csv("data/raw/node/ctf_test.csv", index=None)
+    X_ctf_train["selfies_node"].to_csv(
+        "data/raw/node/ctf_train_selfies.slf", sep=" ", index=None, header=None
+    )
+    X_ctf_test["selfies_node"].to_csv(
+        "data/raw/node/ctf_test_selfies.slf", sep=" ", index=None, header=None
+    )
+    X_ctf_train["smiles_node"].rename("canon_smiles").to_csv(
+        "data/raw/node/ctf_train.csv", index=None
+    )
+    X_ctf_test["smiles_node"].rename("canon_smiles").to_csv(
+        "data/raw/node/ctf_test.csv", index=None
+    )
 
     # save full ctf dataset
     ctfs.to_csv("data/raw/experts_15_09_25_ctf_filtered.csv", index=None)
@@ -277,10 +346,20 @@ def _(pd):
 @app.cell
 def _(Chem, working_df):
     # compute mean number of atoms for substrates and nodes
-    working_df["molecule_substrate"] = working_df["smiles_substrate"].apply(Chem.MolFromSmiles)
+    working_df["molecule_substrate"] = working_df["smiles_substrate"].apply(
+        Chem.MolFromSmiles
+    )
     working_df["molecule_node"] = working_df["smiles_node"].apply(Chem.MolFromSmiles)
-    mean_atoms_substrate = working_df["molecule_substrate"].apply(lambda x: x.GetNumAtoms() if x is not None else 0).mean()
-    mean_atoms_node = working_df["molecule_node"].apply(lambda x: x.GetNumAtoms() if x is not None else 0).mean()
+    mean_atoms_substrate = (
+        working_df["molecule_substrate"]
+        .apply(lambda x: x.GetNumAtoms() if x is not None else 0)
+        .mean()
+    )
+    mean_atoms_node = (
+        working_df["molecule_node"]
+        .apply(lambda x: x.GetNumAtoms() if x is not None else 0)
+        .mean()
+    )
     mean_atoms_substrate, mean_atoms_node
     return
 
@@ -305,15 +384,21 @@ def _():
 
 @app.cell
 def _(flatness_filter, working_df):
-    _, flatness_substrate = flatness_filter.apply(working_df["molecule_substrate"].tolist(), return_flatness=True)
-    _, flatness_node = flatness_filter.apply(working_df["molecule_node"].tolist(), return_flatness=True)
+    _, flatness_substrate = flatness_filter.apply(
+        working_df["molecule_substrate"].tolist(), return_flatness=True
+    )
+    _, flatness_node = flatness_filter.apply(
+        working_df["molecule_node"].tolist(), return_flatness=True
+    )
     return flatness_node, flatness_substrate
 
 
 @app.cell(hide_code=True)
 def _(math, np, plt):
     def plot_flatness(flatness_list, name):
-        flatness = [f[0] for f in flatness_list if f[0] is not None and not math.isnan(f[0])]
+        flatness = [
+            f[0] for f in flatness_list if f[0] is not None and not math.isnan(f[0])
+        ]
 
         # boxplot of flatness
         plt.figure(figsize=(5, 5))
@@ -321,11 +406,23 @@ def _(math, np, plt):
         # add median, mean, min, max, quantiles
         # and add values to the plot
         plt.plot([1], [np.mean(flatness)], "ro", label=f"Mean: {np.mean(flatness):.2f}")
-        plt.plot([1], [np.median(flatness)], "bo", label=f"Median: {np.median(flatness):.2f}")
+        plt.plot(
+            [1], [np.median(flatness)], "bo", label=f"Median: {np.median(flatness):.2f}"
+        )
         plt.plot([1], [np.min(flatness)], "go", label=f"Min: {np.min(flatness):.2f}")
         plt.plot([1], [np.max(flatness)], "yo", label=f"Max: {np.max(flatness):.2f}")
-        plt.plot([1], [np.quantile(flatness, 0.25)], "co", label=f"1Q: {np.quantile(flatness, 0.25):.2f}")
-        plt.plot([1], [np.quantile(flatness, 0.75)], "mo", label=f"3Q: {np.quantile(flatness, 0.75):.2f}")
+        plt.plot(
+            [1],
+            [np.quantile(flatness, 0.25)],
+            "co",
+            label=f"1Q: {np.quantile(flatness, 0.25):.2f}",
+        )
+        plt.plot(
+            [1],
+            [np.quantile(flatness, 0.75)],
+            "mo",
+            label=f"3Q: {np.quantile(flatness, 0.75):.2f}",
+        )
         plt.legend()
         plt.xticks([1], ["Flatness"])
         plt.ylabel("Flatness")
@@ -369,7 +466,9 @@ def _(conjugation_filter, steric_hindrance_filter, working_df):
         return mol_object in xyz_set
 
     for col in ["substrate", "node"]:
-        all_mol_objects_from_df = [mol for mol in working_df[f"molecule_{col}"].tolist() if mol is not None]
+        all_mol_objects_from_df = [
+            mol for mol in working_df[f"molecule_{col}"].tolist() if mol is not None
+        ]
 
         conjugated_mol_objects_list = conjugation_filter.apply(all_mol_objects_from_df)
         steric_mol_objects_list = steric_hindrance_filter.apply(all_mol_objects_from_df)
@@ -380,8 +479,12 @@ def _(conjugation_filter, steric_hindrance_filter, working_df):
         conjugated_set = set(conjugated_mol_objects_list)
         steric_set = set(steric_mol_objects_list)
 
-        working_df[f"conjugated_{col}"] = working_df[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, conjugated_set))
-        working_df[f"steric_{col}"] = working_df[f"molecule_{col}"].apply(lambda x: is_molecule_xyz(x, steric_set))
+        working_df[f"conjugated_{col}"] = working_df[f"molecule_{col}"].apply(
+            lambda x: is_molecule_xyz(x, conjugated_set)
+        )
+        working_df[f"steric_{col}"] = working_df[f"molecule_{col}"].apply(
+            lambda x: is_molecule_xyz(x, steric_set)
+        )
     return
 
 
@@ -453,7 +556,10 @@ def _(measures, measures_normalized, np, plt):
 def _(plt, scores):
     from modules.generation.utils import score_value_exponential
 
-    new_scores = [score_value_exponential(s, min_val=1e-10, max_val=0.2, decay_rate=0.1) for s in scores]
+    new_scores = [
+        score_value_exponential(s, min_val=1e-10, max_val=0.2, decay_rate=0.1)
+        for s in scores
+    ]
 
     # histogram of scores
     plt.figure(figsize=(5, 5))

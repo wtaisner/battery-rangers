@@ -22,7 +22,4 @@ RUN uv sync --all-extras --dev
 
 COPY . .
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv run pylint modules --rcfile=.pylintrc
-
 RUN uv run pytest tests/ --ignore modules/REINVENT4 -v -s

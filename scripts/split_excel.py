@@ -21,23 +21,22 @@ def generate_filtered_excel(input_file, output_folder="filtered_batches_rdkit", 
         print(f"Error reading file: {e}")
         return
 
-    # Identify filter columns (last 3)
-    if df.shape[1] < 2:
-        print("Error: File needs at least a SMILES column and filter columns.")
-        return
-
-    # Assume Column 0 is SMILES, Column 1 is 'molecule' (placeholder), last 3 are filters
     smiles_col = df.columns[0]
-    filter_cols = df.columns[-3:]
+    # Identify filter columns (last 3)
+    if df.shape[1] > 2:
+        print("Filtering columns present")
 
-    print(f"Using '{smiles_col}' as SMILES column.")
-    print(f"Filtering on: {list(filter_cols)}")
+        # Assume Column 0 is SMILES, Column 1 is 'molecule' (placeholder), last 3 are filters
+        filter_cols = df.columns[-3:]
 
-    # Apply 'no' filter (case-insensitive)
-    mask = df[filter_cols].astype(str).apply(lambda x: x.str.strip().str.lower()) == "no"
-    filtered_df = df[mask.all(axis=1)].copy()
+        print(f"Using '{smiles_col}' as SMILES column.")
+        print(f"Filtering on: {list(filter_cols)}")
 
-    total_rows = len(filtered_df)
+        # Apply 'no' filter (case-insensitive)
+        mask = df[filter_cols].astype(str).apply(lambda x: x.str.strip().str.lower()) == "no"
+        df = df[mask.all(axis=1)].copy()
+
+    total_rows = len(df)
     print(f"Rows passing filter: {total_rows}")
 
     if total_rows == 0:
@@ -55,7 +54,7 @@ def generate_filtered_excel(input_file, output_folder="filtered_batches_rdkit", 
         end_idx = start_idx + chunk_size
 
         # Get the batch dataframe
-        batch_df = filtered_df.iloc[start_idx:end_idx].copy()
+        batch_df = df.iloc[start_idx:end_idx].copy()
 
         # Define output filename
         filename = os.path.join(output_folder, f"batch_{i + 1}.xlsx")

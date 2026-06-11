@@ -6,6 +6,8 @@ recipe = "ft_rl"
 [tl]
 smiles_file = "data/raw/node/ctf_train_chembl35.smi"
 validation_smiles_file = "data/raw/node/ctf_test_chembl35.smi"
+randomize_smiles = false
+standardize_smiles = false
 
 [rl]
 known_smiles_path = "data/raw/node/ctf_train_chembl35.smi"

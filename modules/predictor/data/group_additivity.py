@@ -1,4 +1,5 @@
 """Functions for additive group generation."""
+
 import os
 
 import numpy as np
@@ -7,8 +8,7 @@ from rdkit import Chem
 
 
 def _smiles_to_graphs(molecules: list) -> list:
-    """
-    Transforms smiles to graph representation.
+    """Transforms smiles to graph representation.
     :param molecules: list of smiles.
     :return: list of adjacency matrices.
     """
@@ -23,8 +23,7 @@ def _smiles_to_graphs(molecules: list) -> list:
 
 
 def graph_to_groups(graph: pd.DataFrame, permit_groups: list | None = None) -> tuple[dict, dict]:
-    """
-    Transforms a graph (adjacency matrix) to additive groups.
+    """Transforms a graph (adjacency matrix) to additive groups.
     :param graph: adjacency matrix.
     :param permit_groups: permitted groups, if not given extracts all groups from the graph
     :return: Dictionary with group counts, dictionary with atoms and their groups.
@@ -36,7 +35,10 @@ def graph_to_groups(graph: pd.DataFrame, permit_groups: list | None = None) -> t
         central_atom = row[0]
         neighbors = []
         nonzero_neighbors = row[1][row[1] > 0]
-        neighbors_ids, neighbors_counts = nonzero_neighbors.index, nonzero_neighbors.values
+        neighbors_ids, neighbors_counts = (
+            nonzero_neighbors.index,
+            nonzero_neighbors.values,
+        )
         for n_id, n_count in zip(neighbors_ids, neighbors_counts):
             n_atom, n_id = n_id.split("_")
             neighbors.append((str(int(n_count)) + str(n_atom)))
@@ -58,13 +60,10 @@ def graph_to_groups(graph: pd.DataFrame, permit_groups: list | None = None) -> t
 
 
 class AdditiveGroups:
-    """
-    Class for generating additive groups.
-    """
+    """Class for generating additive groups."""
 
     def __init__(self, molecules: list, groups: dict | None = None):
-        """
-        :param molecules: list of training smiles.
+        """:param molecules: list of training smiles.
         :param groups: list of permitted groups (optional).
         """
         self.molecules = molecules
@@ -76,8 +75,7 @@ class AdditiveGroups:
         print(len(self.groups))
 
     def generate_groups(self, molecules: list, permit_groups: list | None = None) -> tuple:
-        """
-        Generates additive groups from the given molecules.
+        """Generates additive groups from the given molecules.
         :param molecules: list of molecules (smiles).
         :param permit_groups: list of permitted groups.
         :return: dictionary with groups and their count, dataframe with groups for each molecule, dictionary with groups and atoms belonging to them.
@@ -108,8 +106,7 @@ class AdditiveGroups:
         return groups, groups_matrix, coverage
 
     def reduce_groups(self) -> list:
-        """
-        Reduces the number of groups by selecting the most informative ones (set of groups that covers all atoms using greedy algorithm for set coverage problem).
+        """Reduces the number of groups by selecting the most informative ones (set of groups that covers all atoms using greedy algorithm for set coverage problem).
         :return: selected groups.
         """
         all_atoms = len(set(atom for atoms in self.coverage.values() for atom in atoms))
@@ -134,7 +131,12 @@ if __name__ == "__main__":
     DIR_PATH = "../../../data/processed_selected_custom_features/"
     SAVE_PATH = "../../../data/additive_groups/"
     os.makedirs(SAVE_PATH, exist_ok=True)
-    data_names = ["data_experts1.csv", "data_experts2.csv", "data_saad.csv", "data_zhu.csv"]
+    data_names = [
+        "data_experts1.csv",
+        "data_experts2.csv",
+        "data_saad.csv",
+        "data_zhu.csv",
+    ]
     TARGET = "capacity_max"
     datasets = [DIR_PATH + dataset for dataset in data_names]
     dfs = [pd.read_csv(dataset) for dataset in datasets]

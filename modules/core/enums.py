@@ -1,11 +1,10 @@
 """Enums for the project."""
+
 from enum import Enum
 
 
 class MoleculeType(Enum):
-    """
-    Enum for different types of molecules.
-    """
+    """Enum for different types of molecules."""
 
     SUBSTRATE = "substrate"
     NODE = "node"
@@ -15,11 +14,16 @@ class MoleculeType(Enum):
 
 
 class PriorType(Enum):
+    """Enum for different REINVENT's prior."""
+
     VANILLA = "vanilla"
     CHEMBL35 = "chembl35"
+    DISCOVERED = "discovered"
 
 
 class Recipe(Enum):
+    """Enum for different training/sampling recipes."""
+
     SAMPLING = "sampling"
     FT = "ft"
     RL = "rl"

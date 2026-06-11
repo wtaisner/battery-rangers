@@ -1,4 +1,5 @@
 """Test for SMARTSFilter class"""
+
 import pytest
 from rdkit import Chem
 
@@ -18,7 +19,11 @@ from modules.core.filters.smarts_filter import SMARTSFilter
                 "N#Cc1cc(C#N)c(F)c(C#N)c1F",
                 "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1",
             ],
-            ["N#Cc1ccnc(C#N)n1", "N#Cc1cc(C#N)c(F)c(C#N)c1F", "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1"],
+            [
+                "N#Cc1ccnc(C#N)n1",
+                "N#Cc1cc(C#N)c(F)c(C#N)c1F",
+                "N#Cc1ccc(-c2cc(=O)nc(-c3ccc(C#N)cc3)[nH]2)cc1",
+            ],
         ),
         # Cl/Br
         # 5, 6, 7, 39, 40, 43, 60
@@ -110,4 +115,6 @@ def test_smarts_filter(smiles, expected):
     mols = [Chem.MolFromSmiles(smile) for smile in smiles]
     molecule_filter = SMARTSFilter()
     filtered = molecule_filter.apply(mols)
-    assert [Chem.MolToSmiles(mol) for mol in filtered] == [Chem.MolToSmiles(Chem.MolFromSmiles(exp)) for exp in expected], f"Expected {expected} but got {[Chem.MolToSmiles(mol) for mol in filtered]}"
+    assert [Chem.MolToSmiles(mol) for mol in filtered] == [
+        Chem.MolToSmiles(Chem.MolFromSmiles(exp)) for exp in expected
+    ], f"Expected {expected} but got {[Chem.MolToSmiles(mol) for mol in filtered]}"

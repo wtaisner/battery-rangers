@@ -1,37 +1,39 @@
 repos:
-# Use black formatter.
-- repo: https://github.com/psf/black
-  rev: 23.1.0
-  hooks:
-  - id: black
-    args: ['--line-length=200']
-# Use isort to sort imports.
-- repo: https://github.com/pycqa/isort
-  rev: 5.12.0
-  hooks:
-  - id: isort
-    name: isort (python)
-    args: ['-v', '--line-length=127', '--profile', 'black']
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.3.0
-  hooks:
-  - id: end-of-file-fixer
-  - id: trailing-whitespace
-  - id: check-case-conflict
-  - id: check-json
-  - id: check-yaml
-# Use pylint to check code quality.
-- repo: https://github.com/pycqa/pylint
-  rev: v2.17.4 # Use an appropriate tag/version
-  hooks:
-    - id: pylint
-      name: pylint
-      entry: pylint
-      language: system
-      types: [python]
-      require_serial: true
-      args:
-        [
-          "-rn", # Only display messages
-          "--rcfile=.pylintrc", # Use the .pylintrc file
-        ]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-toml
+        exclude: '^(configs/reinvent/templates/).*'
+      - id: check-yaml
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.43.3
+    hooks:
+      - id: typos
+        exclude: '^(notebooks/|modules/predictor/notebooks/|configs/).*'
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.0
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
+
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.8.3
+    hooks:
+      - id: pydoclint
+        args: [ "--config=pyproject.toml", "-rrs=False" ]
+
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty check
+        entry: .venv/bin/ty check
+        language: system
+        types: [ python ]
+        pass_filenames: false

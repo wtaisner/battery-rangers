@@ -1,11 +1,11 @@
 """Datasets preprocessing."""
+
 import pandas as pd
 from rdkit import Chem
 
 
 def preprocess_target(df: pd.DataFrame, targets: list) -> pd.DataFrame:
-    """
-    Preprocessing of the target column, selects maximal obtained value per molecule
+    """Preprocessing of the target column, selects maximal obtained value per molecule
     :param df: dataframe with molecules
     :param targets: columns with target values
     :return: preprocessed dataframe
@@ -14,8 +14,7 @@ def preprocess_target(df: pd.DataFrame, targets: list) -> pd.DataFrame:
 
 
 def canon_smiles(smiles: str) -> str | None:
-    """
-    Produces a canonical smiles string from a SMILES string.
+    """Produces a canonical smiles string from a SMILES string.
     :param smiles: SMILES string.
     :return: canonical smiles string.
     """
@@ -26,8 +25,7 @@ def canon_smiles(smiles: str) -> str | None:
 
 
 def expert_dataset_preprocessing(df_experts: pd.DataFrame, drop=False) -> pd.DataFrame:
-    """
-    Preprocessing of expert data
+    """Preprocessing of expert data
     :param df_experts: dataframe with expert data
     :return: preprocessed dataframe
     """
@@ -56,11 +54,35 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame, drop=False) -> pd.Dat
     }
 
     df_experts = df_experts.rename(columns=column_names_mapping)
-    df_experts[["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]] = df_experts[
-        ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
+    df_experts[
+        [
+            "capacity_H2SO4_CV",
+            "capacity_H2SO4_GCD",
+            "capacity_NaOH_CV",
+            "capacity_NaOH_GCD",
+        ]
+    ] = df_experts[
+        [
+            "capacity_H2SO4_CV",
+            "capacity_H2SO4_GCD",
+            "capacity_NaOH_CV",
+            "capacity_NaOH_GCD",
+        ]
     ].replace("~", "", regex=True)
-    df_experts[["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]] = df_experts[
-        ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
+    df_experts[
+        [
+            "capacity_H2SO4_CV",
+            "capacity_H2SO4_GCD",
+            "capacity_NaOH_CV",
+            "capacity_NaOH_GCD",
+        ]
+    ] = df_experts[
+        [
+            "capacity_H2SO4_CV",
+            "capacity_H2SO4_GCD",
+            "capacity_NaOH_CV",
+            "capacity_NaOH_GCD",
+        ]
     ].astype(float)
 
     # Calculate mean capacity
@@ -73,7 +95,12 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame, drop=False) -> pd.Dat
         problematic_no_target = [20, 21, 22, 23, 24, 44, 46, 50, 52]
         df_experts.drop(problematic_no_target)
     # Process target
-    targets = ["capacity_H2SO4_CV", "capacity_H2SO4_GCD", "capacity_NaOH_CV", "capacity_NaOH_GCD"]
+    targets = [
+        "capacity_H2SO4_CV",
+        "capacity_H2SO4_GCD",
+        "capacity_NaOH_CV",
+        "capacity_NaOH_GCD",
+    ]
     df_experts["capacity_max"] = preprocess_target(df_experts, targets=targets)
 
     df_experts = df_experts.loc[~df_experts["capacity_max"].isna()].reset_index(drop=True)
@@ -85,8 +112,7 @@ def expert_dataset_preprocessing(df_experts: pd.DataFrame, drop=False) -> pd.Dat
 
 
 def zhu_dataset_preprocessing(df_zhu: pd.DataFrame) -> pd.DataFrame:
-    """
-    Preprocessing of literature data (Zhu)
+    """Preprocessing of literature data (Zhu)
     :param df_zhu: dataframe with Zhu data
     :return: preprocessed dataframe
     """
@@ -105,8 +131,7 @@ def zhu_dataset_preprocessing(df_zhu: pd.DataFrame) -> pd.DataFrame:
 
 
 def saad_dataset_preprocessing(df_saad: pd.DataFrame) -> pd.DataFrame:
-    """
-    Preprocessing of literature data (Saad)
+    """Preprocessing of literature data (Saad)
     :param df_saad: pandas dataframe with Saad data
     :return: preprocessed dataframe
     """

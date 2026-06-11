@@ -6,7 +6,6 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    import marimo as mo
     import pandas as pd
 
     from modules.generation.evaluation import MoleculeGenerationEvaluator
@@ -16,7 +15,9 @@ def _():
 
 @app.cell
 def _(pd):
-    generated_smiles = pd.read_csv("modules/bionemo/data/outputs/molrl/MolMIM_test_seed_molecules_100_epochs_lr_0_0005_bs_200.csv")["canon_smiles"].tolist()
+    generated_smiles = pd.read_csv(
+        "modules/bionemo/data/outputs/molrl/MolMIM_test_seed_molecules_100_epochs_lr_0_0005_bs_200.csv"
+    )["canon_smiles"].tolist()
     len(generated_smiles)
     return (generated_smiles,)
 
@@ -57,17 +58,21 @@ def _(MoleculeGenerationEvaluator, generated_smiles):
         device="cpu",  # Use the determined device
     )
 
-    circles_value, org_indices = evaluator.calculate_circles_metric(distance_threshold=0.75)
+    circles_value, org_indices = evaluator.calculate_circles_metric(
+        distance_threshold=0.75
+    )
     return evaluator, org_indices
 
 
 @app.cell
 def _(Chem, evaluator, org_indices):
     # plot the NxN grid of most diverse molecules based on results, evaluator.valid_generated_smiles_canon, and org_indices list
-    import matplotlib.pyplot as plt
     from rdkit.Chem import Draw
 
-    diverse_mols = [Chem.MolFromSmiles(evaluator.valid_generated_smiles_canon[i]) for i in org_indices]
+    diverse_mols = [
+        Chem.MolFromSmiles(evaluator.valid_generated_smiles_canon[i])
+        for i in org_indices
+    ]
     img = Draw.MolsToGridImage(diverse_mols[:50], molsPerRow=10)
     img
     return
@@ -78,10 +83,8 @@ def _():
     import random
 
     import more_itertools as mit
-    import numpy as np
-    import rdkit
     from rdkit import Chem, DataStructs
-    from rdkit.Chem import AllChem, DataStructs
+    from rdkit.Chem import DataStructs
     from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
     from tqdm import tqdm
     from tqdm.contrib.concurrent import process_map
@@ -96,7 +99,9 @@ def _():
                 # Instead of using a passed-in function, we calculate the distances
                 # directly inside the worker. This is the core of the fix.
                 # We find the single closest similarity and convert it to a distance.
-                min_dist = 1.0 - max(DataStructs.TanimotoSimilarity(vec, c) for c in circs)
+                min_dist = 1.0 - max(
+                    DataStructs.TanimotoSimilarity(vec, c) for c in circs
+                )
 
                 # The original logic of your algorithm is preserved
                 if min_dist <= t:
@@ -153,8 +158,18 @@ def _():
 
 @app.cell
 def _(Chem, GetMorganFingerprintAsBitVect, NCircles, evaluator):
-    circles = NCircles(vectorizer=lambda x: [GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(s), 2, nBits=2048) for s in x], threshold=0.75)
-    circles.measure(evaluator.valid_generated_smiles_canon, False, len(evaluator.valid_generated_smiles_canon))
+    circles = NCircles(
+        vectorizer=lambda x: [
+            GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(s), 2, nBits=2048)
+            for s in x
+        ],
+        threshold=0.75,
+    )
+    circles.measure(
+        evaluator.valid_generated_smiles_canon,
+        False,
+        len(evaluator.valid_generated_smiles_canon),
+    )
     return
 
 

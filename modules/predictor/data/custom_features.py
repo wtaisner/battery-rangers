@@ -1,4 +1,5 @@
 """Functions for handcrafted features."""
+
 from typing import Literal
 
 import pandas as pd
@@ -14,8 +15,7 @@ from modules.predictor.data.utils import data_preprocessing
 
 
 def calculate_atom_percentage(smiles: str, atom: str) -> float | None:
-    """
-    Calculates the percentage of a given atom in a molecule.
+    """Calculates the percentage of a given atom in a molecule.
     :param smiles: smiles representation of a molecule.
     :param atom: atom name
     :return: percentage of the given atom in the molecule or None
@@ -40,8 +40,7 @@ def calculate_atom_percentage(smiles: str, atom: str) -> float | None:
 
 
 def handcrafted_feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculates selected features for a given dataframe (percentage of carbon, oxygen, nitrogen, fluorine, and MolLogP descriptor)
+    """Calculates selected features for a given dataframe (percentage of carbon, oxygen, nitrogen, fluorine, and MolLogP descriptor)
     :param df: dataframe with smiles
     :return: dataframe with handcrafted features
     """
@@ -53,14 +52,19 @@ def handcrafted_feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     df["MolLogP"] = df["smiles"].apply(lambda smiles: Descriptors.MolLogP(Chem.MolFromSmiles(smiles)))
 
     # Add features from extract_data_from_mol
-    df = pd.concat([df, df["smiles"].apply(lambda smiles: pd.Series(extract_data_from_mol(Chem.MolFromSmiles(smiles))))], axis=1)
+    df = pd.concat(
+        [
+            df,
+            df["smiles"].apply(lambda smiles: pd.Series(extract_data_from_mol(Chem.MolFromSmiles(smiles)))),
+        ],
+        axis=1,
+    )
 
     return df
 
 
 def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str | None:
-    """
-    Calculates a point group for a given molecule.
+    """Calculates a point group for a given molecule.
     :param smiles: smiles representation of a molecule
     :param translation_table_path: path to translation table (symmetry_translation.csv file)
     :return: point group symmetry of a given molecule
@@ -75,8 +79,7 @@ def check_symmetry_smiles(smiles: str, translation_table_path: str) -> str | Non
 
 
 def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.DataFrame:
-    """
-    Calculates selected features from a given dataframe with smiles (flatness, pore size, symmetry, percentages of selected atoms, and MolLogP descriptor)
+    """Calculates selected features from a given dataframe with smiles (flatness, pore size, symmetry, percentages of selected atoms, and MolLogP descriptor)
     :param translation_table_path: path to translation table (symmetry_translation.csv file)
     :param df: dataframe with smiles
     :return: dataframe with selected features
@@ -96,13 +99,24 @@ def feature_engineering(df: pd.DataFrame, translation_table_path: str) -> pd.Dat
 
 
 def remove_unuseful_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Removes duplicated and rarely present features
+    """Removes duplicated and rarely present features
     :param df: dataframe with generated features
     :return: dataframe without duplicated and rarely present features
     """
     # Drop features with the same values in all rows
-    df.drop(columns=["num_conformers", "is_chiral", "is_aromatic", "is_branched", "is_cyclic", "is_heterocycle", "is_homocycle"], axis=1, inplace=True)
+    df.drop(
+        columns=[
+            "num_conformers",
+            "is_chiral",
+            "is_aromatic",
+            "is_branched",
+            "is_cyclic",
+            "is_heterocycle",
+            "is_homocycle",
+        ],
+        axis=1,
+        inplace=True,
+    )
 
     # Value for only 5 rows
     df.drop(columns=["num_amide_bonds", "%F"], axis=1, inplace=True)
@@ -117,10 +131,13 @@ def remove_unuseful_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def data_preprocessing_and_feature_engineering(
-    data_path: str, data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"], translation_data_path: str, save_path: str | None = None, remove_unuseful: bool = False
+    data_path: str,
+    data_type: Literal["expert", "zhu", "saad", "expert2", "expert3"],
+    translation_data_path: str,
+    save_path: str | None = None,
+    remove_unuseful: bool = False,
 ) -> pd.DataFrame:
-    """
-    Preprocesses data and performs feature engineering
+    """Preprocesses data and performs feature engineering
     :param translation_data_path: path to translation table (symmetry_translation.csv file)
     :param data_path: path to the data file
     :param data_type: type of data, one of the following: expert, zhu, saad, expert2

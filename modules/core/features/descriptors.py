@@ -1,4 +1,5 @@
 """Functions for calculating descriptors of a molecule"""
+
 from typing import Dict
 
 from rdkit import Chem
@@ -6,8 +7,7 @@ from rdkit.Chem import Mol, rdMolDescriptors
 
 
 def extract_data_from_mol(mol: Mol) -> Dict[str, float | bool]:
-    """
-    Extract a bunch of descriptor data from a molecule object.
+    """Extract a bunch of descriptor data from a molecule object.
     :param: mol:
     More: https://www.rdkit.org/docs/source/rdkit.Chem.rdMolDescriptors.html
     """

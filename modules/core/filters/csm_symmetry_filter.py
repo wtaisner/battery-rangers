@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)  # __name__ ensures the logger is specific 
 
 
 class CSMSymmetryFilter(GenericMoleculeFilter):
-    """
-    A filter that retains molecules with a CSM symmetry below a specified threshold.
+    """A filter that retains molecules with a CSM symmetry below a specified threshold.
 
     Args:
         symmetry_measure_threshold (float): The threshold for the CSM symmetry measure. Molecules with
@@ -21,6 +20,7 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
         normalize_score (bool): Whether to normalize the symmetry score by number of atoms. Default is True.
         evaluated_symmetry_groups (list[str] | None): A list of symmetry groups to evaluate.
             If None, defaults to ["c2", "c3", "c4"].
+
     """
 
     def __init__(
@@ -41,11 +41,12 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
 
     # pylint: disable=arguments-differ
     def apply(self, molecules: list[Mol], **kwargs) -> list[Mol]:
-        """
-        Apply the filter to a list of RDKit Mol objects.
+        """Apply the filter to a list of RDKit Mol objects.
 
         Args:
-            molecules (list[Mol]): The list of RDKit Mol objects to filter.
+            molecules: The list of RDKit Mol objects to filter.
+            **kwargs: Additional keyword arguments (for API compatibility, unused).
+
         Returns:
             list[Mol]: The list of RDKit Mol objects that passed the filter.
 
@@ -61,16 +62,13 @@ class CSMSymmetryFilter(GenericMoleculeFilter):
             if self.normalize_score:
                 if csm_result and csm_result.lowest_csm_normalized and csm_result.lowest_csm_normalized[1] < self.symmetry_measure_threshold:
                     filtered_molecules.append(mol)
-            else:
-                if csm_result and csm_result.lowest_csm and csm_result.lowest_csm[1] < self.symmetry_measure_threshold:
-                    filtered_molecules.append(mol)
+            elif csm_result and csm_result.lowest_csm and csm_result.lowest_csm[1] < self.symmetry_measure_threshold:
+                filtered_molecules.append(mol)
 
         return filtered_molecules
 
     def filter_from_property(self, properties: dict) -> bool:
-        """
-        Reads properties from a dictionary (database) and decides whether to filter the molecule.
-        """
+        """Reads properties from a dictionary (database) and decides whether to filter the molecule."""
         lowest_csm_normalized = properties.get("normalized_csm", np.inf)
         if not lowest_csm_normalized:
             return False  # Filter out if no CSM data is available

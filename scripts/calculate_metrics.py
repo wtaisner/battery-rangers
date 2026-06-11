@@ -1,8 +1,8 @@
-"""
-Script to evaluate molecule generation metrics.
+"""Script to evaluate molecule generation metrics.
 Accepts a single file or a glob pattern for generated SMILES.
 Logs an aggregated report to Weights & Biases for multiple files.
 """
+
 import argparse
 import glob
 import os
@@ -10,9 +10,9 @@ import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import wandb
 from upsetplot import plot
 
-import wandb
 from modules.core.enums import MoleculeType
 from modules.generation.evaluation import MoleculeGenerationEvaluator
 
@@ -42,11 +42,30 @@ parser.add_argument(
     help="Base name for the run. Used for the aggregated wandb log.",
 )
 
-parser.add_argument("--log_wandb", action="store_true", help="Enable logging of the aggregated report to Weights & Biases.")  # Makes this a flag: --log_wandb
+parser.add_argument(
+    "--log_wandb",
+    action="store_true",
+    help="Enable logging of the aggregated report to Weights & Biases.",
+)  # Makes this a flag: --log_wandb
 parser.add_argument("--backup_db", action="store_true", help="Logs MoleculeDB as an artifact to wandb.")
-parser.add_argument("--db_dir", type=str, help="Where the database is stored", default="modules/bionemo/data/mol_db/")
-parser.add_argument("--wandb_project", type=str, default="molecule-generation", help="Specify the wandb project name.")
-parser.add_argument("--wandb_entity", type=str, default="witold_taisner", help="Specify the wandb entity (user or team).")
+parser.add_argument(
+    "--db_dir",
+    type=str,
+    help="Where the database is stored",
+    default="modules/bionemo/data/mol_db/",
+)
+parser.add_argument(
+    "--wandb_project",
+    type=str,
+    default="molecule-generation",
+    help="Specify the wandb project name.",
+)
+parser.add_argument(
+    "--wandb_entity",
+    type=str,
+    default="witold_taisner",
+    help="Specify the wandb entity (user or team).",
+)
 # argument that if provided will set molecule type to NODE, otherwise it will be set to SUBSTRATE
 parser.add_argument(
     "--molecule_type",
@@ -85,7 +104,12 @@ if __name__ == "__main__":
     for f_path in generated_files:
         print(f"\n---> Evaluating file: {os.path.basename(f_path)}")
         start_time = time.time()
-        allowed_smiles_columns = ["SMILES", "canonical_smiles", "smiles", "canon_smiles"]
+        allowed_smiles_columns = [
+            "SMILES",
+            "canonical_smiles",
+            "smiles",
+            "canon_smiles",
+        ]
         # Check if the file has any of the allowed columns
         df = pd.read_csv(f_path)  # [:1000] # TODO: remove later
         found_column = None
@@ -128,6 +152,7 @@ if __name__ == "__main__":
         print("=" * 50)
         print(results_df.round(3).to_string())
 
+        # TODO: add SMILES to the upset plot data, such that we can aggregate which molecules failed which filters
         records = []
         for smiles, filter_outcomes in all_upset_results.items():
             # Invert the boolean: True if the molecule failed (result is False)
@@ -151,7 +176,12 @@ if __name__ == "__main__":
             # --- Log the aggregated report to wandb if enabled ---
             if args.log_wandb:
                 print("\n---> Logging aggregated report to Weights & Biases...")
-                wandb.init(project=args.wandb_project, entity=args.wandb_entity, name=args.run_name, config=vars(args))  # Log script arguments for reproducibility
+                wandb.init(
+                    project=args.wandb_project,
+                    entity=args.wandb_entity,
+                    name=args.run_name,
+                    config=vars(args),
+                )  # Log script arguments for reproducibility
 
                 if args.backup_db:
                     db_path = os.path.join(args.db_dir, f"{args.molecule_type}_properties.db")
@@ -189,7 +219,7 @@ if __name__ == "__main__":
                 plot(
                     upset_data,
                     fig=fig,
-                    show_percentages=True,
+                    # show_percentages=True, # TODO: probably some conflicting packages versions broke this option
                     sort_by="cardinality",
                     # min_subset_size="1%"
                 )

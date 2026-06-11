@@ -1,10 +1,13 @@
 """Data preparation script. Generating custom, dft, fingerprints and additive groups features."""
+
 import os
 
 import pandas as pd
 import yaml
 
-from modules.predictor.data.custom_features import data_preprocessing_and_feature_engineering
+from modules.predictor.data.custom_features import (
+    data_preprocessing_and_feature_engineering,
+)
 from modules.predictor.data.dft_features import df_to_features_pyscf
 from modules.predictor.data.fingerprints import fingerprints_dataset
 from modules.predictor.data.group_additivity import AdditiveGroups
@@ -15,7 +18,11 @@ if __name__ == "__main__":
     with open(CONFIG_PATH, encoding="UTF-8") as file:
         config = yaml.safe_load(file)
 
-    root_dir, raw_data_dir, data_dict = config["root_dir"], config["raw_data_dir"], config["data_dict"]
+    root_dir, raw_data_dir, data_dict = (
+        config["root_dir"],
+        config["raw_data_dir"],
+        config["data_dict"],
+    )
     data_path = os.path.join(root_dir, raw_data_dir)
 
     if config["custom_features"]:
@@ -25,7 +32,13 @@ if __name__ == "__main__":
         os.makedirs(save_path, exist_ok=True)
         for data_type, data in data_dict.items():
             print(data_type)
-            data_preprocessing_and_feature_engineering(os.path.join(data_path, data), data_type, translation_table_path, os.path.join(save_path, data), remove_unuseful=True)
+            data_preprocessing_and_feature_engineering(
+                os.path.join(data_path, data),
+                data_type,
+                translation_table_path,
+                os.path.join(save_path, data),
+                remove_unuseful=True,
+            )
 
     if config["dft_features"]:
         config_dft_features = config["dft_features_params"]
@@ -34,7 +47,13 @@ if __name__ == "__main__":
         for data_type, data in data_dict.items():
             print(f"{data_type}, dft")
             df = data_preprocessing(os.path.join(data_path, data), data_type)
-            df = df_to_features_pyscf(df, "smiles", "capacity_max", functional=config_dft_features["functional"], n_jobs=config_dft_features["n_jobs"])
+            df = df_to_features_pyscf(
+                df,
+                "smiles",
+                "capacity_max",
+                functional=config_dft_features["functional"],
+                n_jobs=config_dft_features["n_jobs"],
+            )
             df.to_csv(os.path.join(save_path, data), index=False)
 
     if config["fingerprints"]:
