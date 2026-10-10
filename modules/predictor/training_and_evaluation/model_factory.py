@@ -125,7 +125,7 @@ def _get_bayes() -> tuple:
     """
     bayes = BayesianRidge()
     bayes_params = {"alpha_1": [1e-6, 1e-5, 1e-4], "alpha_2": [1e-6, 1e-5, 1e-4], "lambda_1": [1e-6, 1e-5, 1e-4], "lambda_2": [1e-6, 1e-5, 1e-4]}
-    return bayes, bayes_params, "Bayesian Ridge Regressor", "coefficients"
+    return bayes, bayes_params, "Bayesian Ridge Regressor", "linear"  # "coefficients"
 
 
 @Models.register("mlp")

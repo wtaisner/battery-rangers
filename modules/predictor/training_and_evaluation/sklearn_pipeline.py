@@ -1,14 +1,16 @@
 """Sklearn training pipeline module."""
 import ast
 import copy
+import os
 import warnings
 
+import joblib
 import numpy as np
 import optuna
 import pandas as pd
 import shap
 from sklearn.metrics import root_mean_squared_error
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import MaxAbsScaler, OneHotEncoder, StandardScaler
 from tabpfn_extensions.interpretability import shapiq
 
 from modules.predictor.data.utils import custom_data_split
@@ -236,10 +238,13 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
             intercept = model.intercept_
             coefficients = list(coefficients) + [intercept]
             features = X_train.columns
-
             features = list(features) + ["intercept"]
             coef_df = {"feature": features, "coefficient": coefficients}
             return method, coef_df
+        elif method == "linear":
+            explainer = shap.LinearExplainer(model, X_train.to_numpy())
+            shap_values = explainer.shap_values(X_test.to_numpy())
+            return method, shap_values
         return None, None
 
     def train_and_save_model(self, model_name: str, model_path: str | None = None) -> object:
@@ -249,7 +254,7 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
         :param model_path: path to saved model.
         :return: trained model.
         """
-        proper_model_name, model, param_grid, _ = Models().get_model(model_name, model_path=model_path)
+        proper_model_name, model, param_grid, f_importance_method = Models().get_model(model_name, model_path=model_path)
 
         if self.verbose:
             print(f"Training final model {proper_model_name} on the entire dataset")
@@ -263,9 +268,15 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
 
         model.fit(X_prepared.to_numpy(), self.y[self.y.columns[0]].to_numpy())
 
+        f_imp = self.calculate_f_importance(model, f_importance_method, X_prepared, X_prepared)
+
         if len(self.save_dir) > 0:
             self.save_model(standard_scaler, fold_num="scaler_final")
             self.save_model(model, fold_num="final")
+            f_importance_path = os.path.join(self.save_dir, f"feature_importance.pickle")
+            with open(f_importance_path, "wb") as f:
+                joblib.dump(f_imp, f)
+            X_prepared.to_csv(os.path.join(self.save_dir, "data.csv"), index=False)
 
         return model
 
@@ -276,6 +287,6 @@ class SklearnTrainingPipeline(ModelTrainingPipeline):
         :param X_predict: data for prediction.
         :return: predicted values.
         """
-        X_prepared = self._data_preparation(self.X, X_predict)
+        X_prepared = self._prepare_features_for_model(model, self.X, X_predict)
         y_pred = model.predict(X_prepared.to_numpy()).flatten()
         return y_pred

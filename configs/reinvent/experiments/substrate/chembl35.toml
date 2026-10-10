@@ -1,4 +1,0 @@
-name = "substrate_chembl35"
-molecule_type = "substrate"
-prior_type = "chembl35"
-recipe = "sampling"

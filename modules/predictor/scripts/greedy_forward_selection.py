@@ -285,7 +285,11 @@ def _rank_model_candidates(model_name: str, evaluations: list[CandidateEvaluatio
     table["smape_rank"] = table["smape"].rank(method="average", ascending=True)
     table["pa_rank"] = table["pa"].rank(method="average", ascending=False)
     table["combined_rank"] = (table["smape_rank"] + table["pa_rank"]) / 2.0
-    return table.sort_values("combined_rank", ascending=True).reset_index(drop=True)
+    # Tie-break equal combined rank by better PA rank (lower is better), then SMAPE rank.
+    return table.sort_values(
+        ["combined_rank", "pa_rank", "smape_rank", "candidate"],
+        ascending=[True, True, True, True],
+    ).reset_index(drop=True)
 
 
 def _append_evaluation_record(log_path: str, record: dict[str, Any]) -> None:

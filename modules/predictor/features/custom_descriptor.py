@@ -3,12 +3,12 @@ from functools import partial
 
 import numpy as np
 import skfp
+from predictor.features.csm_runner import CSMRunner
+from predictor.features.flatness import get_flatness_mol
 from rdkit import Chem
 from rdkit.Chem import rdDepictor, rdMolDescriptors, rdmolops
 from tqdm import tqdm
 
-from modules.core.features.csm_runner import CSMRunner
-from modules.core.features.flatness import get_flatness_mol
 from modules.predictor.features.feature_factory import FeatureFactory
 
 

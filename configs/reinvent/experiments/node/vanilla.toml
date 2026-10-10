@@ -1,4 +1,0 @@
-name="node_vanilla_sampling"
-molecule_type="node"
-prior_type="vanilla"
-recipe="sampling"
